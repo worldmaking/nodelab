@@ -329,15 +329,17 @@ function updateAvatars() {
 
 		
 		// console.log(client)
-		if (client != undefined && client.pose != undefined && client.id != myid) {
+		if (client != undefined && client.pose != undefined) {
 			avatar.feet.visible = true;
-			//avatar.mesh.position.fromArray( client.pose.position );
-		 	avatar.feet.position.fromArray( [
-			 	client.pose.position[0], 
-				client.pose.position[1]-AVATAR_HEIGHT+AVATAR_WIDTH, 
-				client.pose.position[2]
-			 ] );
-			avatar.mesh.quaternion.fromArray(client.pose.quaternion)
+			if (client.id != myid) {
+				//avatar.mesh.position.fromArray( client.pose.position );
+				avatar.feet.position.fromArray( [
+					client.pose.position[0], 
+					client.pose.position[1]-AVATAR_HEIGHT+AVATAR_WIDTH, 
+					client.pose.position[2]
+				] );
+				avatar.mesh.quaternion.fromArray(client.pose.quaternion)
+			}
 		} else {
 			avatar.feet.visible = false;
 		}
