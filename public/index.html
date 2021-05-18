@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <title></title>
-<!--<link rel="stylesheet" href="style.css">-->
+<link rel="stylesheet" href="basic.css">
 <style>
 
 </style>
 </head>
 <body>
+<div id="status"></div>
 Hi.
-<div id="output"></div>
 <script>
-var HOST = location.origin.replace(/^http/, 'ws')
-var ws = new WebSocket(HOST);
+const HOST = location.origin.replace(/^http/, 'ws');
 
+let ws = new WebSocket(HOST);
 ws.onmessage = function (event) {
-	document.getElementById('output').innerHTML = event.data;
+	document.getElementById('status').innerText = event.data;
 };
 </script>
 </body>
