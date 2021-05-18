@@ -1,0 +1,23 @@
+{
+  "name": "nodelab",
+  "version": "0.0.1",
+  "description": "Alice Lab Node.js server",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/worldmaking/nodelab.git"
+  },
+  "author": "Alice Lab @ York University",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/worldmaking/nodelab/issues"
+  },
+  "homepage": "https://github.com/worldmaking/nodelab#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "ws": "^7.4.5"
+  }
+}
