@@ -20,19 +20,14 @@ function connect(handleMessage, logMessage = console.log, reconnect_timeout=5000
 
 	server.onopen = () => {
 		logMessage( `connected to ${HOST}`)
-
 		server.onclose = function(event) {
 			logMessage("disconnected")
 			server = null
 			reconnect();
 		}
-
-		//socket.send('Here\'s some text that the server is urgently awaiting!'); 
 		server.onmessage = event => {
-			if (handleMessage) handleMessage(event.data)
+			if (handleMessage) handleMessage(event.data, server)
 		}
-
-		server.send(`handshake`)
 	}
 	return server
 }

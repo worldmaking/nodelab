@@ -25,27 +25,25 @@
 <script src="connect.js"></script>
 <script>
 
-function handleMessage (msg) {
-	document.getElementById("log").innerText += msg + "\n"
-	// if (serverMessage) {
-			// 	if (msg[0]=="{") {
-			// 		serverMessage(JSON.parse(msg), server)
-			// 	} else {
-			// 		console.log(`Received message ${msg}`);
-			// 	}
-			// }
-// 			//if(msg instanceof ArrayBuffer) { ... }
-// 			msg = JSON.parse(msg)
-// 			if (msg.cmd == "setcode") {
-// 				//console.log("setcode", msg.code)
+let myid
 
-// 				editor.setValue(msg.code)
-// 				editor_dirty = false;
-// 			} else if (msg.cmd == "setstate") {
-// 				data.innerText = JSON.stringify(msg.state, null, "  ")
-// 			} else {
-// 				console.log(`Received message ${msg}`);
-// 			}
+function handleMessage (msg, server) {
+	if(msg instanceof ArrayBuffer) { 
+		///... 
+	} else if (msg[0]=="{") {
+		let json = JSON.parse(msg);
+		switch(json.cmd) {
+			case "handshake": 
+				myid = json.id; 
+				server.send(msg);
+				break;
+			default: 
+				document.getElementById("log").innerText += msg + "\n";
+				break;
+		}
+	} else {
+		document.getElementById("log").innerText += msg + "\n";
+	}
 }
 
 let server = connect(handleMessage, (msg) => {
