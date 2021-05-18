@@ -1,8 +1,7 @@
 const path = require("path")
 const fs = require('fs');
 const http = require('http');
-const https = require('https');
-const { Server } = require('ws');
+const ws = require('ws');
 const express = require("express")
 
 const PORT = process.env.PORT || 3000;
@@ -10,16 +9,31 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 
-const httpServer = http.createServer(app)
+const server = http.createServer(app)
 
-const wss = new Server({ server: httpServer });
+const wss = new ws.Server({ server: server });
 
-wss.on('connection', (socket) => {
-	console.log('Client connected');
-	socket.send("hi there");
-	socket.on('close', () => console.log('Client disconnected'));
+function broadcast(msg) {
+	wss.clients.forEach(function (client) {
+       if (client.readyState == ws.OPEN) {
+          client.send( msg );
+       }
+    });
+}
+
+wss.on('connection', (client) => {
+	console.log('client connected');
+	broadcast("somebody joined");
+	client.on('close', () => {
+		console.log('client disconnected')
+		broadcast("somebody left");
+	});
+	client.on('message', (msg) => {
+		console.log('received: %s', msg);
+		broadcast("somebody said " + msg);
+	})
 });
 
-httpServer.listen(PORT, () => console.log(`Server listening on port: ${PORT}`));
+server.listen(PORT, () => console.log(`Server listening on port: ${PORT}`));
 
 console.log("ok")
