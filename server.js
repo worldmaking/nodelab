@@ -61,7 +61,6 @@ wss.on('connection', (socket) => {
 			let json = JSON.parse(msg);
 			switch(json.cmd) {
 				case "handshake": 
-					console.log("handshake", id, json.id, id==json.id)
 					if(json.id != id) { 
 						console.error("bad handshake");
 						socket.close()

@@ -326,8 +326,11 @@ loader.load( 'collision-world.glb', ( gltf ) => {
 function updateAvatars() {
 	avatars.forEach((avatar, i)=>{
 		let client = clients[i]
+
+		
 		// console.log(client)
 		if (client != undefined && client.pose != undefined && client.id != myid) {
+			avatar.feet.visible = true;
 			//avatar.mesh.position.fromArray( client.pose.position );
 		 	avatar.feet.position.fromArray( [
 			 	client.pose.position[0], 
@@ -336,8 +339,7 @@ function updateAvatars() {
 			 ] );
 			avatar.mesh.quaternion.fromArray(client.pose.quaternion)
 		} else {
-		 	//avatar.feet.position.set(0, -100, 0)
-			 avatar.feet.position.copy(avatar.defaultpos)
+			avatar.feet.visible = false;
 		}
 	})
 }
