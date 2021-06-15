@@ -18,6 +18,8 @@
   "homepage": "https://github.com/worldmaking/nodelab#readme",
   "dependencies": {
     "express": "^4.17.1",
+    "json-diff": "^0.5.4",
+    "jsondiffpatch": "^0.4.1",
     "ws": "^7.4.5"
   }
 }
