@@ -1,7 +1,9 @@
 function connect(handleMessage, logMessage = console.log, reconnect_timeout=3000) {
-	console.log(location)
-	
-	const HOST = location.origin.replace(/^http/, 'ws');
+	let HOST = "wss://alicelab.herokuapp.com"
+	// if (location.hostname == "localhost" || location.hostname == "127.0.0.1") {
+	// 	HOST = location.origin.replace(/^http/, 'ws');
+	// 	console.log(HOST)
+	// }
 	let server = new WebSocket(HOST);
 	logMessage( `connecting to ${HOST}` )
 	server.binaryType = "arraybuffer";
