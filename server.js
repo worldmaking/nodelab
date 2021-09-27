@@ -7,7 +7,7 @@ const assert = require("assert");
 
 const PORT = process.env.PORT || 3000;
 const app = express();
-app.use(express.static(path.join(__dirname, 'gh-pages')));
+app.use(express.static(path.join(__dirname, 'public')));
 const server = http.createServer(app)
 const wss = new ws.Server({ server: server });
 

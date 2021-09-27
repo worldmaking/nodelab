@@ -1,4 +1,0 @@
-[submodule "nodelab"]
-	path = gh-pages
-	url = git@github.com:worldmaking/nodelab.git
-	branch = gh-pages
