@@ -1,38 +1,37 @@
 function connect(handleMessage, opt) {
-	const options = Object.assign({ 
+	const self = Object.assign({ 
 		log: console.log, 
 		reconnect_timeout: 3000,
 		url: location.origin.replace(/^http/, 'ws')
 		}, opt)
-	console.log(options)
-	let server = new WebSocket(options.url);
-	options.log( `connecting to ${options.url}` )
-	server.binaryType = "arraybuffer";
+	self.server = new WebSocket(self.url);
+	self.log( `connecting to ${self.url}` )
+	self.server.binaryType = "arraybuffer";
 
 	reconnect = function() {
-		options.log ("connection lost")
+		self.log ("connection lost")
 		setTimeout(() => {
-			if (!server) server = connect(handleMessage, options)
-		}, options.reconnect_timeout);
+			if (!self.server) self.server = connect(handleMessage, self)
+		}, self.reconnect_timeout);
 	}
 
-	server.onerror = function(event, err) {
-		options.log( `connection error ${event} ${server.readyState}` )
-		console.error("WebSocket error observed:", event, server.readyState);
-		server = null
+	self.server.onerror = function(event, err) {
+		self.log( `connection error ${event} ${self.server.readyState}` )
+		console.error("WebSocket error observed:", event, self.server.readyState);
+		self.server = null
 		reconnect();
 	}
 
-	server.onopen = () => {
-		options.log( `connected to ${options.url}`)
-		server.onclose = function(event) {
-			options.log("disconnected")
-			server = null
+	self.server.onopen = () => {
+		self.log( `connected to ${self.url}`)
+		self.server.onclose = function(event) {
+			self.log("disconnected")
+			self.server = null
 			reconnect();
 		}
-		server.onmessage = event => {
-			if (handleMessage) handleMessage(event.data, server)
+		self.server.onmessage = event => {
+			if (handleMessage) handleMessage(event.data, self.server)
 		}
 	}
-	return server
+	return self
 }

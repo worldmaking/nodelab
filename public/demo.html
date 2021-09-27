@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title></title>
+<style>
+body {
+	background-color: #ffffff;
+	margin: 0;
+	font-family: Monospace;
+}
+#status {
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	z-index: 10;
+	width: 100%;
+
+	white-space: pre;
+	color: white;
+	background-color: rgba(0, 0, 0, 0.5);
+	/*font-size: 1.4rem;*/
+	text-rendering: optimizeLegibility;
+	font-family: monospace;
+}
+#data {
+	position: absolute;
+	top: 0px;
+	left: 50%;
+	width: 50%;
+	height: 100%;
+	white-space: pre-wrap;
+	color: #eeeeee;
+	background-color: rgba(0, 0, 0, 0.4);
+
+}
+#log {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width: 50%;
+	z-index: 10;
+
+	white-space: pre-wrap;
+	text-rendering: optimizeLegibility;
+	font-family: monospace;
+}
+
+canvas {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
+}
+</style>
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+	<div id="status">No status</div>
+	<div id="log"></div>
+	<div id="data"></div>
+	<script>
+
+		
+
+function statuslog(msg) {
+	document.getElementById("status").textContent = msg;
+}
+	
+let self = {
+	id: "",
+	pos: [0, 0, 0],
+	quat: [0, 0, 0, 1],
+	user: {
+		rgb: [Math.random(), Math.random(), Math.random()]
+	}
+}
+
+let mates = []
+
+
+let url =  location.origin.replace(/^http/, 'ws') + "/kitchen"
+let reload_on_disconnect = true
+let server = null
+
+function connect() {
+	statuslog(`connecting to ${url}`)
+	server = new WebSocket(url);
+	server.binaryType = "arraybuffer";
+
+	reconnect = function() {
+		server = null
+		setTimeout(() => {
+			if (reload_on_disconnect) {
+				location.reload();
+			} else {
+				if (!server) connect()
+			}
+		}, 3000);
+	}
+
+	server.onerror = function(event, err) {
+		statuslog("WebSocket error observed:", err, server.readyState);
+		server.close();
+		reconnect();
+	}
+
+	server.onopen = () => {
+		statuslog( `connected to ${url}`)
+		server.onclose = function(event) {
+			statuslog("disconnected")
+			reconnect();
+		}
+		server.onmessage = (event) => {
+			let msg = event.data
+			//console.log(msg)
+			let s = msg.indexOf(" ")
+			if (s > 0) {
+				const cmd = msg.substr(0, s), rest = msg.substr(s+1)
+				if (cmd == "handshake") {
+					// this is how we get our id!
+					self.id = rest
+				} 
+				if (!self.id) return; // no other messages handled
+				if (cmd == "mates") {
+					const shared = JSON.parse(rest)
+					document.getElementById("data").textContent = JSON.stringify(shared, null, " ");
+					mates = shared.filter(o=>o.id != self.id)
+				}
+			}
+		}
+
+		// send an update regarding our userdata:
+		server.send(`user ${JSON.stringify(self.user)}`)
+	}
+
+	return server
+}
+
+server = connect();
+
+setInterval(() => {
+	if (server && server.readyState==1 && self.id) {
+		server.send(`pose ${self.pos.join(" ")} ${self.quat.join(" ")}`)
+	}
+}, 1000/30);
+
+
+
+// adding elements
+canvas = document.getElementById("canvas");
+canvas.width = 1000;
+canvas.height = 1000;
+canvas.style.cursor = 'crosshair';
+const ctx = canvas.getContext('2d');
+
+function update() {
+	window.requestAnimationFrame(update);
+
+	self.pos[0] = Math.max(Math.min(self.pos[0] + 0.01*(Math.random()-0.5), 1.), 0.)
+	self.pos[1] = Math.max(Math.min(self.pos[1] + 0.01*(Math.random()-0.5), 1.), 0.)
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.fillStyle  =  `rgb(${self.user.rgb.map(n=>n*255).join(",")})`;
+	ctx.fillRect(1000 * self.pos[0], 1000 * self.pos[1], 10, 10);
+	mates.forEach(mate => {
+		ctx.fillStyle  = `rgb(${mate.user.rgb.map(n=>n*255).join(",")})`;
+		ctx.fillRect(1000 * mate.pos[0], 1000 * mate.pos[1], 10, 10);
+	})
+}
+update()
+
+	</script>
+</body>
+</html>

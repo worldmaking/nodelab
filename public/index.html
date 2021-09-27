@@ -23,13 +23,22 @@ body {
 	text-rendering: optimizeLegibility;
 	font-family: monospace;
 }
+#data {
+	width: 50%;
+	height: 100%;
+	white-space: pre-wrap;
+	color: #eeeeee;
+	background-color: rgba(0, 0, 0, 0.4);
+
+}
 #log {
 	position: absolute;
 	top: 0px;
-	left: 0px;
+	left: 50%;
+	width: 50%;
 	z-index: 10;
 
-	white-space: pre;
+	white-space: pre-wrap;
 	text-rendering: optimizeLegibility;
 	font-family: monospace;
 }
@@ -45,44 +54,149 @@ canvas {
 </style>
 </head>
 <body>
+	<canvas id="canvas"></canvas>
 	<div id="status">No status</div>
 	<div id="log"></div>
-	<pre id="data"></pre>
-	<script src="connect.js"></script>
+	<div id="data"></div>
 	<script>
 		
-let myid
-let clients = {}
+let self = {
+	id: "",
+	pos: [Math.random(), Math.random(), 0],
+	quat: [0, 0, 0, 1],
+	user: {}
+}
+let mates = []
 
-function handleMessage (msg, server) {
-	if(msg instanceof ArrayBuffer) { 
-		///... 
-	} else if (msg[0]=="{") {
-		let json = JSON.parse(msg);
-		switch(json.cmd) {
-			case "clients":
-				clients = json.clients
-				document.getElementById("data").innerText = JSON.stringify(clients, null, "  ")
-				break;
-			case "handshake": 
-				myid = json.id; 
-				server.send(msg);
-				break;
-			default: 
-				document.getElementById("log").innerText += msg + "\n";
-				break;
-		}
-	} else {
-		document.getElementById("log").innerText += msg + "\n";
+let session = {
+	self: self,
+	reload_on_disconnect: true, // if false, will try to reconnect instead
+
+	log: function(msg) {
+		console.log(msg)
+		document.getElementById("log").textContent += msg + "\n";
+		document.getElementById("status").textContent  = msg
 	}
 }
 
-let server = connect(handleMessage, { 
-	url: "wss://alicelab.herokuapp.com",
-	log: function(msg) {
-		document.getElementById("status").innerText = msg
+function datalog(msg) {
+	document.getElementById("data").textContent  = msg;
+}
+
+function connect() {
+	if (session.server) return; // important to prevent multiple connection attempts
+	session.url = session.url || location.origin.replace(/^http/, 'ws');
+	session.url += "/kitchen"
+	session.reconnect_timeout = session.reconnect_timeout || 3000;
+	session.log(`connecting to ${session.url}`)
+	let server = new WebSocket(session.url);
+	session.server = server; 
+	server.binaryType = "arraybuffer";
+
+	reconnect = function() {
+		session.server = null
+		setTimeout(() => {
+			if (session.reload_on_disconnect) {
+				location.reload();
+			} else {
+				if (!session.server) connect()
+			}
+		}, session.reconnect_timeout);
 	}
-});
+
+	server.onerror = function(event, err) {
+		session.log(`connection error ${server.readyState}`)
+		console.error("WebSocket error observed:", event, server.readyState);
+		server.close();
+		reconnect();
+	}
+
+	server.onopen = () => {
+		session.log( `connected to ${session.url}`)
+		server.onclose = function(event) {
+			session.log("disconnected")
+			reconnect();
+		}
+		server.onmessage = (event) => {
+			let msg = event.data
+			//session.log("message: " + msg)
+
+			let s = msg.indexOf(" ")
+			if (s > 0) {
+				const cmd = msg.substr(0, s), rest = msg.substr(s+1)
+				//console.log(msg)
+				switch(cmd) {
+					case "handshake": 
+						session.self.id = rest;
+						console.log("my name is", session.self.id)
+						server.send(msg)
+						break;
+					case "mates": 
+						let shared = JSON.parse(rest)
+						datalog(JSON.stringify(mates, null, "  "))
+						mates = shared.filter(o=>o.id != session.self.id)
+						break;
+					case "pose":
+						let vals = rest.split(" ") 
+						let name = vals.shift()
+							console.log(name)
+						let mate = mates.find(o => o.id == name)
+						if (mate) {
+							vals = vals.map(Number)
+							mate.pos = vals.slice(0,3)
+							mate.quat = vals.slice(3, 7)
+						}
+						datalog(JSON.stringify(mates, null, "  "))
+						
+						break;
+					case "reload": 
+						location.reload();
+						break;
+					default: 
+						document.getElementById("data").textContent = msg;
+				}
+			}
+		}
+	}
+
+	return server
+}
+
+connect()
+
+
+setInterval(() => {
+	//console.log(session.server ? session.server.readyState : "no server")
+	if (session.server && session.server.readyState==1) {
+		session.server.send(`pose ${Math.random()} ${Math.random()} 0 0 0 0 1`)
+	}
+}, 100);
+
+// adding elements
+canvas = document.getElementById("canvas");
+canvas.width = 1000;
+canvas.height = 1000;
+canvas.style.cursor = 'crosshair';
+const ctx = canvas.getContext('2d');
+
+
+function update() {
+	window.requestAnimationFrame(update);
+
+	self.pos[0] = Math.max(Math.min(self.pos[0] + 0.01*(Math.random()-0.5), 1.), 0.)
+	self.pos[1] = Math.max(Math.min(self.pos[1] + 0.01*(Math.random()-0.5), 1.), 0.)
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.fillStyle  = "black";
+	ctx.fillRect(1000 * self.pos[0], 1000 * self.pos[1], 10, 10);
+	mates.forEach(mate => {
+		ctx.fillStyle  = "red";
+		ctx.fillRect(1000 * mate.pos[0], 1000 * mate.pos[1], 10, 10);
+	})
+
+}
+update()
+
+
 	</script>
 </body>
 </html>
