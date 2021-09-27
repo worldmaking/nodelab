@@ -58,6 +58,42 @@ const { v4: uuidv4 } = require("uuid")
 const jsonpatch = require("json8-patch");
 const { exit } = require("process");
 
+const clients = {}
+// a set of uniquely-named rooms
+// each room would have a list of its occupants
+// a client can only be in one room at a time
+const rooms = {
+	
+}
+
+// get (or create) a room:
+function getRoom(name="default") {
+	if (!rooms[name]) {
+		rooms[name] = {
+			name: name,
+			clients: {},
+		}
+	}
+	return rooms[name]
+}
+
+function notifyRoom(roomname, msg) {
+	let room = rooms[roomname]
+	if (!room) return;
+	let mates = Object.values(room.clients)
+	for (let mate of mates) {
+		mate.socket.send(msg)
+	}
+}
+
+// generate a unique id if needed
+// verify id is unused (or generate a new one instead)
+// returns 128-bit UUID as a string:
+function newID(id="") {
+	while (!id || clients[id]) id = uuidv4()
+	return id
+}
+
 const PORT = process.env.PORT || 3000;
 const app = express();
 // allow cross-domain access:
@@ -72,121 +108,28 @@ const server = http.createServer(app)
 const wss = new ws.Server({ server: server });
 
 
-// a set of uniquely-named rooms
-// each room would have a list of its occupants
-// a client can only be in one room at a time
-const rooms = {
-	
-}
-
-// a set of clients, indexed by their uuid
-const clients = {
-
-}
-
-// get (or create) a room:
-function getRoom(name="default") {
-	if (!rooms[name]) {
-		rooms[name] = {
-			name: name,
-			clients: {},
-		}
-
-	}
-	return rooms[name]
-}
-
-function sendRoom(roomname, msg, client) {
-	let room = rooms[roomname]
-	if (!room) return;
-
-	let mates = Object.values(room.clients)
-	for (let mate of mates) {
-		//console.log(mate.shared.id, msg)
-		//console.log(roomname, msg)
-		//if (client && mate.socket != client.socket) {
-			//console.log(mate.shared.id, mate.socket == client.socket)
-			mate.socket.send(msg)
-		//} 
-	}
-}
-
-function exitRoom(id) {
-	let client = clients[id]
-	if (!client) return;
-	const roomname = client.room
-	let room = rooms[roomname]
-	if (!room) return;
-
-	// remove id from room.clients
-	delete room.clients[id]
-	client.room = ""
-	// notify roommates
-	sendRoom(roomname, `exit ${id}`)
-}
-
-function enterRoom(id, roomname) {
-	let client = clients[id]
-	if (!client) return;
-	let room = getRoom(roomname);
-	// ensure we can only be in one room at a time:
-	if (client.room) exitRoom(id)
-	client.room = roomname;
-	// and update room:
-	room.clients[id] = client;
-
-	// full roll call
-	sendRoom(roomname, "mates "+JSON.stringify(Object.values(room.clients).map(o => o.shared)))
-}
-
-// generate a unique id if needed
-// verify id is unused (or generate a new one instead)
-// returns 128-bit UUID as a string:
-function newID(id="") {
-	while (!id || clients[id]) id = uuidv4()
-	return id
-}
-
 wss.on('connection', (socket, req) => {
 	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/^\/*/, "").replace(/\/+/, "/")
-	console.log('client connecting to', room);
-
-	const query = url.parse(req.url, true).query;
-	//console.log("query: ", query);
-
-	const id = newID()
-	const client = {
+	let id = newID()
+	let client = {
 		socket: socket,
-		room: "",
+		room: room,
 		shared: {
-			id: id,				// server-defined unique id
-			pos: [0, 0, 0], 		// head position
-			quat: [0, 0, 0, 1], 	// head orientation
-			user: {} 				// user-defined state
+			id: id,
+			pos: [0, 0, 0],
+			quat: [0, 0, 0, 1],
+			user: {}
 		}
 	}
 	clients[id] = client
 
-	function onhandshake(msg) {
-		const s = msg.indexOf(" ")
-		const cmd = msg.substr(0, s), rest = msg.substr(s+1)
-		if (cmd != "handshake") {
-			// ignored
-			console.log("ignoring", msg)
-		} else if (rest != id) {
-			console.error("bad handshake");
-			socket.close()
-		} else {
-			// success, now we can add the client to a room and handle messages:
-			console.log("handshake success")
-			socket.removeListener('message', onhandshake)
-			socket.on('message', onmessage);
+	console.log(`client ${client.shared.id} connecting to room ${client.room}`);
 
-			if (room) enterRoom(id, room)
-		}
-	}
+	// enter this room
+	getRoom(client.room).clients[id] = client
 
-	function onmessage(msg) {
+	socket.on('message', (msg) => {
+		//console.log(msg)
 		const s = msg.indexOf(" ")
 		if (s > 0) {
 			const cmd = msg.substr(0, s), rest = msg.substr(s+1)
@@ -195,90 +138,40 @@ wss.on('connection', (socket, req) => {
 					let vals = rest.split(" ").map(Number)
 					client.shared.pos = vals.slice(0,3)
 					client.shared.quat = vals.slice(3, 7)
-
-					//console.log(Object.values(clients).map(o => o.shared.pos))
-					// forward pose change to all members of this room
-					let fwd = `pose ${id} ${rest}`
-					sendRoom(client.room, fwd, client)
-					//socket.send(fwd)
 					break;
-				default:
-					console.log("default", msg);
+				case "user": 
+					client.shared.user = JSON.parse(rest)
+					break;
 			}
-		} else {
-			console.log(msg)
 		}
-	}
-	
-	socket.on('message', onhandshake);
-	// reply with handshake:
-	socket.send("handshake " + id)
-
-	// let id = nextID();
-	// let client = { 
-	// 	id: id,  
-	// 	pose: {
-	// 		position: [0, 0, 0],
-	// 		quaternion: [0, 0, 0, 1],
-	// 		height: 1.2,
-
-	// 	}
-	// }
-	// clients[id] = client
-	// socket2client[socket] = client
-	// socket.send(JSON.stringify({ cmd:"handshake", id:id }))
-
-	// broadcast(`client ${id} joined`);
-	// console.log(`client ${id} joined`);
+	});
 
 	socket.on('error', (err) => {
 		console.log(err)
+		// should we exit?
 	});
 
 	socket.on('close', () => {
-		//delete socket2client[socket]
-		// remove from room
-		if (client.room) {
-			exitRoom(id)
-		}
-		// TODO notify members of that room
-		//broadcast(`client ${id} left`);
-		delete clients[client.id]
-		console.log(`client ${id} left`)
+		console.log("close", id)
+		console.log(Object.keys(clients))
+		delete clients[id]
 
+		// remove from room
+		if (client.room) delete rooms[client.room].clients[id]
+
+		console.log(`client ${id} left`)
 	});
-	// socket.on('message', (msg) => {
-	// 	if(msg instanceof ArrayBuffer) { 
-	// 		///... 
-	// 	} else if (msg[0]=="{") {
-	// 		let json = JSON.parse(msg);
-	// 		switch(json.cmd) {
-	// 			case "handshake": 
-	// 				if(json.id != id) { 
-	// 					console.error("bad handshake");
-	// 					socket.close()
-	// 				}
-	// 				return;
-	// 				break;
-	// 			case "pose":
-	// 				clients[json.id].pose = json.pose
-	// 				return;
-	// 				break;
-	// 		}
-	// 	} 
-		
-	// 	console.log(`client ${id} said ${msg}`);
-	// 	broadcast(`client ${id} said ${msg}`);
-	// })
+
+	socket.send("handshake " + id)
 });
 
+setInterval(function() {
+	for (let roomid of Object.keys(rooms)) {
+		const room = rooms[roomid]
+		let clientlist = Object.values(room.clients)
+		let shared = "mates " + JSON.stringify(clientlist.map(o=>o.shared));
+		clientlist.forEach(c => c.socket.send(shared))
+	}
+}, 1000/30);
 
 server.listen(PORT, () => console.log(`Server listening on port: ${PORT}`));
-
-function cleanup(e) {
-	console.log("cleanup", e)
-}
-
-[`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`].forEach((e) => process.on(e, e => {
-	cleanup(e)
-}))

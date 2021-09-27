@@ -124,10 +124,18 @@ function connect() {
 					self.id = rest
 				} 
 				if (!self.id) return; // no other messages handled
-				if (cmd == "mates") {
-					const shared = JSON.parse(rest)
-					document.getElementById("data").textContent = JSON.stringify(shared, null, " ");
-					mates = shared.filter(o=>o.id != self.id)
+				switch (cmd) {
+					case "mates":
+						const shared = JSON.parse(rest)
+						document.getElementById("data").textContent = JSON.stringify(shared, null, " ");
+						mates = shared.filter(o=>o.id != self.id)
+						break;
+						
+					case "reload": 
+						location.reload();
+						break;
+					default: 
+						document.getElementById("data").textContent = msg;
 				}
 			}
 		}

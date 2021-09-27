@@ -24,6 +24,9 @@ body {
 	font-family: monospace;
 }
 #data {
+	position: absolute;
+	top: 0px;
+	left: 50%;
 	width: 50%;
 	height: 100%;
 	white-space: pre-wrap;
@@ -34,7 +37,7 @@ body {
 #log {
 	position: absolute;
 	top: 0px;
-	left: 50%;
+	left: 0px;
 	width: 50%;
 	z-index: 10;
 
@@ -59,96 +62,75 @@ canvas {
 	<div id="log"></div>
 	<div id="data"></div>
 	<script>
+
 		
+
+function statuslog(msg) {
+	document.getElementById("status").textContent = msg;
+}
+	
 let self = {
 	id: "",
-	pos: [Math.random(), Math.random(), 0],
+	pos: [0, 0, 0],
 	quat: [0, 0, 0, 1],
-	user: {}
-}
-let mates = []
-
-let session = {
-	self: self,
-	reload_on_disconnect: true, // if false, will try to reconnect instead
-
-	log: function(msg) {
-		console.log(msg)
-		document.getElementById("log").textContent += msg + "\n";
-		document.getElementById("status").textContent  = msg
+	user: {
+		rgb: [Math.random(), Math.random(), Math.random()]
 	}
 }
 
-function datalog(msg) {
-	document.getElementById("data").textContent  = msg;
-}
+let mates = []
+
+
+let url =  location.origin.replace(/^http/, 'ws') + "/kitchen"
+let reload_on_disconnect = true
+let server = null
 
 function connect() {
-	if (session.server) return; // important to prevent multiple connection attempts
-	session.url = session.url || location.origin.replace(/^http/, 'ws');
-	session.url += "/kitchen"
-	session.reconnect_timeout = session.reconnect_timeout || 3000;
-	session.log(`connecting to ${session.url}`)
-	let server = new WebSocket(session.url);
-	session.server = server; 
+	statuslog(`connecting to ${url}`)
+	server = new WebSocket(url);
 	server.binaryType = "arraybuffer";
 
 	reconnect = function() {
-		session.server = null
+		server = null
 		setTimeout(() => {
-			if (session.reload_on_disconnect) {
+			if (reload_on_disconnect) {
 				location.reload();
 			} else {
-				if (!session.server) connect()
+				if (!server) connect()
 			}
-		}, session.reconnect_timeout);
+		}, 3000);
 	}
 
 	server.onerror = function(event, err) {
-		session.log(`connection error ${server.readyState}`)
-		console.error("WebSocket error observed:", event, server.readyState);
+		statuslog("WebSocket error observed:", err, server.readyState);
 		server.close();
 		reconnect();
 	}
 
 	server.onopen = () => {
-		session.log( `connected to ${session.url}`)
+		statuslog( `connected to ${url}`)
 		server.onclose = function(event) {
-			session.log("disconnected")
+			statuslog("disconnected")
 			reconnect();
 		}
 		server.onmessage = (event) => {
 			let msg = event.data
-			//session.log("message: " + msg)
-
+			//console.log(msg)
 			let s = msg.indexOf(" ")
 			if (s > 0) {
 				const cmd = msg.substr(0, s), rest = msg.substr(s+1)
-				//console.log(msg)
-				switch(cmd) {
-					case "handshake": 
-						session.self.id = rest;
-						console.log("my name is", session.self.id)
-						server.send(msg)
+				if (cmd == "handshake") {
+					// this is how we get our id!
+					self.id = rest
+				} 
+				if (!self.id) return; // no other messages handled
+				switch (cmd) {
+					case "mates":
+						const shared = JSON.parse(rest)
+						document.getElementById("data").textContent = JSON.stringify(shared, null, " ");
+						mates = shared.filter(o=>o.id != self.id)
 						break;
-					case "mates": 
-						let shared = JSON.parse(rest)
-						datalog(JSON.stringify(mates, null, "  "))
-						mates = shared.filter(o=>o.id != session.self.id)
-						break;
-					case "pose":
-						let vals = rest.split(" ") 
-						let name = vals.shift()
-							console.log(name)
-						let mate = mates.find(o => o.id == name)
-						if (mate) {
-							vals = vals.map(Number)
-							mate.pos = vals.slice(0,3)
-							mate.quat = vals.slice(3, 7)
-						}
-						datalog(JSON.stringify(mates, null, "  "))
 						
-						break;
 					case "reload": 
 						location.reload();
 						break;
@@ -157,20 +139,23 @@ function connect() {
 				}
 			}
 		}
+
+		// send an update regarding our userdata:
+		server.send(`user ${JSON.stringify(self.user)}`)
 	}
 
 	return server
 }
 
-connect()
-
+server = connect();
 
 setInterval(() => {
-	//console.log(session.server ? session.server.readyState : "no server")
-	if (session.server && session.server.readyState==1) {
-		session.server.send(`pose ${Math.random()} ${Math.random()} 0 0 0 0 1`)
+	if (server && server.readyState==1 && self.id) {
+		server.send(`pose ${self.pos.join(" ")} ${self.quat.join(" ")}`)
 	}
-}, 100);
+}, 1000/30);
+
+
 
 // adding elements
 canvas = document.getElementById("canvas");
@@ -179,23 +164,20 @@ canvas.height = 1000;
 canvas.style.cursor = 'crosshair';
 const ctx = canvas.getContext('2d');
 
-
 function update() {
 	window.requestAnimationFrame(update);
 
 	self.pos[0] = Math.max(Math.min(self.pos[0] + 0.01*(Math.random()-0.5), 1.), 0.)
 	self.pos[1] = Math.max(Math.min(self.pos[1] + 0.01*(Math.random()-0.5), 1.), 0.)
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	ctx.fillStyle  = "black";
+	ctx.fillStyle  =  `rgb(${self.user.rgb.map(n=>n*255).join(",")})`;
 	ctx.fillRect(1000 * self.pos[0], 1000 * self.pos[1], 10, 10);
 	mates.forEach(mate => {
-		ctx.fillStyle  = "red";
+		ctx.fillStyle  = `rgb(${mate.user.rgb.map(n=>n*255).join(",")})`;
 		ctx.fillRect(1000 * mate.pos[0], 1000 * mate.pos[1], 10, 10);
 	})
-
 }
 update()
-
 
 	</script>
 </body>
