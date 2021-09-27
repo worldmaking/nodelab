@@ -7,6 +7,12 @@ const assert = require("assert");
 
 const PORT = process.env.PORT || 3000;
 const app = express();
+app.use(function(req, res, next) {
+	res.header('Access-Control-Allow-Origin', '*');
+	res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+	res.header('Access-Control-Allow-Headers', 'Content-Type');
+	return next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 const server = http.createServer(app)
 const wss = new ws.Server({ server: server });
