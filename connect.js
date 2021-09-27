@@ -1,4 +1,6 @@
 function connect(handleMessage, logMessage = console.log, reconnect_timeout=3000) {
+	console.log(location)
+	
 	const HOST = location.origin.replace(/^http/, 'ws');
 	let server = new WebSocket(HOST);
 	logMessage( `connecting to ${HOST}` )
