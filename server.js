@@ -80,8 +80,8 @@ function getRoom(name="default") {
 function notifyRoom(roomname, msg) {
 	let room = rooms[roomname]
 	if (!room) return;
-	let mates = Object.values(room.clients)
-	for (let mate of mates) {
+	let others = Object.values(room.clients)
+	for (let mate of others) {
 		mate.socket.send(msg)
 	}
 }
@@ -109,7 +109,7 @@ const wss = new ws.Server({ server: server });
 
 
 wss.on('connection', (socket, req) => {
-	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/^\/*/, "").replace(/\/+/, "/")
+	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
 	let id = newID()
 	let client = {
 		socket: socket,
@@ -169,7 +169,7 @@ setInterval(function() {
 	for (let roomid of Object.keys(rooms)) {
 		const room = rooms[roomid]
 		let clientlist = Object.values(room.clients)
-		let shared = "mates " + JSON.stringify(clientlist.map(o=>o.shared));
+		let shared = "others " + JSON.stringify(clientlist.map(o=>o.shared));
 		clientlist.forEach(c => c.socket.send(shared))
 	}
 }, 1000/30);
