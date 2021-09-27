@@ -3,8 +3,12 @@
 <head>
 <meta charset="utf-8">
 <title></title>
-<link rel="stylesheet" href="basic.css">
 <style>
+body {
+	background-color: #ffffff;
+	margin: 0;
+	font-family: Monospace;
+}
 #status {
 	position: absolute;
 	bottom: 0px;
@@ -41,6 +45,44 @@ canvas {
 </style>
 </head>
 <body>
-	Holding page
+	<div id="status">No status</div>
+	<div id="log"></div>
+	<pre id="data"></pre>
+	<script src="connect.js"></script>
+	<script>
+		
+let myid
+let clients = {}
+
+function handleMessage (msg, server) {
+	if(msg instanceof ArrayBuffer) { 
+		///... 
+	} else if (msg[0]=="{") {
+		let json = JSON.parse(msg);
+		switch(json.cmd) {
+			case "clients":
+				clients = json.clients
+				document.getElementById("data").innerText = JSON.stringify(clients, null, "  ")
+				break;
+			case "handshake": 
+				myid = json.id; 
+				server.send(msg);
+				break;
+			default: 
+				document.getElementById("log").innerText += msg + "\n";
+				break;
+		}
+	} else {
+		document.getElementById("log").innerText += msg + "\n";
+	}
+}
+
+let server = connect(handleMessage, { 
+	url: "wss://alicelab.herokuapp.com",
+	log: function(msg) {
+		document.getElementById("status").innerText = msg
+	}
+});
+	</script>
 </body>
 </html>

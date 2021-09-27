@@ -71,8 +71,11 @@ function handleMessage (msg, server) {
 	}
 }
 
-let server = connect(handleMessage, (msg) => {
-	document.getElementById("status").innerText = msg
+let server = connect(handleMessage, { 
+	url: "wss://alicelab.herokuapp.com",
+	log: function(msg) {
+		document.getElementById("status").innerText = msg
+	}
 });
 
 </script>
