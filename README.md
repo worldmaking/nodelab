@@ -2,6 +2,7 @@
 
 [https://alicelab.herokuapp.com/index.html](https://alicelab.herokuapp.com/index.html)
 
+[https://codepen.io/grrrwaaa/pen/PojXgGK?editors=0010](https://codepen.io/grrrwaaa/pen/PojXgGK?editors=0010) -- demo using it from a separate website
 
 -----
 
