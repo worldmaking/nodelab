@@ -61,12 +61,13 @@ canvas {
 	<div id="status">No status</div>
 	<div id="log"></div>
 	<div id="data"></div>
-	<script src="connect.js"></script>
+	<script src="https://alicelab.herokuapp.com/connect.js"></script>
 	<script>
 
 const app = connectToWorld({
 	reload_on_disconnect: true, // useful for local dev
 	room: "/kitchen",
+	url: location.origin.replace(/^http/, 'ws'),
 
 	log(msg) {
 		document.getElementById("status").textContent = msg;

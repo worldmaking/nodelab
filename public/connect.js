@@ -1,7 +1,7 @@
 function connectToWorld(opt={}) {
 
 	let options = Object.assign({
-		url: location.origin.replace(/^http/, 'ws'),
+		url: "wss://alicelab.herokuapp.com",
 		room: "/",
 		reload_on_disconnect: false,
 
