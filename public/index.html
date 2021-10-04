@@ -29,6 +29,7 @@ body {
 	left: 50%;
 	width: 50%;
 	height: 100%;
+	z-index: 10;
 	white-space: pre-wrap;
 	color: #eeeeee;
 	background-color: rgba(0, 0, 0, 0.4);
@@ -61,8 +62,146 @@ canvas {
 	<div id="status">No status</div>
 	<div id="log"></div>
 	<div id="data"></div>
-	<script src="https://alicelab.herokuapp.com/connect.js"></script>
-	<script>
+	<!--<script src="https://alicelab.herokuapp.com/connect.js"></script>-->
+  <script src="connect.js"></script>
+	<script type="module">
+
+// import the Three.js module:
+import * as THREE from "https://unpkg.com/three@0.126.0/build/three.module.js";
+import { OrbitControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/OrbitControls.js";
+
+// usual stuff
+// create a renderer with better than default quality:
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+// make it fill the page
+renderer.setSize(window.innerWidth, window.innerHeight);
+// create and add the <canvas>
+document.body.appendChild(renderer.domElement);
+// create a perspective camera
+const camera = new THREE.PerspectiveCamera(
+  75, // this camera has a 75 degree field of view in the vertical axis
+  window.innerWidth / window.innerHeight, // the aspect ratio matches the size of the window
+  0.05, // anything less than 5cm from the eye will not be drawn
+  100 // anything more than 100m from the eye will not be drawn
+);
+// position the camera 2m in the Z axis and 1.5m in the Y axis
+// the Y axis points up from the ground
+// the Z axis point out of the screen toward you
+camera.position.y = 1.5;
+camera.position.z = 2;
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.y = 1.5;
+// do this now and whenever the window is resized()
+window.addEventListener(
+  "resize",
+  function () {
+    // ensure the renderer fills the page, and the camera aspect ratio matches:
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  },
+  false
+);
+
+// create the root of a scene graph
+const scene = new THREE.Scene();
+
+const MAX_USERS = 64;
+const usersInstancedMesh = new THREE.InstancedMesh( new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({}), MAX_USERS);
+scene.add(usersInstancedMesh)
+
+const clock = new THREE.Clock();
+function animate() {
+  // get current timing:
+  const dt = clock.getDelta();
+  const t = clock.getElapsedTime();
+  controls.update(dt);
+
+  let {self, others} = app.world;
+  document.getElementById("data").textContent = "self: " + JSON.stringify(self, null, " ") + "\nothers: " + JSON.stringify(others, null, " ");
+
+  // update `self` from camera, so that it gets broadcast to others:
+  const position = new THREE.Vector3();
+  const rotation = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  camera.matrixWorld.decompose(position, rotation, scale);
+  self.pos = position.toArray();
+  self.quat = rotation.toArray();
+  
+
+  others.forEach((mate, i) => {
+    if (i >= MAX_USERS) return;
+    // mat.pos, mate.quat, mat.user.rgb ... TODO
+    let mat = usersInstancedMesh.getMatrixAt(i);
+    mat.compose(new Vector3().fromArray(mate.pos), new Quaternion().fromArray(mate.quat), new Vector3(1,1,1));
+    //usersInstancedMesh.setMatrixAt(i, mat); // not sure if this is necessary
+  });
+  usersInstancedMesh.instanceMatrix.needsUpdate = true;
+
+  // draw the scene:
+  renderer.render(scene, camera);
+}
+// start!
+renderer.setAnimationLoop(animate);
+
+// scene.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial()))
+// scene.toJSON()
+
+let world
+
+//////////////
+
+function cleanup(world) {
+  let trash = new Set();
+
+  function cleanupMaterial(material) {
+    if (Array.isArray(material)) {
+      material.forEach((m) => cleanupMaterial);
+    } else if (material.isMaterial) {
+      trash.add(material);
+      // We have to check if there are any textures on the material
+      for (const value of Object.values(material)) {
+        if (value instanceof THREE.Texture) {
+          trash.add(value);
+        }
+      }
+      // We also have to check if any uniforms reference textures or arrays of textures
+      if (material.uniforms) {
+        for (const value of Object.values(material.uniforms)) {
+          if (value) {
+            const uniformValue = value.value;
+            if (
+              uniformValue instanceof THREE.Texture ||
+              Array.isArray(uniformValue)
+            ) {
+              trash.add(uniformValue);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  world.parent.remove(world);
+  world.traverse((o) => {
+    //console.log("traverse", o);
+    const { geometry, material } = o;
+    if (geometry) {
+      trash.add(geometry);
+    }
+    if (material) {
+      // material could be an array
+      cleanupMaterial(material);
+    }
+    if (o.isMesh) trash.add(o);
+  });
+  //console.log("TRASH", trash);
+  for (let o of trash) {
+    //console.log(o);
+    if (o.dispose) o.dispose();
+  }
+}
 
 const app = connectToWorld({
 	reload_on_disconnect: true, // useful for local dev
@@ -72,33 +211,42 @@ const app = connectToWorld({
 	log(msg) {
 		document.getElementById("status").textContent = msg;
 	},
+
+  onscene(newproject) {
+    console.log("received scene", newproject)
+
+    if (world) cleanup(world)
+    world = new THREE.ObjectLoader().parse(newproject)
+    scene.add(world)
+
+  },
 })
 
-// adding elements
-canvas = document.getElementById("canvas");
-canvas.width = 1000;
-canvas.height = 1000;
-canvas.style.cursor = 'crosshair';
-const ctx = canvas.getContext('2d');
+// // adding elements
+// canvas = document.getElementById("canvas");
+// canvas.width = 1000;
+// canvas.height = 1000;
+// canvas.style.cursor = 'crosshair';
+// const ctx = canvas.getContext('2d');
 
-function update() {
-	window.requestAnimationFrame(update);
+// function update() {
+// 	window.requestAnimationFrame(update);
 
-	let {self, others} = app.world;
+// 	let {self, others} = app.world;
 
-	document.getElementById("data").textContent = "self: " + JSON.stringify(self, null, " ") + "\nothers: " + JSON.stringify(others, null, " ");
+// 	document.getElementById("data").textContent = "self: " + JSON.stringify(self, null, " ") + "\nothers: " + JSON.stringify(others, null, " ");
 
-	self.pos[0] = Math.max(Math.min(self.pos[0] + 0.01*(Math.random()-0.5), 1.), 0.)
-	self.pos[1] = Math.max(Math.min(self.pos[1] + 0.01*(Math.random()-0.5), 1.), 0.)
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	ctx.fillStyle  =  `rgb(${self.user.rgb.map(n=>n*255).join(",")})`;
-	ctx.fillRect(1000 * self.pos[0], 1000 * self.pos[1], 10, 10);
-	others.forEach(mate => {
-		ctx.fillStyle  = `rgb(${mate.user.rgb.map(n=>n*255).join(",")})`;
-		ctx.fillRect(1000 * mate.pos[0], 1000 * mate.pos[1], 10, 10);
-	})
-}
-update()
+// 	self.pos[0] = Math.max(Math.min(self.pos[0] + 0.01*(Math.random()-0.5), 1.), 0.)
+// 	self.pos[1] = Math.max(Math.min(self.pos[1] + 0.01*(Math.random()-0.5), 1.), 0.)
+// 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+// 	ctx.fillStyle  =  `rgb(${self.user.rgb.map(n=>n*255).join(",")})`;
+// 	ctx.fillRect(1000 * self.pos[0], 1000 * self.pos[1], 10, 10);
+// 	others.forEach(mate => {
+// 		ctx.fillStyle  = `rgb(${mate.user.rgb.map(n=>n*255).join(",")})`;
+// 		ctx.fillRect(1000 * mate.pos[0], 1000 * mate.pos[1], 10, 10);
+// 	})
+// }
+// update()
 
 	</script>
 </body>

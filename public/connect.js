@@ -9,18 +9,18 @@ function connectToWorld(opt={}) {
 		
 	}, opt)
 
-	console.log("options", options)
+	//console.log("options", options)
 
 	let world = {
 		self: {
 			id: "",
-			pos: [0, 0, 0],
+			pos: [0, 1.4, 2],
 			quat: [0, 0, 0, 1],
 			user: {
 				rgb: [Math.random(), Math.random(), Math.random()]
 			}
 		},
-		others: [],
+		others: []
 	}
 
 
@@ -65,9 +65,11 @@ function connectToWorld(opt={}) {
 						case "others":
 							world.others = JSON.parse(rest).filter(o=>o.id != world.self.id)
 							break;
-
 						case "reload": 
 							location.reload();
+							break;
+						case "scene":
+							if (options.onscene) options.onscene(JSON.parse(rest))
 							break;
 						default: 
 							options.log(msg);

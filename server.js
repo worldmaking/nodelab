@@ -58,6 +58,35 @@ const { v4: uuidv4 } = require("uuid")
 const jsonpatch = require("json8-patch");
 const { exit } = require("process");
 
+const demoscene = {
+	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
+	materials: [{ uuid: "mat_cube", type: "MeshStandardMaterial" }],
+	object: {
+		type: "Scene",
+		children: [
+			{ type: "HemisphereLight", color: 0xfff0f0, groundColor: 0x606066 },
+			{ type: "Mesh", geometry: "geom_cube", material: "mat_cube", matrix: [
+				0.8775825618903728,
+				0.22984884706593015,
+				-0.4207354924039482,
+				0,
+				0,
+				0.8775825618903728,
+				0.47942553860420295,
+				0,
+				0.47942553860420295,
+				-0.4207354924039482,
+				0.7701511529340699,
+				0,
+				0,
+				1.5,
+				0,
+				1
+			]}
+		]
+	}
+};
+
 const clients = {}
 // a set of uniquely-named rooms
 // each room would have a list of its occupants
@@ -72,6 +101,7 @@ function getRoom(name="default") {
 		rooms[name] = {
 			name: name,
 			clients: {},
+			scene: demoscene
 		}
 	}
 	return rooms[name]
@@ -163,6 +193,8 @@ wss.on('connection', (socket, req) => {
 	});
 
 	socket.send("handshake " + id)
+	console.log("sendiing", getRoom(client.room).scene)
+	socket.send("scene " + JSON.stringify(getRoom(client.room).scene))
 });
 
 setInterval(function() {
