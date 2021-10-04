@@ -212,11 +212,11 @@ const app = connectToWorld({
 		document.getElementById("status").textContent = msg;
 	},
 
-  onscene(newproject) {
+  onproject(newproject) {
     console.log("received scene", newproject)
 
     if (world) cleanup(world)
-    world = new THREE.ObjectLoader().parse(newproject)
+    world = new THREE.ObjectLoader().parse(newproject.threejs)
     scene.add(world)
 
   },

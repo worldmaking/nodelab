@@ -58,7 +58,8 @@ const { v4: uuidv4 } = require("uuid")
 const jsonpatch = require("json8-patch");
 const { exit } = require("process");
 
-const demoscene = {
+const demoproject = {
+  threejs: {
 	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
 	materials: [{ uuid: "mat_cube", type: "MeshStandardMaterial" }],
 	object: {
@@ -85,6 +86,7 @@ const demoscene = {
 			]}
 		]
 	}
+  }
 };
 
 const clients = {}
@@ -101,7 +103,7 @@ function getRoom(name="default") {
 		rooms[name] = {
 			name: name,
 			clients: {},
-			scene: demoscene
+			project: demoproject
 		}
 	}
 	return rooms[name]
@@ -193,8 +195,7 @@ wss.on('connection', (socket, req) => {
 	});
 
 	socket.send("handshake " + id)
-	console.log("sendiing", getRoom(client.room).scene)
-	socket.send("scene " + JSON.stringify(getRoom(client.room).scene))
+	socket.send("project " + JSON.stringify(getRoom(client.room).project))
 });
 
 setInterval(function() {

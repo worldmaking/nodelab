@@ -68,8 +68,8 @@ function connectToWorld(opt={}) {
 						case "reload": 
 							location.reload();
 							break;
-						case "scene":
-							if (options.onscene) options.onscene(JSON.parse(rest))
+						case "project":
+							if (options.onproject) options.onproject(JSON.parse(rest))
 							break;
 						default: 
 							options.log(msg);
