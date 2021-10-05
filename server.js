@@ -58,36 +58,55 @@ const { v4: uuidv4 } = require("uuid")
 const jsonpatch = require("json8-patch");
 const { exit } = require("process");
 
-const demoproject = {
-  threejs: {
-	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
-	materials: [{ uuid: "mat_cube", type: "MeshStandardMaterial" }],
-	object: {
-		type: "Scene",
-		children: [
-			{ type: "HemisphereLight", color: 0xfff0f0, groundColor: 0x606066 },
-			{ type: "Mesh", geometry: "geom_cube", material: "mat_cube", matrix: [
-				0.8775825618903728,
-				0.22984884706593015,
-				-0.4207354924039482,
-				0,
-				0,
-				0.8775825618903728,
-				0.47942553860420295,
-				0,
-				0.47942553860420295,
-				-0.4207354924039482,
-				0.7701511529340699,
-				0,
-				0,
-				1.5,
-				0,
-				1
-			]}
-		]
+const Automerge = require('automerge')
+
+
+
+let demoproject = {}
+
+
+
+
+// make a local automerge doc from our scene
+let doc1 = Automerge.from(demoproject);
+let syncStates = {
+  serverState: Automerge.initSyncState()
+}
+
+// test just adding a node to the doc
+var newDoc = Automerge.change(doc1, 'newnode', (doc) => {
+	// create the node
+	doc['threejs'] = {
+		geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
+		materials: [{ uuid: "mat_cube", type: "MeshStandardMaterial" }],
+		object: {
+			type: "Scene",
+			children: [
+				{ type: "HemisphereLight", color: 0xfff0f0, groundColor: 0x606066 },
+				{ type: "Mesh", geometry: "geom_cube", material: "mat_cube", matrix: [
+					0.8775825618903728,
+					0.22984884706593015,
+					-0.4207354924039482,
+					0,
+					0,
+					0.8775825618903728,
+					0.47942553860420295,
+					0,
+					0.47942553860420295,
+					-0.4207354924039482,
+					0.7701511529340699,
+					0,
+					0,
+					1.5,
+					0,
+					1
+				]}
+			]
+		}
 	}
-  }
-};
+	// otherObject[delta.path] = delta._props
+});
+const [nextSyncState, syncMessage] = Automerge.generateSyncMessage(newDoc, syncStates.serverState)
 
 const clients = {}
 // a set of uniquely-named rooms
@@ -161,8 +180,14 @@ wss.on('connection', (socket, req) => {
 	getRoom(client.room).clients[id] = client
 
 	socket.on('message', (msg) => {
-		//console.log(msg)
-		const s = msg.indexOf(" ")
+		// console.log(msg)
+		let s
+		try {
+		  msg = JSON.parse(msg)
+		} catch (e) {
+		  s = msg.indexOf(" ")
+		}
+		
 		if (s > 0) {
 			const cmd = msg.substr(0, s), rest = msg.substr(s+1)
 			switch(cmd) {
@@ -174,6 +199,27 @@ wss.on('connection', (socket, req) => {
 				case "user": 
 					client.shared.user = JSON.parse(rest)
 					break;
+			}
+		} else {
+			switch(msg.cmd){
+				case 'actorID':
+					clients['actorID'] = msg.data
+					// create a syncState for the new client
+					syncStates[msg.data] = Automerge.initSyncState()
+
+					syncStates[msg.data] = nextSyncState
+					// send sync state to client
+					msg = JSON.stringify({
+						cmd: 'sync',
+						data: {
+							state: nextSyncState,
+							// convert uInt8array to js array
+							syncMessage: Array.from(syncMessage)
+						}
+					})
+					socket.send(msg)
+				break
+
 			}
 		}
 	});
