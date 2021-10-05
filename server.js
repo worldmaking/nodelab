@@ -65,8 +65,7 @@ const demoproject = {
 	object: {
 		type: "Scene",
 		children: [
-			{ type: "HemisphereLight", color: 0xfff0f0, groundColor: 0x606066 },
-			{ type: "Mesh", geometry: "geom_cube", material: "mat_cube", matrix: [
+			{ type: "Mesh", geometry: "geom_cube", material: "mat_cube", castShadow: true, matrix: [
 				0.8775825618903728,
 				0.22984884706593015,
 				-0.4207354924039482,
