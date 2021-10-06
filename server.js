@@ -46,14 +46,71 @@ JSONPATCH:
 - https://github.com/sonnyp/JSON8/tree/main/packages/patch mutates, can generate diffs, inversions, can compress patches. ACTIVE. spec shows this to be the most complete. 
 */
 
-const path = require("path")
+"use strict";
+
+const express = require("express");
+const server = express();
+const ws = require("ws");
 const fs = require('fs');
+
+const dotenv = require("dotenv").config();
+
+let DEBUG;
+if (!process.env.PORT_HTTP) { // if this is false, there's no .env
+	console.log("\nNo .env file was found.");
+	DEBUG = true;
+} else {
+	console.log("\nFound .env file.");
+	DEBUG = process.env.DEBUG === true;
+}
+
+let https, http, wss;
+const PORT_HTTP = process.env.PORT_HTTP || 8080;
+const PORT_HTTPS = process.env.PORT_HTTPS || 443;
+const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
+
+if (!DEBUG) {
+    http = require("http");
+
+    http.createServer(function(req, res) {
+        res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+        res.end();
+    }).listen(PORT_HTTP);
+
+	let options = {
+		key: fs.readFileSync(process.env.KEY_PATH),
+		cert: fs.readFileSync(process.env.CERT_PATH)
+	};
+
+	https = require("https").createServer(options, server);
+
+	wss = new ws.Server({ server: https });
+
+	https.listen(PORT_HTTPS, function() {
+        console.log("\nNode.js listening on https port " + PORT_HTTPS);
+    });
+} else {
+    http = require("http").Server(server);
+	
+	wss = new ws.Server({ server: http });
+
+	http.listen(PORT_HTTP, function() {
+        console.log("\nNode.js listening on http port " + PORT_HTTP);
+    });
+}
+
+server.use(express.static("public")); 
+
+server.get("/", function(req, res) {
+    res.sendFile(__dirname + "/public/index.html");
+});
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
+
+const path = require("path")
 const url = require('url');
-const http = require('http');
 const assert = require("assert");
 
-const ws = require('ws');
-const express = require("express");
 const { v4: uuidv4 } = require("uuid")
 const jsonpatch = require("json8-patch");
 const { exit } = require("process");
@@ -125,20 +182,6 @@ function newID(id="") {
 	return id
 }
 
-const PORT = process.env.PORT || 3000;
-const app = express();
-// allow cross-domain access:
-app.use(function(req, res, next) {
-	res.header('Access-Control-Allow-Origin', '*');
-	res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-	res.header('Access-Control-Allow-Headers', 'Content-Type');
-	return next();
-});
-app.use(express.static(path.join(__dirname, 'public')));
-const server = http.createServer(app)
-const wss = new ws.Server({ server: server });
-
-
 wss.on('connection', (socket, req) => {
 	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
 	let id = newID()
@@ -206,4 +249,3 @@ setInterval(function() {
 	}
 }, 1000/30);
 
-server.listen(PORT, () => console.log(`Server listening on port: ${PORT}`));
