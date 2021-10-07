@@ -69,6 +69,7 @@ canvas {
 // import the Three.js module:
 import * as THREE from "https://unpkg.com/three@0.126.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/OrbitControls.js";
+import { TransformControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/TransformControls.js";
 
 // usual stuff
 // create a renderer with better than default quality:
@@ -76,6 +77,11 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 // make it fill the page
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x222322, 1);
+renderer.shadowMap.enabled = true;
+//renderer.shadowMap.soft = true;
+renderer.shadowMap.type = THREE.PCFShadowMap; // default THREE.PCFShadowMap
+//renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 // create and add the <canvas>
 document.body.appendChild(renderer.domElement);
 // create a perspective camera
@@ -89,9 +95,9 @@ const camera = new THREE.PerspectiveCamera(
 // the Y axis points up from the ground
 // the Z axis point out of the screen toward you
 camera.position.y = 1.5;
-camera.position.z = 2;
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.y = 1.5;
+camera.position.z = 3;
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.target.y = 1.5;
 // do this now and whenever the window is resized()
 window.addEventListener(
   "resize",
@@ -107,19 +113,71 @@ window.addEventListener(
 // create the root of a scene graph
 const scene = new THREE.Scene();
 
+{
+  const hemiLight = new THREE.HemisphereLight(0x999999, 0x333333, 1);
+  hemiLight.position.set(10, 10, 10);
+  scene.add(hemiLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(0, 5, 0);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+  //Set up shadow properties for the light
+  dirLight.shadow.mapSize.width = 512; // default
+  dirLight.shadow.mapSize.height = 512; // default
+  dirLight.shadow.camera.near = 0.5; // default
+  dirLight.shadow.camera.far = 20; // default
+
+  const floorPlane = new THREE.PlaneGeometry(30, 30, 30, 30);
+  floorPlane.rotateX(-Math.PI / 2);
+  const floor = new THREE.Mesh(
+    floorPlane,
+    new THREE.ShadowMaterial({
+      opacity: 0.5
+    })
+  );
+  floor.castShadow = false;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  const floorGrid = new THREE.PolarGridHelper();
+  scene.add(floorGrid);
+
+  const democube = new THREE.Mesh(
+    new THREE.BoxGeometry(),
+    new THREE.MeshStandardMaterial()
+  );
+  democube.position.set(-1, 3, -1);
+  democube.castShadow = true;
+  scene.add(democube);
+}
+
 const MAX_USERS = 64;
-const usersInstancedMesh = new THREE.InstancedMesh( new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshStandardMaterial({}), MAX_USERS);
-scene.add(usersInstancedMesh)
+const usersInstancedMesh = new THREE.InstancedMesh(
+  new THREE.IcosahedronGeometry(0.3, 3),
+  new THREE.MeshPhongMaterial({}),
+  MAX_USERS
+);
+usersInstancedMesh.castShadow = true;
+scene.add(usersInstancedMesh);
+
+let project
 
 const clock = new THREE.Clock();
 function animate() {
   // get current timing:
   const dt = clock.getDelta();
   const t = clock.getElapsedTime();
-  controls.update(dt);
+  orbit.update(dt);
 
-  let {self, others} = app.world;
-  document.getElementById("data").textContent = "self: " + JSON.stringify(self, null, " ") + "\nothers: " + JSON.stringify(others, null, " ");
+  let { self, others } = app.world;
+  document.getElementById("data").textContent =
+    "project: " +
+    JSON.stringify(project, null, " ") +
+    "self: " +
+    JSON.stringify(self, null, " ") +
+    "\nothers: " +
+    JSON.stringify(others, null, " ");
 
   // update `self` from camera, so that it gets broadcast to others:
   const position = new THREE.Vector3();
@@ -129,13 +187,23 @@ function animate() {
   self.pos = position.toArray();
   self.quat = rotation.toArray();
   
-
+  
+  usersInstancedMesh.count = Math.min(others.length, MAX_USERS);
   others.forEach((mate, i) => {
     if (i >= MAX_USERS) return;
     // mat.pos, mate.quat, mat.user.rgb ... TODO
-    let mat = usersInstancedMesh.getMatrixAt(i);
-    mat.compose(new Vector3().fromArray(mate.pos), new Quaternion().fromArray(mate.quat), new Vector3(1,1,1));
-    //usersInstancedMesh.setMatrixAt(i, mat); // not sure if this is necessary
+    let mat = new THREE.Matrix4(); // usersInstancedMesh.getMatrixAt(i);
+    //console.log(mate)
+    mat.compose(
+      new THREE.Vector3().fromArray(mate.pos),
+      new THREE.Quaternion().fromArray(mate.quat),
+      new THREE.Vector3(1, 1, 1)
+    );
+    usersInstancedMesh.setMatrixAt(i, mat);
+    if (mate.user.rgb) {
+      usersInstancedMesh.setColorAt(i, new THREE.Color(...mate.user.rgb));
+      usersInstancedMesh.instanceColor.needsUpdate = true;
+    }
   });
   usersInstancedMesh.instanceMatrix.needsUpdate = true;
 

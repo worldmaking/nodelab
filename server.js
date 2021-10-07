@@ -52,6 +52,13 @@ const express = require("express");
 const server = express();
 const ws = require("ws");
 const fs = require('fs');
+const path = require("path")
+const url = require('url');
+const assert = require("assert");
+
+const { v4: uuidv4 } = require("uuid")
+const jsonpatch = require("json8-patch");
+const { exit } = require("process");
 
 const dotenv = require("dotenv").config();
 
@@ -106,14 +113,6 @@ server.get("/", function(req, res) {
 });
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
-
-const path = require("path")
-const url = require('url');
-const assert = require("assert");
-
-const { v4: uuidv4 } = require("uuid")
-const jsonpatch = require("json8-patch");
-const { exit } = require("process");
 
 const demoproject = {
   threejs: {
