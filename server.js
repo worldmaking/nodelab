@@ -1,50 +1,3 @@
-/*
-
-A simple server to manage user connections within different "rooms"
-
-Server: I open a websocket server
-Client: I connect to your websocket
-Server: wss.on('connection') -- I create a UUID and client struct for you, set up my handlers, and tell you "handshake <id>"
-Client: I receive your "handshake", and copy that to my local session ID
-I reply with "handshake <id>" to confirm
-I will now start listening for other messages
-Server: I receive your "handshake" and I will now start listening for other messages
-
-
-
-Should:
-- ensure clients all have unique IDs (UUID)
-	- new client connection generates new UUID on server & server informs client
-	- wait for an ack back?
-	- could be nice to resume old UUID if the break wasn't too long?
-- ensure a client is in only one room at once
-- notice when a client has disconnected, & remove it
-	- this includes when client has not posted a request for a while?
-- remove a room when nobody is in it
-- receive pose updates from clients
-- reply to these with the poses of other clients in the same room
-- when a client enters or exits a room, update other clients in the same room
-- when a client changes some self-state (e.g. colour), update other clients in the same room
-- basically, forward all client changes to other clients in the same room
-
-A relatively lazy way to do this would be to simply send a list of client states to all members of a room, but that would be wasteful of bandwidth when client states get more complex. 
-Next laziest is to simply forward all client changes to other clients in the same room, adding the corresponding UUID. Change could be represented as a jsonpatch, but that would be wasteful for poses. Probably better to have a few commands.
-To server:
-- "enter <roomname>" (implicit exit)
-- "pose <headpos array> <quat array>"
-- "patch <jsonpatch>" for everything else
-To clients:
-- "enter <uuid>"
-- "exit <uuid>"
-- "pose <uuid> <headpos array> <quat array>"
-- "patch <uuid> <jsonpatch>"
-
-
-JSONPATCH:
-- http://jsonpatchjs.com/ node and browser, does not mutate, 
-- https://github.com/Starcounter-Jack/JSON-Patch can mutate or not, observers, diffs. ACTIVE. benchmarks show this to be fastest
-- https://github.com/sonnyp/JSON8/tree/main/packages/patch mutates, can generate diffs, inversions, can compress patches. ACTIVE. spec shows this to be the most complete. 
-*/
 
 "use strict";
 
@@ -71,7 +24,7 @@ const IS_DEBUG = (!process.env.PORT_HTTP) || (process.env.DEBUG === true);
 const IS_HTTPS = !IS_DEBUG && !IS_HEROKU;
 
 const PUBLIC_PATH = path.join(__dirname, "public")
-const PORT_HTTP = process.env.PORT_HTTP || 8080;
+const PORT_HTTP = IS_HEROKU ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 8080);
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
 const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
 //const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
