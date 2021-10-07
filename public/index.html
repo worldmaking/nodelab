@@ -222,32 +222,6 @@ const app = connectToWorld({
   },
 })
 
-// // adding elements
-// canvas = document.getElementById("canvas");
-// canvas.width = 1000;
-// canvas.height = 1000;
-// canvas.style.cursor = 'crosshair';
-// const ctx = canvas.getContext('2d');
-
-// function update() {
-// 	window.requestAnimationFrame(update);
-
-// 	let {self, others} = app.world;
-
-// 	document.getElementById("data").textContent = "self: " + JSON.stringify(self, null, " ") + "\nothers: " + JSON.stringify(others, null, " ");
-
-// 	self.pos[0] = Math.max(Math.min(self.pos[0] + 0.01*(Math.random()-0.5), 1.), 0.)
-// 	self.pos[1] = Math.max(Math.min(self.pos[1] + 0.01*(Math.random()-0.5), 1.), 0.)
-// 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-// 	ctx.fillStyle  =  `rgb(${self.user.rgb.map(n=>n*255).join(",")})`;
-// 	ctx.fillRect(1000 * self.pos[0], 1000 * self.pos[1], 10, 10);
-// 	others.forEach(mate => {
-// 		ctx.fillStyle  = `rgb(${mate.user.rgb.map(n=>n*255).join(",")})`;
-// 		ctx.fillRect(1000 * mate.pos[0], 1000 * mate.pos[1], 10, 10);
-// 	})
-// }
-// update()
-
 	</script>
 </body>
 </html>
