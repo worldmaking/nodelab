@@ -48,68 +48,71 @@ JSONPATCH:
 
 "use strict";
 
-const express = require("express");
-const server = express();
-const ws = require("ws");
 const fs = require('fs');
 const path = require("path")
 const url = require('url');
 const assert = require("assert");
+const http = require("http");
+const https = require("https");
 
+const express = require("express");
+const ws = require("ws");
 const { v4: uuidv4 } = require("uuid")
 const jsonpatch = require("json8-patch");
 const { exit } = require("process");
-
 const dotenv = require("dotenv").config();
 
-let DEBUG;
-if (!process.env.PORT_HTTP) { // if this is false, there's no .env
-	console.log("\nNo .env file was found.");
-	DEBUG = true;
-} else {
-	console.log("\nFound .env file.");
-	DEBUG = process.env.DEBUG === true;
-}
 
-let https, http, wss;
+// this will be true if this server is running on Heroku
+const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
+// this will be true if there's no .env file or the DEBUG environment variable was set to true:
+const IS_DEBUG = (!process.env.PORT_HTTP) || (process.env.DEBUG === true);
+// use HTTPS if we are NOT on Heroku, and NOT using DEBUG:
+const IS_HTTPS = !IS_DEBUG && !IS_HEROKU;
+
+const PUBLIC_PATH = path.join(__dirname, "public")
 const PORT_HTTP = process.env.PORT_HTTP || 8080;
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
-const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
+const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
+//const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
 
-if (!DEBUG) {
-    http = require("http");
 
-    http.createServer(function(req, res) {
+
+// allow cross-domain access (CORS)
+const app = express();
+app.use(function(req, res, next) {
+	res.header('Access-Control-Allow-Origin', '*');
+	res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+	res.header('Access-Control-Allow-Headers', 'Content-Type');
+	return next();
+});
+
+// promote http to https:
+if (IS_HTTPS) {
+	http.createServer(function(req, res) {
         res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
         res.end();
     }).listen(PORT_HTTP);
-
-	let options = {
-		key: fs.readFileSync(process.env.KEY_PATH),
-		cert: fs.readFileSync(process.env.CERT_PATH)
-	};
-
-	https = require("https").createServer(options, server);
-
-	wss = new ws.Server({ server: https });
-
-	https.listen(PORT_HTTPS, function() {
-        console.log("\nNode.js listening on https port " + PORT_HTTPS);
-    });
-} else {
-    http = require("http").Server(server);
-	
-	wss = new ws.Server({ server: http });
-
-	http.listen(PORT_HTTP, function() {
-        console.log("\nNode.js listening on http port " + PORT_HTTP);
-    });
 }
 
-server.use(express.static("public")); 
+// create the primary server:
+const server = IS_HTTPS ? https.createServer({
+	key: fs.readFileSync(process.env.KEY_PATH),
+	cert: fs.readFileSync(process.env.CERT_PATH)
+}, app) : http.createServer(app);
 
-server.get("/", function(req, res) {
-    res.sendFile(__dirname + "/public/index.html");
+
+// serve static files from PUBLIC_PATH:
+app.use(express.static(PUBLIC_PATH)); 
+// default to index.html if no file given:
+app.get("/", function(req, res) {
+    res.sendFile(path.join(PUBLIC_PATH, "index.html"))
+});
+// add a websocket server:
+const wss = new ws.Server({ server });
+// start the server:
+server.listen(PORT, function() {
+	console.log("\nNode.js listening on port " + PORT);
 });
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
