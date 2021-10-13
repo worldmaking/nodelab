@@ -4,8 +4,8 @@
 function connectToWorld(opt={}) {
 
 	let options = Object.assign({
-		// url: "wss://alicelab.herokuapp.com",
-		url: "wss://localhost:3000",
+		url: "wss://alicelab.herokuapp.com",
+		// url: "wss://localhost:3000",
 		room: "/",
 		reload_on_disconnect: false,
 
@@ -66,7 +66,7 @@ function connectToWorld(opt={}) {
 				cmd: 'actorID',
 				data: actorID,
 				date: Date.now()
-			  })
+			})
 			server.send(msg);
 			console.log(msg)
 
@@ -96,6 +96,7 @@ function connectToWorld(opt={}) {
 							location.reload();
 							break;
 						case "project":
+							console.log(rest)
 							if (options.onproject) options.onproject(JSON.parse(rest))
 							break;
 						default: 
@@ -117,7 +118,7 @@ function connectToWorld(opt={}) {
 							console.log('sync\n','nextBackend', nextBackend, '\n\nnextSyncState', nextSyncState, '\n\npatch', patch)
 					
 							console.log('adding a new node')
-							newnode()
+
 						break
 					}
 				}
@@ -144,30 +145,30 @@ function connectToWorld(opt={}) {
 	};
 
 	
-	function newnode(){
+	// function newnode(){
 	
 
-	doc1 = Automerge.change(doc1, 'newnode', (doc) => {
-		// create the node
-		nodename = 'osc_' + Math.random()
-		doc[nodename] = {};
-	});
+	// doc1 = Automerge.change(doc1, 'newnode', (doc) => {
+	// 	// create the node
+	// 	nodename = 'osc_' + Math.random()
+	// 	doc[nodename] = {};
+	// });
 	
-	const [nextSyncState, syncMessage] = Automerge.generateSyncMessage(backends.doc1, syncState)
-	// updatePeers(newDoc)
-	syncState = nextSyncState
-	msg = JSON.stringify({
-		cmd: 'sync',
-		data: {
-			// convert uInt8array to js array
-			syncMessage: Array.from(syncMessage)
-		}
-	})
-		console.log(msg)
-		server.send(msg)
-		dirty = false
+	// const [nextSyncState, syncMessage] = Automerge.generateSyncMessage(backends.doc1, syncState)
+	// // updatePeers(newDoc)
+	// syncState = nextSyncState
+	// msg = JSON.stringify({
+	// 	cmd: 'sync',
+	// 	data: {
+	// 		// convert uInt8array to js array
+	// 		syncMessage: Array.from(syncMessage)
+	// 	}
+	// })
+	// 	console.log(msg)
+	// 	server.send(msg)
+	// 	dirty = false
 
-	}
+	// }
 
 }
 

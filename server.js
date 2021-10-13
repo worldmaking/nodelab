@@ -122,7 +122,7 @@ function getRoom(name="default") {
 		rooms[name] = {
 			name: name,
 			clients: {},
-			project: demoproject
+			project: newDoc
 		}
 	}
 	return rooms[name]
@@ -239,7 +239,7 @@ wss.on('connection', (socket, req) => {
 
 		console.log(`client ${id} left`)
 	});
-
+	console.log(getRoom(client.room).project)
 	socket.send("handshake " + id)
 	socket.send("project " + JSON.stringify(getRoom(client.room).project))
 });

@@ -1,0 +1,52 @@
+body {
+    background-color: #ffffff;
+    margin: 0;
+    font-family: Monospace;
+  }
+  #status {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    z-index: 10;
+    width: 100%;
+  
+    white-space: pre;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    /*font-size: 1.4rem;*/
+    text-rendering: optimizeLegibility;
+    font-family: monospace;
+  }
+  #data {
+    position: absolute;
+    top: 0px;
+    left: 75%;
+    width: 25%;
+    height: 100%;
+    z-index: 10;
+    white-space: pre-wrap;
+    color: #eeeeee;
+    background-color: rgba(0, 0, 0, 0.4);
+    font-size: 8px;
+  }
+  #log {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 50%;
+    z-index: 10;
+  
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+    font-family: monospace;
+  }
+  
+  canvas {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
