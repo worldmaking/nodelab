@@ -61,15 +61,14 @@ canvas {
 	<canvas id="canvas"></canvas>
 	<div id="status">No status</div>
 	<div id="log"></div>
-	<div id="data"></div>
-	<!--<script src="https://alicelab.herokuapp.com/connect.js"></script>-->
-  <script src="connect.js"></script>
-	<script type="module">
+	<div id="data"></div>	
+  <script type="module">
 
 // import the Three.js module:
 import * as THREE from "https://unpkg.com/three@0.126.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/TransformControls.js";
+import { connectToWorld } from "/connect.js";
 
 // usual stuff
 // create a renderer with better than default quality:
@@ -170,7 +169,7 @@ function animate() {
   const t = clock.getElapsedTime();
   orbit.update(dt);
 
-  let { self, others } = app.world;
+  let { self, others } = app.users;
   document.getElementById("data").textContent =
     "project: " +
     JSON.stringify(project, null, " ") +

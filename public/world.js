@@ -1,9 +1,15 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 
-// Bundles up the boilerplate of setting up a THREE.js scene for VR,
-// and packs up the items we want to use most often into a "world" object with type information
-// for easier code completion when accessing it in other modules.
+/**
+ * Bundles up the boilerplate of setting up a THREE.js scene for VR,
+ * and packs up the items we want to use most often into a "world" object with type information
+ * for easier code completion when accessing it in other modules.
+ * 
+ * Also responsible for maintaining the user's "client space" zone within the world,
+ * tracking how the space of their sensor range in their physical room
+ * maps into the virtual scene.
+ */ 
 class World {
     /** @type {THREE.Clock} */
     clock;
@@ -112,6 +118,8 @@ class World {
             sphere: new THREE.SphereGeometry(0.5, 17, 9),
         }
     }
+
+    // TODO: Add functions to handle teleporting client space around.
 }
 
 // Export our world class to be used elsewhere.

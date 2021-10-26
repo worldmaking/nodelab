@@ -1,30 +1,34 @@
+import {Message, PoseData} from './networkMessages';
+
+
 function connectToWorld(opt={}) {
 
 	let options = Object.assign({
 		url: "wss://alicelab.herokuapp.com",
 		room: "/",
 		reload_on_disconnect: false,
-
+		userName: "Anonymous",
+		userRGB: [Math.random(), Math.random(), Math.random()],		
 		log: console.log,
-		
-	}, opt)
+		onproject: function(projectData) { 
+			options.log ("Received project message, but ignored it since no 'onproject' handler was provided.")
+		},		
+	}, opt);
 
-	//console.log("options", options)
-
-	let world = {
+	let users = {
 		self: {
 			id: "",
-			pos: [0, 1.4, 2],
-			quat: [0, 0, 0, 1],
+			poses: [new PoseData(0, 1.4, 2)],
 			user: {
-				rgb: [Math.random(), Math.random(), Math.random()]
+				name: options.userName,
+				rgb: options.userRGB
 			}
 		},
 		others: []
-	}
+	};
 
 
-	function connect(world) {
+	function connect(users) {
 		options.log(`connecting to ${options.url}${options.room}`)
 		server = new WebSocket(options.url + options.room);
 		server.binaryType = "arraybuffer";
@@ -35,7 +39,7 @@ function connectToWorld(opt={}) {
 				if (options.reload_on_disconnect) {
 					location.reload();
 				} else {
-					if (!server) connect(world)
+					if (!server) connect(users)
 				}
 			}, 3000);
 		}
@@ -53,47 +57,51 @@ function connectToWorld(opt={}) {
 				reconnect();
 			}
 			server.onmessage = (event) => {
-				let msg = event.data
-				//console.log(msg)
-				let s = msg.indexOf(" ")
-				if (s > 0) {
-					const cmd = msg.substr(0, s), rest = msg.substr(s+1)
-					switch (cmd) {
-						case "handshake":
-							world.self.id = rest
-							break;
-						case "others":
-							world.others = JSON.parse(rest).filter(o=>o.id != world.self.id)
-							break;
-						case "reload": 
-							location.reload();
-							break;
-						case "project":
-							if (options.onproject) options.onproject(JSON.parse(rest))
-							break;
-						default: 
-							options.log(msg);
-					}
-				}
+				const msg = JSON.parse(event.data);				
+				
+				switch (msg.cmd) {
+					case "handshake":
+						users.self.id = msg.val;
+						break;
+					case "others":
+						users.others = msg.val.filter(o=>o.id != users.self.id);
+						break;
+					case "reload": 
+						location.reload();
+						break;					
+					case "project":
+						if (options.onproject) options.onproject(message.val);
+						break;					
+					default: 
+						options.log("unknown message", msg);
+				}			
 			}
 
 			// send an update regarding our userdata:
-			server.send(`user ${JSON.stringify(world.self.user)}`)
+			{
+				const message = new Message("user", self.user);
+				message.sendWith(server);
+			}
 		}
 
 		return server
 	}
 
-	server = connect(world);
+	server = connect(users);
 
 	setInterval(() => {
-		if (server && server.readyState==1 && world.self.id) {
-			server.send(`pose ${world.self.pos.join(" ")} ${world.self.quat.join(" ")}`)
+		if (server && server.readyState==1 && users.self.id) {
+			const message = new Message("pose", users.self.poses);
+			message.sendWith(server);
 		}
 	}, 1000/30);
 
 	return {
-		world,
+		users,
 		server
 	};
 }
+
+export { 
+	connectToWorld 
+};

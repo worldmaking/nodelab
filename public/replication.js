@@ -1,20 +1,16 @@
 //import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
-import * as THREE from 'three';
-import { World } from './world';
+import * as THREE   from 'three';
+import { World }    from './world';
+import { PoseData } from './networkMessages';
 
+/**
+ * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.
+ */
 const HandID = {
     left: 0,
     right: 1
 }
 Object.freeze(HandID);
-
-/**
- * Plain-Old-Data structure for replicating poses of HMDs and controllers.
- */
-class PoseData {
-    pos = [0, 0, 0];
-    quat = [0, 0, 0, 1];
-}
 
 /**
  * Gets the world space position and orientation of an object 
@@ -43,12 +39,14 @@ function packWorldPose(source, pose) {
  * 
  * Note that replicas are always at the root level of the scene,
  * so setting their local position is sufficient to set their world position.
- * @param {PoseData} pose 
- * @param {THREE.Object3D} destination 
+ * @param {PoseData} pose The pose data to unpack, including position & orientation.
+ * @param {THREE.Object3D} destination The 3D object to transform to match this pose.
+ * @param {number} [scale=1] The scale factor for this object.
  */
-function unpackLocalPose(pose, destination) {
+function unpackLocalPose(pose, destination, scale = 1) {
     destination.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
     destination.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+    destination.scale.set(pose.scale, pose.scale, pose.scale);
 }
 
 

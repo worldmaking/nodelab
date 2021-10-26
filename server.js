@@ -1,4 +1,3 @@
-
 "use strict";
 
 const fs = require('fs');
@@ -10,7 +9,8 @@ const https = require("https");
 
 const express = require("express");
 const ws = require("ws");
-const { v4: uuidv4 } = require("uuid")
+const { v4: uuidv4 } = require("uuid");
+const { PoseData, Message } = require('./public/networkMessages');
 // const jsonpatch = require("json8-patch");
 // const { exit } = require("process");
 // const dotenv = require("dotenv").config();
@@ -120,13 +120,17 @@ function getRoom(name="default") {
 	return rooms[name]
 }
 
-function notifyRoom(roomname, msg) {
+/**
+ * 
+ * @param {string} roomname 
+ * @param {Message} message 
+ * @returns 
+ */
+function notifyRoom(roomname, message) {
 	let room = rooms[roomname]
 	if (!room) return;
-	let others = Object.values(room.clients)
-	for (let mate of others) {
-		mate.socket.send(msg)
-	}
+	const others = Object.values(room.clients);
+	message.sendToAll(others);
 }
 
 // generate a unique id if needed
@@ -137,42 +141,51 @@ function newID(id="") {
 	return id
 }
 
+// Handle incoming connections as a new user joining a room.
 wss.on('connection', (socket, req) => {
-	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
-	let id = newID()
+	// Read the path from the connection request and treat it as a room name, sanitizing and standardizing the format.
+	// Actual room name might differ from this, if it's empty and we need to substitute a "default" instead.
+	const requestedRoomName = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
+	
+	const id = newID()
 	let client = {
 		socket: socket,
-		room: room,
+		room: getRoom(requestedRoomName),
 		shared: {
 			id: id,
-			pos: [0, 0, 0],
-			quat: [0, 0, 0, 1],
+			poses: [new PoseData()],
 			user: {}
 		}
 	}
 	clients[id] = client
-
-	console.log(`client ${client.shared.id} connecting to room ${client.room}`);
-
 	// enter this room
-	getRoom(client.room).clients[id] = client
+	client.room.clients[id] = client;
+
+	console.log(`client ${client.shared.id} connecting to room ${client.room.name}`);
 
 	socket.on('message', (msg) => {
-		//console.log(msg)
-		const s = msg.indexOf(" ")
-		if (s > 0) {
-			const cmd = msg.substr(0, s), rest = msg.substr(s+1)
-			switch(cmd) {
-				case "pose": 
-					let vals = rest.split(" ").map(Number)
-					client.shared.pos = vals.slice(0,3)
-					client.shared.quat = vals.slice(3, 7)
-					break;
-				case "user": 
-					client.shared.user = JSON.parse(rest)
-					break;
-			}
+		const msg = JSON.parse(data);
+		
+		switch(msg.cmd) {
+			case "pose":
+				// New pose update from the client.
+				const poses = msg.val;
+				// First, contract our pose array if it's bigger (user lost a controller).
+				if (poses.length < client.shared.poses.length) {
+					client.shared.poses.splice(poses.length, client.shared.poses.length -  poses.length);
+				}
+				// Then copy pose data from new message into client's data structure.
+				// (Why copy instead of assign? Because data structure will be referenced elsewhere)
+				for(let i = 0; i < poses.length; i++) {
+					client.shared.poses[i] = poses[i];
+				}				
+				break;
+			case "user": 
+				// TODO: Send update to other users about changed info.
+				client.shared.user = msg.val;
+				break;
 		}
+	
 	});
 
 	socket.on('error', (err) => {
@@ -191,16 +204,16 @@ wss.on('connection', (socket, req) => {
 		console.log(`client ${id} left`)
 	});
 
-	socket.send("handshake " + id)
-	socket.send("project " + JSON.stringify(getRoom(client.room).project))
+	(new Message("handshake", id)).sendWith(socket);
+	(new Message("project", client.shared.room.project)).sendWith(socket);
 });
 
 setInterval(function() {
 	for (let roomid of Object.keys(rooms)) {
-		const room = rooms[roomid]
-		let clientlist = Object.values(room.clients)
-		let shared = "others " + JSON.stringify(clientlist.map(o=>o.shared));
-		clientlist.forEach(c => c.socket.send(shared))
+		const room = rooms[roomid];
+		const clientlist = Object.values(room.clients);
+		const message = new Message(others, clientlist.map(o=>o.shared));
+		message.sendToAll(clientlist);
 	}
 }, 1000/30);
 
