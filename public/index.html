@@ -68,7 +68,7 @@ canvas {
 import * as THREE from "https://unpkg.com/three@0.126.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/TransformControls.js";
-import { connectToWorld } from "/connect.js";
+import { connectToWorld } from "/connect.mjs";
 
 // usual stuff
 // create a renderer with better than default quality:
@@ -194,12 +194,12 @@ function animate() {
     let mat = new THREE.Matrix4(); // usersInstancedMesh.getMatrixAt(i);
     //console.log(mate)
     mat.compose(
-      new THREE.Vector3().fromArray(mate.pos),
-      new THREE.Quaternion().fromArray(mate.quat),
+      new THREE.Vector3().fromArray(mate.poses[0].pos),
+      new THREE.Quaternion().fromArray(mate.poses[0].quat),
       new THREE.Vector3(1, 1, 1)
     );
     usersInstancedMesh.setMatrixAt(i, mat);
-    if (mate.user.rgb) {
+    if (mate.user && mate.user.rgb) {
       usersInstancedMesh.setColorAt(i, new THREE.Color(...mate.user.rgb));
       usersInstancedMesh.instanceColor.needsUpdate = true;
     }
@@ -286,6 +286,7 @@ const app = connectToWorld({
     world = new THREE.ObjectLoader().parse(newproject.threejs)
     scene.add(world)
 
+    project = newproject.threejs;
   },
 })
 

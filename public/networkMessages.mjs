@@ -1,6 +1,7 @@
 
 /**
- * Common structure for sending
+ * Common structure for sending data between client & server.
+ * Attempting to centralize any changes that might be needed into one shared file.
  */
 class Message {
     /** @type {string} */
@@ -63,4 +64,4 @@ class PoseData {
     }
 }
 
-export {Message, PoseData};
+export { Message, PoseData };

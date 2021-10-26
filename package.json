@@ -2,9 +2,10 @@
   "name": "nodelab",
   "version": "0.0.1",
   "description": "Alice Lab Node.js server",
-  "main": "server.js",
+  "main": "server.mjs",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.mjs"
   },
   "repository": {
     "type": "git",
@@ -17,12 +18,13 @@
   },
   "homepage": "https://github.com/worldmaking/nodelab#readme",
   "dependencies": {
+    "dotenv": "^8.0.0",
+    "esm": "^3.2.25",
     "express": "^4.17.1",
     "json-diff": "^0.5.4",
     "json8-patch": "^1.0.6",
     "jsondiffpatch": "^0.4.1",
     "uuid": "^8.3.2",
-    "ws": "^7.4.5",
-    "dotenv": "^8.0.0"
+    "ws": "^7.4.5"
   }
 }

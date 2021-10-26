@@ -1,4 +1,4 @@
-import {Message, PoseData} from './networkMessages';
+import {Message, PoseData} from './networkMessages.mjs';
 
 
 function connectToWorld(opt={}) {
@@ -30,10 +30,10 @@ function connectToWorld(opt={}) {
 
 	function connect(users) {
 		options.log(`connecting to ${options.url}${options.room}`)
-		server = new WebSocket(options.url + options.room);
+		let server = new WebSocket(options.url + options.room);
 		server.binaryType = "arraybuffer";
 
-		reconnect = function() {
+		const reconnect = function() {
 			server = null
 			setTimeout(() => {
 				if (options.reload_on_disconnect) {
@@ -70,7 +70,7 @@ function connectToWorld(opt={}) {
 						location.reload();
 						break;					
 					case "project":
-						if (options.onproject) options.onproject(message.val);
+						if (options.onproject) options.onproject(msg.val);
 						break;					
 					default: 
 						options.log("unknown message", msg);
@@ -79,7 +79,7 @@ function connectToWorld(opt={}) {
 
 			// send an update regarding our userdata:
 			{
-				const message = new Message("user", self.user);
+				const message = new Message("user", users.self.user);
 				message.sendWith(server);
 			}
 		}
@@ -87,7 +87,7 @@ function connectToWorld(opt={}) {
 		return server
 	}
 
-	server = connect(users);
+	const server = connect(users);
 
 	setInterval(() => {
 		if (server && server.readyState==1 && users.self.id) {

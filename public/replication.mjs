@@ -1,7 +1,7 @@
 //import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import * as THREE   from 'three';
-import { World }    from './world';
-import { PoseData } from './networkMessages';
+import { World }    from './world.mjs';
+import { PoseData } from './networkMessages.mjs';
 
 /**
  * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.

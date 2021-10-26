@@ -1,20 +1,23 @@
 "use strict";
 
-const fs = require('fs');
-const path = require("path")
-const url = require('url');
-const assert = require("assert");
-const http = require("http");
-const https = require("https");
+import fs from 'fs';
+import path from 'path';
+import url from 'url';
+import assert from 'assert';
+import http from 'http';
+import https from 'https';
 
-const express = require("express");
-const ws = require("ws");
-const { v4: uuidv4 } = require("uuid");
-const { PoseData, Message } = require('./public/networkMessages');
+import express from 'express';
+import ws from 'ws';
+import { v4 as uuidv4 } from 'uuid';
+import { Message, PoseData } from './public/networkMessages.mjs';
 // const jsonpatch = require("json8-patch");
 // const { exit } = require("process");
 // const dotenv = require("dotenv").config();
 
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // this will be true if this server is running on Heroku
 const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
@@ -22,6 +25,8 @@ const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
 const IS_DEBUG = (!process.env.PORT_HTTP) || (process.env.DEBUG === true);
 // use HTTPS if we are NOT on Heroku, and NOT using DEBUG:
 const IS_HTTPS = !IS_DEBUG && !IS_HEROKU;
+
+console.log(IS_HEROKU, IS_DEBUG, IS_HTTPS);
 
 const PUBLIC_PATH = path.join(__dirname, "public")
 const PORT_HTTP = IS_HEROKU ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 8080);
@@ -163,7 +168,7 @@ wss.on('connection', (socket, req) => {
 
 	console.log(`client ${client.shared.id} connecting to room ${client.room.name}`);
 
-	socket.on('message', (msg) => {
+	socket.on('message', (data) => {
 		const msg = JSON.parse(data);
 		
 		switch(msg.cmd) {
@@ -195,24 +200,24 @@ wss.on('connection', (socket, req) => {
 
 	socket.on('close', () => {
 		console.log("close", id)
-		console.log(Object.keys(clients))
+		// console.log(Object.keys(clients))
 		delete clients[id]
 
 		// remove from room
-		if (client.room) delete rooms[client.room].clients[id]
+		if (client.room) delete client.room.clients[id]
 
 		console.log(`client ${id} left`)
 	});
 
 	(new Message("handshake", id)).sendWith(socket);
-	(new Message("project", client.shared.room.project)).sendWith(socket);
+	(new Message("project", client.room.project)).sendWith(socket);
 });
 
 setInterval(function() {
 	for (let roomid of Object.keys(rooms)) {
 		const room = rooms[roomid];
 		const clientlist = Object.values(room.clients);
-		const message = new Message(others, clientlist.map(o=>o.shared));
+		const message = new Message("others", clientlist.map(o=>o.shared));
 		message.sendToAll(clientlist);
 	}
 }, 1000/30);
