@@ -1,5 +1,10 @@
-"use strict";
-
+/**
+ * 2021-10-26
+ * I've converted the server code to ES Module syntax,
+ * so that we can import the same "networkMessages" module into both client and server.
+ * This required changing all "require" code to "import"
+ *   - Douglas
+ */
 import fs from 'fs';
 import path from 'path';
 import url from 'url';
@@ -15,7 +20,8 @@ import { Message, PoseData } from './public/networkMessages.mjs';
 // const { exit } = require("process");
 // const dotenv = require("dotenv").config();
 
-
+// These constants are available by default in CommonJS Module syntax,
+// but we need to polyfill them in when working in an ES Module.
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -26,15 +32,11 @@ const IS_DEBUG = (!process.env.PORT_HTTP) || (process.env.DEBUG === true);
 // use HTTPS if we are NOT on Heroku, and NOT using DEBUG:
 const IS_HTTPS = !IS_DEBUG && !IS_HEROKU;
 
-console.log(IS_HEROKU, IS_DEBUG, IS_HTTPS);
-
 const PUBLIC_PATH = path.join(__dirname, "public")
 const PORT_HTTP = IS_HEROKU ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 8080);
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
 const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
 //const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
-
-
 
 // allow cross-domain access (CORS)
 const app = express();
@@ -146,6 +148,7 @@ function newID(id="") {
 	return id
 }
 
+
 // Handle incoming connections as a new user joining a room.
 wss.on('connection', (socket, req) => {
 	// Read the path from the connection request and treat it as a room name, sanitizing and standardizing the format.
@@ -167,9 +170,9 @@ wss.on('connection', (socket, req) => {
 	client.room.clients[id] = client;
 
 	console.log(`client ${client.shared.id} connecting to room ${client.room.name}`);
-
+	
 	socket.on('message', (data) => {
-		const msg = JSON.parse(data);
+		const msg = Message.fromData(data);
 		
 		switch(msg.cmd) {
 			case "pose":
@@ -180,7 +183,7 @@ wss.on('connection', (socket, req) => {
 					client.shared.poses.splice(poses.length, client.shared.poses.length -  poses.length);
 				}
 				// Then copy pose data from new message into client's data structure.
-				// (Why copy instead of assign? Because data structure will be referenced elsewhere)
+				// (Why copy instead of assign? Because this data structure will be referenced elsewhere)
 				for(let i = 0; i < poses.length; i++) {
 					client.shared.poses[i] = poses[i];
 				}				
@@ -209,7 +212,11 @@ wss.on('connection', (socket, req) => {
 		console.log(`client ${id} left`)
 	});
 
+	// Welcome the new user and tell them their unique id.
+	// TODO: Tell them their spawn position too.
 	(new Message("handshake", id)).sendWith(socket);
+
+	// Share the current 3D scene with the user.
 	(new Message("project", client.room.project)).sendWith(socket);
 });
 

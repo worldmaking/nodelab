@@ -19,9 +19,20 @@ class Message {
         this.val = value;
     }
 
+    /**
+     * Standard call to deserialize a socket message into a data structure.
+     * Centralized in one place so we can change our parsing method if needed.
+     * @param {string|ArrayBuffer} data Message data received over a websocket.
+     * @returns {Message} (Hopefully) a Message object with cmd and val members.
+     */
+    static fromData(data) {
+        return JSON.parse(data);
+    }
+
     /** 
      * Converts this message to a serialized form of data to send over a socket.
      * Centralized in one place so we can swap from JSON to binary if needed in future.
+     * @returns {string} Serialized data that can be sent over a socket.
      */
     #serialize() {
         return JSON.stringify(this);

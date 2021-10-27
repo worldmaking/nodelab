@@ -8,7 +8,23 @@ import { PoseData } from './networkMessages.mjs';
  */
 const HandID = {
     left: 0,
-    right: 1
+    right: 1,
+    /**
+     * Converts a hand ID to a sign for mirror-flipping left vs right side geometry.
+     * @param {number} handID A value from the HandID pseudo-enum.
+     * @returns {number} -1 for left, +1 for right.
+     */
+    toSideSign = function(handID) {
+        return 2 * handID - 1;
+    },
+    /**
+     * Converts a hand ID to the corresponding index to use into the serialized poses array.
+     * @param {number} handID A value from the HandID pseudo-enum.
+     * @returns {number} 1 for left, 2 for right (head is in index 0).
+     */
+    toPoseIndex = function(handID) {
+        return handID + 1;
+    }
 }
 Object.freeze(HandID);
 
@@ -50,11 +66,10 @@ function unpackLocalPose(pose, destination, scale = 1) {
 }
 
 
-/** @type {World} */
+/**
+ * World object to use in accessing camera, scene, shared primitives, etc.
+ * @type {World} */
 let world;
-
-const controllers = [null, null];
-
 
 // Load a font that we can use to display user names of other users, 
 // and prepare a material to use for text rendering.
@@ -67,6 +82,15 @@ loader.load('fonts/Roboto_Regular.json', function (loadedFont) {
 const textMaterial = new THREE.MeshBasicMaterial({color:0x000000});
 
 
+/**
+ * Array of the local user's controller objects - to use for reading pose info.
+ * @type {THREE.Object3D[]}
+ */
+const controllers = [null, null];
+
+/**
+ * Class representing the visual presentation of a single remote user.
+ */
 class Replica {    
     /** @type {THREE.Mesh} */
     #head;
@@ -84,12 +108,11 @@ class Replica {
     #material = null;
 
     /**
-     * 
-     * @param {string} id 
-     * @param {string} displayName 
-     * @param {?number} colour 
+     * Create a replica with these user properties.
+     * @param {string} displayName Name to display for this replica user.
+     * @param {?number} colour Hex code colour to tint this user's avatar. Uses default material if absent.
      */
-    constructor(id, displayName, colour) {
+    constructor(displayName, colour) {
         
 
         // Use the world default material if we lack a colour for this user.
@@ -148,50 +171,59 @@ class Replica {
         if (this.#material) this.#material.dispose();
     }
 
-    #createHand(index) {
+    /**
+     * Creates a set of geometry to represent the remote user's hand / controller.
+     * @param handID A HandID value to indicate whether to make a left (0) or right (1) hand.
+     * @returns {THREE.Group} A group that contains the hand geometry.
+     */
+    #createHand(handID) {
          // -1 = left, +1 = right to mirror the displayed shape.
-        const side = index * 2 - 1;
+        const side = HandID.toSideSign(handID);
 
         const hand = new THREE.Group();
 
-        const palm = new THREE.Mesh(world.primitiveGeo.box, replica.material);
+        // Position and scale a cube to act as the palm/extended fingers of the hand.
+        const palm = new THREE.Mesh(world.primitiveGeo.box, this.#material);
         palm.scale.set(0.08, 0.02, 0.16);
         palm.rotation.set(0.3, 0, side * -1);
         palm.position.set(side * 0.02, 0, 0.05);
         hand.add(palm);
     
-        const thumb = new THREE.Mesh(world.primitiveGeo.box, replica.material);
+        // Position and scale another cube jutting out to represent the thumb.
+        const thumb = new THREE.Mesh(world.primitiveGeo.box, this.#material);
         thumb.scale.set(0.02, 0.02, 0.08);
         thumb.rotation.set(0, side * 0.5, 0);
         thumb.position.set(side * -0.02, 0.02, 0.08);
         hand.add(thumb);    
     
+        // Add the hand to the scene, record it for later reference, and return it.
         world.scene.add(hand);
-
         this.#hands[handIndex] = hand;
         return hand;
     }
 
     /**
-     * 
-     * @param {number} handId Integer 0 for left, 1 for right
-     * @param {PoseData} poseData 
+     * Replicates pose data for a controller, if present. 
+     * Handles creating the visual for the hand if needed, and removing it if the controller is disconnected.
+     * @param {number} handId A HandID value to indicate whether to make a left (0) or right (1) hand.
+     * @param {?PoseData} poseData The pose information to apply, or undefined if this controller is absent.
+     * @param {?number} [scale=1] A scale factor to apply to the hand, if this avatar is scaled.
      */
-    #tryReplicateHand(handId, poseData) {
+    #tryReplicateHand(handId, poseData, scale = 1) {
         let hand = this.#hands[handId];
 
         if (poseData) {           
             // If we have pose data for this hand, display and update it.
             if (!hand) {
                 // If we haven't made this hand yet for this avatar, make one "just in time".                
-                this.#createHand(handId);
+                hand = this.#createHand(handId);
             } else if (!hand.parent) {
                 // Otherwise, if we'd hidden the hand, un-hide it.
-                hand = world.scene.add(hand);
+                world.scene.add(hand);
             }
     
             // Update the hand group's pose with the new server data.
-            unpackLocalPose(poseData, hand);          
+            unpackLocalPose(poseData, hand, scale);          
         } else if (hand && hand.parent) {        
             // Otherwise, if we stopped getting hand pose data,
             // and we're currently showing a hand we made earlier, hide it.
@@ -199,9 +231,15 @@ class Replica {
         }
     }
 
+    /**
+     * Applies pose information received from the server to this replica.
+     * @param userData Data structure containing a poses array or PoseData, and optional scale factor.
+     */
     updatePose(userData) {
+        const scale = userData.scale ?? 1;
 
-        unpackLocalPose(userData.poses[0], this.#head);
+        // Position the head.
+        unpackLocalPose(userData.poses[0], this.#head, scale);
 
         const p = new THREE.Vector3();
         const q = new THREE.Quaternion();
@@ -216,11 +254,11 @@ class Replica {
 
         // Shift the body down and back from the head position, using the offset vector from earlier.
         this.#head.children[0].getWorldPosition(this.#body.position);
-        this.#body.position.y -= 0.6;
-        this.#body.position.addScaledVector(p, -0.1);
+        this.#body.position.y -= 0.6 * scale;
+        this.#body.position.addScaledVector(p, -0.1 * scale);
 
-        this.#tryReplicateHand(HandID.left, userData.poses[1]);
-        this.#tryReplicateHand(HandID.right, userData.poses[2]);
+        this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
+        this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
     }
 }
 
@@ -228,8 +266,9 @@ class Replica {
 let replicas = [];
 
 /**
- * 
- * @param {World} targetWorld 
+ * Set up the replication, with a reference to the world it should add replica user avatars into.
+ * Call this during initialization, before receiving the list of remote users from the server.
+ * @param {World} targetWorld World to use for accessing the scene, camera, shared primitives/materials.
  */
 function initializeReplication(targetWorld) {
     world = targetWorld;
@@ -238,32 +277,53 @@ function initializeReplication(targetWorld) {
     controllers[HandID.right] = world.renderer.xr.getController(HandID.right);
 }
 
+/**
+ * Call this when a new user joins to create a replica of their avatar to represent them.
+ * @param userData A data structure containing the user's id, and user structure with their name and colour.
+ */
 function createReplicaForUser(userData) {
-    const replica = new Replica(userData.id, userData.displayName, userData.rgb)
+    const replica = new Replica(userData.user.name, userData.user.rgb)
     replicas[userData.id] = replica;
 }
 
+/**
+ * Updates the replica's pose to match the latest data received from the server.
+ * Call this inside the animation loop, or when new pose data is received.
+ * @param userData 
+ */
 function replicateUserPose(userData) {
     const replica = replicas[userData.id];
     if (replica) replica.updatePose(userData);
 }
 
+/**
+ * Logs pose information from a handheld controller to be sent over the network,
+ * if such a controller is present. Otherwise it sets the corresponding pose to undefined.
+ * @param handID A value of the HandID enum indicating which hand we're trying to read.
+ * @param self The "self" data structure from connect.js's "users" structure.
+ */
+function tryRecordLocalHand(handID, self) {
+    // First pose is always the HMD, so we need to shift our index.
+    const poseIndex = HandID.toPoseIndex(handID);
 
-function tryRecordLocalHand(handIndex, self) {
-    // First pose is always the HMD.
-    const poseIndex = handIndex + 1;
-
-    if (controllers[handIndex].children.length > 0) {
+    if (controllers[handID].children.length > 0) {
         let data = self.poses[poseIndex];
         if (!data) {
-            self.controllers[handIndex] = data = new PoseData();
+            self.controllers[handID] = data = new PoseData();
         }
-        packWorldPose(controllers[handIndex], data);
+        packWorldPose(controllers[handID], data);
     } else {
         self.poses[poseIndex] = undefined;
     }
 }
 
+/**
+ * Records the local client's pose data into the network data object to be sent to the server,
+ * and updates the replicas of remote users to match the latest pose data received.
+ * Call this in the animation loop so that the latest data is always ready/visible.
+ * @param self The "self" data structure from connect.js's "users" structure.
+ * @param others The "others" data structure from connect.js's "users" structure.
+ */
 function replicatePoses(self, others) {
     
     packWorldPose(world.camera, self.poses[0]);
@@ -277,7 +337,11 @@ function replicatePoses(self, others) {
     }
 }
 
-
+/**
+ * Removes a user's visible replica from the scene and cleans up its assets.
+ * Call this when a user disconnects.
+ * @param {string} id Identifier for the user to be removed.
+ */
 function disposeReplicaForUser(id) {
     const replica = replicas[id];
     if (replica) {
@@ -287,7 +351,6 @@ function disposeReplicaForUser(id) {
 }
 
 export {
-    PoseData,
     initializeReplication,
     createReplicaForUser,
     replicatePoses,

@@ -7,6 +7,7 @@ function connectToWorld(opt={}) {
 		url: "wss://alicelab.herokuapp.com",
 		room: "/",
 		reload_on_disconnect: false,
+		
 		userName: "Anonymous",
 		userRGB: [Math.random(), Math.random(), Math.random()],		
 		log: console.log,
@@ -17,7 +18,7 @@ function connectToWorld(opt={}) {
 
 	let users = {
 		self: {
-			id: "",
+			id: "",			
 			poses: [new PoseData(0, 1.4, 2)],
 			user: {
 				name: options.userName,
@@ -57,7 +58,7 @@ function connectToWorld(opt={}) {
 				reconnect();
 			}
 			server.onmessage = (event) => {
-				const msg = JSON.parse(event.data);				
+				const msg = Message.fromData(event.data);				
 				
 				switch (msg.cmd) {
 					case "handshake":
