@@ -63,7 +63,7 @@ function packWorldPose(source, pose) {
 function unpackLocalPose(pose, destination, scale = 1) {
     destination.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
     destination.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
-    destination.scale.set(pose.scale, pose.scale, pose.scale);
+    destination.scale.set(scale, scale, scale);
 }
 
 
@@ -129,22 +129,27 @@ class Replica {
         }
 
          // Build a "head" object, starting with a box representing the user's VR goggles.
-         this.#head = new THREE.Mesh(world.primitiveGeo.box, material);
-         this.#head.scale.set(0.2, 0.1, 0.12);
+         this.#head = new THREE.Group();
+         const visor = new THREE.Mesh(world.primitiveGeo.box, material);
+         visor.scale.set(0.2, 0.1, 0.12);
+         this.#head.add(visor);
      
          // Add to the box a sphere to create a sense of a head/face behind the goggles,
          // and help clarify which direction the goggles are pointing.
          const ball = new THREE.Mesh(world.primitiveGeo.sphere, material);    
          this.#head.add (ball);
-         ball.scale.set(1.2, 3.5, 2);
-         ball.position.set(0, -0.52, 0.75);
+
+         ball.scale.set(0.24, 0.35, 0.24);
+         ball.position.set(0, -0.052, 0.09);
          ball.castShadow = true;
          world.scene.add(this.#head);
 
          // Create a box to serve as the torso.
-        this.#body = new THREE.Mesh(world.primitiveGeo.box, material);
-        this.#body.scale.set(0.35, 0.65, 0.12);
-        this.#body.castShadow = true;
+        this.#body = new THREE.Group();
+        const torso = new THREE.Mesh(world.primitiveGeo.box, material);
+        torso.scale.set(0.35, 0.65, 0.12);
+        torso.castShadow = true;
+        this.#body.add(torso);
         world.scene.add(this.#body);
 
         this.#displayName = displayName;
@@ -251,12 +256,10 @@ class Replica {
      * @param userData Data structure containing a poses array or PoseData, and optional scale factor.
      */
     updatePose(userData) {
-        const scale = userData.scale ?? 1;
-        
+        const scale = userData.scale ?? 1;        
+
         // Position the head.
         unpackLocalPose(userData.poses[0], this.#head, scale);
-
-        print(vectorToString(this.#head.position));
 
         const p = new THREE.Vector3();
         const q = new THREE.Quaternion();
@@ -272,7 +275,8 @@ class Replica {
         // Shift the body down and back from the head position, using the offset vector from earlier.
         this.#head.children[0].getWorldPosition(this.#body.position);
         this.#body.position.y -= 0.6 * scale;
-        this.#body.position.addScaledVector(p, -0.1 * scale);
+        this.#body.position.addScaledVector(p, -0.12 * scale);        
+        this.#body.scale.set(scale, scale, scale);
 
         this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
