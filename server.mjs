@@ -216,7 +216,7 @@ wss.on('connection', (socket, req) => {
 		// Tell everyone this user left.		
 		notifyRoom(client.room, new Message("exit", id));
 
-		console.log(`client ${id} lef room ${client.room.name}`);		
+		console.log(`client ${id} left room ${client.room.name}`);		
 	});
 
 	// Welcome the new user and tell them their unique id.

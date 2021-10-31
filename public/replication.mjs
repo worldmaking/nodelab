@@ -181,10 +181,10 @@ class Replica {
 
     /** Destroys this replica and disposes of its unmanaged assets. */
     dispose() {
-        this.#head.removeFromParent();
-        this.#body.removeFromParent();
+        world.scene.remove(this.#head);
+        world.scene.remove(this.#body);
         for (let hand of this.#hands) {
-            if (hand && hand.parent) hand.removeFromParent();
+            if (hand && hand.parent) world.scene.remove(hand);
         }
         
         this.#nameGeo.dispose();
@@ -218,7 +218,7 @@ class Replica {
     
         // Add the hand to the scene, record it for later reference, and return it.
         world.scene.add(hand);
-        this.#hands[handIndex] = hand;
+        this.#hands[handID] = hand;
         return hand;
     }
 
