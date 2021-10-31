@@ -183,8 +183,7 @@ function animate() {
   const rotation = new THREE.Quaternion();
   const scale = new THREE.Vector3();
   camera.matrixWorld.decompose(position, rotation, scale);
-  self.pos = position.toArray();
-  self.quat = rotation.toArray();
+  self.poses = [{ pos:position.toArray(), quat: rotation.toArray()}];
   
   
   usersInstancedMesh.count = Math.min(others.length, MAX_USERS);
@@ -273,8 +272,6 @@ function cleanup(world) {
 const app = connectToWorld({
 	reload_on_disconnect: true, // useful for local dev
 	room: "/kitchen",
-	url: location.origin.replace(/^http/, 'ws'),
-
 	log(msg) {
 		document.getElementById("status").textContent = msg;
 	},

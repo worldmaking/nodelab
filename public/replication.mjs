@@ -1,7 +1,7 @@
-//import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
-import * as THREE   from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
 import { PoseData } from './networkMessages.mjs';
+import { colourTripletToHex } from './utility.mjs';
 
 /**
  * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.
@@ -107,6 +107,8 @@ class Replica {
     /** @type {THREE.Material} */
     #material = null;
 
+    #displayName;
+
     /**
      * Create a replica with these user properties.
      * @param {string} displayName Name to display for this replica user.
@@ -121,7 +123,7 @@ class Replica {
         // Otherwise, make a custom material for this replica, 
         // and cache it for re-use and cleanup when we're done.
         if (colour) {
-            material = new THREE.MeshLambertMaterial({color: new THREE.Color(rgb)});
+            material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(rgb))});
             this.#material = material;
         }
 
@@ -144,6 +146,7 @@ class Replica {
         this.#body.castShadow = true;
         world.scene.add(this.#body);
 
+        this.#displayName = displayName;
         // Create text to show the user's display name.
         const nameGeo = new THREE.TextGeometry(displayName, {font:font, size: 0.3, height: 0});                
         nameGeo.computeBoundingBox();
@@ -157,6 +160,17 @@ class Replica {
         name.position.x *= -1.0;
         this.#body.add(name);
         this.#nameGeo = nameGeo;
+    }
+
+    updateUserData(userData) {
+        this.#material.color = new THREE.Color(colourTripletToHex(userData.rgb));
+
+        if (userData.name != this.#displayName) {
+            this.#nameGeo.dispose();
+            this.displayName = userData.name;
+            const nameGeo = new THREE.TextGeometry(userData.name, {font:font, size: 0.3, height: 0});                
+            nameGeo.computeBoundingBox();
+        }
     }
 
     /** Destroys this replica and disposes of its unmanaged assets. */
@@ -281,9 +295,9 @@ function initializeReplication(targetWorld) {
  * Call this when a new user joins to create a replica of their avatar to represent them.
  * @param userData A data structure containing the user's id, and user structure with their name and colour.
  */
-function createReplicaForUser(userData) {
+function createReplicaForUser(id, userData) {
     const replica = new Replica(userData.user.name, userData.user.rgb)
-    replicas[userData.id] = replica;
+    replicas[id] = replica;
 }
 
 /**
@@ -338,6 +352,21 @@ function replicatePoses(self, others) {
 }
 
 /**
+ * Call this function when receiving a "user" message,
+ * to configure a newly-joining user (new replica) or update an existing one.
+ * @param id 
+ * @param userData 
+ */
+function updateUserReplica(id, userData) {
+    const replica = replicas[id];
+    if (!replica) {
+        createReplicaForUser(id, userData);
+    } else {
+        replica.updateUserData(userData);
+    }
+}
+
+/**
  * Removes a user's visible replica from the scene and cleans up its assets.
  * Call this when a user disconnects.
  * @param {string} id Identifier for the user to be removed.
@@ -352,7 +381,7 @@ function disposeReplicaForUser(id) {
 
 export {
     initializeReplication,
-    createReplicaForUser,
+    updateUserReplica,
     replicatePoses,
     disposeReplicaForUser
 }

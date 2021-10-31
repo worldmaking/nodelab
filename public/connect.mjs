@@ -4,7 +4,7 @@ import {Message, PoseData} from './networkMessages.mjs';
 function connectToWorld(opt={}) {
 
 	let options = Object.assign({
-		url: "wss://alicelab.herokuapp.com",
+		url: location.origin.replace(/^http/, 'ws'),
 		room: "/",
 		reload_on_disconnect: false,
 		
@@ -14,6 +14,12 @@ function connectToWorld(opt={}) {
 		onproject: function(projectData) { 
 			options.log ("Received project message, but ignored it since no 'onproject' handler was provided.")
 		},		
+		onuser: function(id, userData) { 
+			options.log (`Received user message for ${id}, but ignored it because no 'onuser' handler was provided.`)
+		},
+		onuserexit: function(id, userData) { 
+			options.log (`Received user exit message for ${id}, but ignored it because no 'onuserexit' handler was provided.`)
+		},	
 	}, opt);
 
 	let users = {
@@ -62,15 +68,34 @@ function connectToWorld(opt={}) {
 				
 				switch (msg.cmd) {
 					case "handshake":
-						users.self.id = msg.val;
+						// Accept our new ID.
+						users.self.id = msg.val.id;
+
+						// Initialize replication for all other users already in the room.
+						for (let o of msg.val.others) {
+							users.others[o.volatile.id] = o.volatile;
+							options.onuser(o.volatile.id, o.user);							
+						}
+						break;
+					case "user":
+						// Accept notification of a new user joining, 
+						// or an existing user changing their persistent data.
+						options.onuser(msg.val.id, msg.val.user);
 						break;
 					case "others":
+						// Accept an update of all users' volatile data. Prune out information about ourselves.
 						users.others = msg.val.filter(o=>o.id != users.self.id);
 						break;
+					case "exit": 
+						// Accept notification that a user has left the room.
+						options.onuserexit(msg.val);
+						break;	
 					case "reload": 
+						// Reload the scene on command from the server.
 						location.reload();
-						break;					
+						break;								
 					case "project":
+						// Accept JSON representing the current state of the world contents.
 						if (options.onproject) options.onproject(msg.val);
 						break;					
 					default: 

@@ -119,7 +119,78 @@ class World {
         }
     }
 
-    // TODO: Add functions to handle teleporting client space around.
+    /**
+     * Moves/rotates the client space to place the camera at a new position/orientation,
+     * without interfering with the position/orientation of the camera relative to its sensor
+     * coordinate system.
+     * @param {THREE.Vector3} floorPositionUnderCamera The desired worldspace location of the user's feet. The camera will teleport to some distance above this.
+     * @param {?THREE.Vector3} worldLookDirection The desired worldspace direction the camera should face. Leave this undefined to keep the current orientation.
+     */
+    teleportClientSpace(floorPositionUnderCamera, worldLookDirection) {
+        if (worldLookDirection) {
+
+            // Get the direction our camera is currently looking 
+            // along the horizontal plane, relative to the client space orientation.
+            const lookDirection = new THREE.Vector3(0, 0, -1);
+            lookDirection.applyQuaternion(this.camera.quaternion);
+            lookDirection.y = 0;
+            lookDirection.normalize();
+
+            // Compute the horizontal rotation difference between camera's look direction and client forward.
+            const forward = new THREE.Vector3(0, 0, -1);
+            const rotationOffset = new THREE.Quaternion();
+            rotationOffset.setFromUnitVectors(lookDirection, forward);
+
+            // Get the direction we want the camera to look, and shift it by the camera's rotational offset.
+            const targetDirection = worldLookDirection.clone();
+            targetDirection.applyQuaternion(rotationOffset);
+            targetDirection.y = 0;
+            targetDirection.normalize();
+
+            // Rotate client space so that the camera looks toward worldLookDirection.
+            if (targetDirection.z < 1) {
+                this.clientSpace.quaternion.setFromUnitVectors(forward, targetDirection);
+            } else {
+                // Special case handling for 180-degree rotation, to be absolutely certain
+                // we get 180 degrees of yaw, not pitch (which would also map forward to
+                // targetDirection, but with an unwanted inversion of the vertical axis).
+                this.clientSpace.quaternion.set(0, 1, 0, 0);
+            }            
+        }   
+
+        // Get the position of the camera within client space, snapped down to floor level.
+        const cameraOffset = this.camera.position.clone();
+        cameraOffset.y = 0;
+
+        // Transform this position offset into world space.
+        cameraOffset.applyQuaternion(this.clientSpace.quaternion);
+
+        // Subtract this offset from our target floor position,
+        // to get the position where the client space needs to be for the camera to be above the target.
+        cameraOffset.multiplyScalar(-1);
+        cameraOffset.add(floorPositionUnderCamera);
+
+        // Apply the teleported position to the client space.
+        this.clientSpace.position.copy(cameraOffset);     
+    }
+
+    /**
+     * Rotates client space around the camera position as its pivot.
+     * @param {number} radianDelta Angle in radians to rotate counter-clockwise about the vertical axis.
+     */
+    rotateClientSpace (radianDelta) {
+        // Record the position of the camera before the rotation, so we can keep it in exactly the same place.
+        const cameraPosition = this.camera.position.clone();
+        // Project it down to the floor plane, and convert it to world space.
+        cameraPosition.y = 0;
+        this.clientSpace.localToWorld(cameraPosition);
+
+        // Rotate client space on the y only.
+        this.clientSpace.rotation.y += radianDelta;
+
+        // Teleport so our camera is back where it was originally.
+        this.teleportClientSpace(cameraPosition);
+    }
 }
 
 // Export our world class to be used elsewhere.

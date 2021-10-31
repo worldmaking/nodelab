@@ -128,16 +128,14 @@ function getRoom(name="default") {
 }
 
 /**
- * 
- * @param {string} roomname 
+ * Send a message to all users in a room.
+ * @param {Room} room
  * @param {Message} message 
- * @returns 
  */
-function notifyRoom(roomname, message) {
-	let room = rooms[roomname]
+function notifyRoom(room, message) {	
 	if (!room) return;
-	const others = Object.values(room.clients);
-	message.sendToAll(others);
+	const clientsInRoom = Object.values(room.clients);
+	message.sendToAll(clientsInRoom);
 }
 
 // generate a unique id if needed
@@ -160,14 +158,23 @@ wss.on('connection', (socket, req) => {
 		socket: socket,
 		room: getRoom(requestedRoomName),
 		shared: {
-			id: id,
-			poses: [new PoseData()],
+			// Structure for any rapidly-changing data (poses, etc.)
+			volatile: {
+				id: id,
+				poses: [new PoseData()],
+			},
+			// Structure for rarely-changing user configuration (display name, colour, etc.)
 			user: {}
 		}
 	}
 	clients[id] = client
 	// enter this room
 	client.room.clients[id] = client;
+
+	// Convenience function for getting everyone in the room *except* this client.
+	function getOthersInRoom() {
+		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != id);
+	}
 
 	console.log(`client ${client.shared.id} connecting to room ${client.room.name}`);
 	
@@ -176,21 +183,18 @@ wss.on('connection', (socket, req) => {
 		
 		switch(msg.cmd) {
 			case "pose":
-				// New pose update from the client.
-				const poses = msg.val;
-				// First, contract our pose array if it's bigger (user lost a controller).
-				if (poses.length < client.shared.poses.length) {
-					client.shared.poses.splice(poses.length, client.shared.poses.length -  poses.length);
-				}
-				// Then copy pose data from new message into client's data structure.
-				// (Why copy instead of assign? Because this data structure will be referenced elsewhere)
-				for(let i = 0; i < poses.length; i++) {
-					client.shared.poses[i] = poses[i];
-				}				
+				// New pose update (and possibly other rapidly-changing data) from the client.
+				client.shared.volatile = msg.val;
+				// Insert our ID into this structure, so we can just batch-send all the volatile
+				// info together and it already has our ID packed in.
+				client.shared.volatile.id = id;			
 				break;
 			case "user": 
 				// TODO: Send update to other users about changed info.
 				client.shared.user = msg.val;
+
+				// Tell everyone about the new/updated user.
+				(new Message("user", {id: id, user: msg.val})).sendToAll(getOthersInRoom());
 				break;
 		}
 	
@@ -209,12 +213,20 @@ wss.on('connection', (socket, req) => {
 		// remove from room
 		if (client.room) delete client.room.clients[id]
 
-		console.log(`client ${id} left`)
+
+		// Tell everyone this user left.
+		const clientlist = Object.values(room.clients);
+		notifyRoom(client.room, new Message("exit", id));
+
+		console.log(`client ${id} left`);		
 	});
 
 	// Welcome the new user and tell them their unique id.
 	// TODO: Tell them their spawn position too.
-	(new Message("handshake", id)).sendWith(socket);
+	(new Message("handshake", {
+		id: id, 
+		others: getOthersInRoom().map(o=>o.shared)
+	})).sendWith(socket);
 
 	// Share the current 3D scene with the user.
 	(new Message("project", client.room.project)).sendWith(socket);
@@ -224,7 +236,7 @@ setInterval(function() {
 	for (let roomid of Object.keys(rooms)) {
 		const room = rooms[roomid];
 		const clientlist = Object.values(room.clients);
-		const message = new Message("others", clientlist.map(o=>o.shared));
+		const message = new Message("others", clientlist.map(o=>o.shared.volatile));
 		message.sendToAll(clientlist);
 	}
 }, 1000/30);
