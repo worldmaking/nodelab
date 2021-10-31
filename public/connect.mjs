@@ -24,8 +24,10 @@ function connectToWorld(opt={}) {
 
 	let users = {
 		self: {
-			id: "",			
-			poses: [new PoseData(0, 1.4, 2)],
+			id: "",	
+			volatile: {		
+				poses: [new PoseData(0, 1.4, 2)],
+			},
 			user: {
 				name: options.userName,
 				rgb: options.userRGB
@@ -84,7 +86,7 @@ function connectToWorld(opt={}) {
 						break;
 					case "others":
 						// Accept an update of all users' volatile data. Prune out information about ourselves.
-						users.others = msg.val.filter(o=>o.id != users.self.id);
+						users.others = msg.val.filter(o=>o.id != users.self.id);						
 						break;
 					case "exit": 
 						// Accept notification that a user has left the room.
@@ -117,7 +119,7 @@ function connectToWorld(opt={}) {
 
 	setInterval(() => {
 		if (server && server.readyState==1 && users.self.id) {
-			const message = new Message("pose", users.self.poses);
+			const message = new Message("pose", users.self.volatile);
 			message.sendWith(server);
 		}
 	}, 1000/30);

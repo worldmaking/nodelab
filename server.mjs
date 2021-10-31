@@ -176,7 +176,7 @@ wss.on('connection', (socket, req) => {
 		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != id);
 	}
 
-	console.log(`client ${client.shared.id} connecting to room ${client.room.name}`);
+	console.log(`client ${client.shared.volatile.id} connecting to room ${client.room.name}`);
 	
 	socket.on('message', (data) => {
 		const msg = Message.fromData(data);
@@ -206,7 +206,6 @@ wss.on('connection', (socket, req) => {
 	});
 
 	socket.on('close', () => {
-		console.log("close", id)
 		// console.log(Object.keys(clients))
 		delete clients[id]
 
@@ -214,11 +213,10 @@ wss.on('connection', (socket, req) => {
 		if (client.room) delete client.room.clients[id]
 
 
-		// Tell everyone this user left.
-		const clientlist = Object.values(room.clients);
+		// Tell everyone this user left.		
 		notifyRoom(client.room, new Message("exit", id));
 
-		console.log(`client ${id} left`);		
+		console.log(`client ${id} lef room ${client.room.name}`);		
 	});
 
 	// Welcome the new user and tell them their unique id.

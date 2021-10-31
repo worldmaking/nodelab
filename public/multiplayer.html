@@ -40,15 +40,15 @@
     </form>
     <button id="joinButton">Join</button>
 
-    <script src="utility.js"></script>
     <script type="module">
       'use strict';
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';      
       import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/OrbitControls.js';      
-      import { initializeWorld } from "./world.js"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeReplicaForUser } from "./replication.mjs"; 
+      import { World } from "./world.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, print, showReadout } from "./utility.mjs"; 
+      import { connectToWorld } from "./connect.mjs"; 
 
       // Setup login form. Randomize the colour value for variety.
       let form = document.getElementById('login');  
@@ -76,10 +76,7 @@
         const readout = document.createElement('div');
         readout.style.position = 'absolute';
         readout.style.top = '0px';
-        document.body.appendChild(readout);
-
-        // Setup a basic THREE.js scene with camera, floor, etc.
-        const world = initializeWorld();      
+        document.body.appendChild(readout);       
 
         // Get our display colour from the login form.
         let colour = parseInt(form.elements[1].value, 16);
@@ -87,6 +84,9 @@
           colour = randomColourHex();
           form.elements[1].value = colourHexToString(colour);
         }
+
+        // Setup a basic THREE.js scene with camera, floor, etc.
+        const world = new World();      
 
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world);
@@ -98,8 +98,8 @@
           url: location.origin.replace(/^http/, 'ws'),
           userName: form.elements[0].value,
           userRGB: colourHexToTriplet(colour),
-          onuser: updateUserData,
-          onuserexit: disposeReplicaForUser
+          onuser: updateUserReplica,
+          onuserexit: disposeUserReplica
         });
 
         // If we get this far, save this user name and colour for next log-in too.

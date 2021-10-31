@@ -1,7 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
 import { PoseData } from './networkMessages.mjs';
-import { colourTripletToHex } from './utility.mjs';
+import { colourTripletToHex, print, vectorToString } from './utility.mjs';
+import { initializeControllers } from './controllers.mjs';
 
 /**
  * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.
@@ -14,7 +15,7 @@ const HandID = {
      * @param {number} handID A value from the HandID pseudo-enum.
      * @returns {number} -1 for left, +1 for right.
      */
-    toSideSign = function(handID) {
+    toSideSign: function(handID) {
         return 2 * handID - 1;
     },
     /**
@@ -22,7 +23,7 @@ const HandID = {
      * @param {number} handID A value from the HandID pseudo-enum.
      * @returns {number} 1 for left, 2 for right (head is in index 0).
      */
-    toPoseIndex = function(handID) {
+    toPoseIndex: function(handID) {
         return handID + 1;
     }
 }
@@ -123,7 +124,7 @@ class Replica {
         // Otherwise, make a custom material for this replica, 
         // and cache it for re-use and cleanup when we're done.
         if (colour) {
-            material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(rgb))});
+            material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(colour))});
             this.#material = material;
         }
 
@@ -151,11 +152,11 @@ class Replica {
         const nameGeo = new THREE.TextGeometry(displayName, {font:font, size: 0.3, height: 0});                
         nameGeo.computeBoundingBox();
 
-        const name = new THREE.Mesh(replica.nameGeo, textMaterial);
+        const name = new THREE.Mesh(nameGeo, textMaterial);
         name.rotation.set(0, Math.PI, 0);
         // Position the name so it hovers above the body, centered left-to-right.
-        name.position.addScaledVector(replica.nameGeo.boundingBox.min, -0.5);
-        name.position.addScaledVector(replica.nameGeo.boundingBox.max, -0.5);
+        name.position.addScaledVector(nameGeo.boundingBox.min, -0.5);
+        name.position.addScaledVector(nameGeo.boundingBox.max, -0.5);
         name.position.y += 1.5;
         name.position.x *= -1.0;
         this.#body.add(name);
@@ -251,9 +252,11 @@ class Replica {
      */
     updatePose(userData) {
         const scale = userData.scale ?? 1;
-
+        
         // Position the head.
         unpackLocalPose(userData.poses[0], this.#head, scale);
+
+        print(vectorToString(this.#head.position));
 
         const p = new THREE.Vector3();
         const q = new THREE.Quaternion();
@@ -261,9 +264,9 @@ class Replica {
         // Position the torso under the head and slightly behind.
         // First, create an offset vector from the head pose, pointing toward the back of the head,
         // flatten it into the horizontal plane, and scale it to unit length.
-        p.set(0, 0, -1).applyQuaternion(this.head.quaternion).setComponent(1, 0).normalize();
+        p.set(0, 0, -1).applyQuaternion(this.#head.quaternion).setComponent(1, 0).normalize();
         // Use this to smoothly rotate the torso, so it stays upright while facing roughly in the gaze direction. 
-        q.setFromUnitVectors(forward, p);        
+        q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), p);        
         this.#body.quaternion.slerp(q, 0.01);
 
         // Shift the body down and back from the head position, using the offset vector from earlier.
@@ -287,6 +290,7 @@ let replicas = [];
 function initializeReplication(targetWorld) {
     world = targetWorld;
     
+    initializeControllers(world);
     controllers[HandID.left] = world.renderer.xr.getController(HandID.left); 
     controllers[HandID.right] = world.renderer.xr.getController(HandID.right);
 }
@@ -296,7 +300,7 @@ function initializeReplication(targetWorld) {
  * @param userData A data structure containing the user's id, and user structure with their name and colour.
  */
 function createReplicaForUser(id, userData) {
-    const replica = new Replica(userData.user.name, userData.user.rgb)
+    const replica = new Replica(userData.name, userData.rgb)
     replicas[id] = replica;
 }
 
@@ -321,12 +325,15 @@ function tryRecordLocalHand(handID, self) {
     const poseIndex = HandID.toPoseIndex(handID);
 
     if (controllers[handID].children.length > 0) {
+        // If we have a controller active (if it has a controller model inserted),
+        // update (or create) pose data for that controller.
         let data = self.poses[poseIndex];
         if (!data) {
-            self.controllers[handID] = data = new PoseData();
+            self.poses[poseIndex] = data = new PoseData();
         }
         packWorldPose(controllers[handID], data);
     } else {
+        // Otherwise, clear out this array index to signal "no such contoller connected".
         self.poses[poseIndex] = undefined;
     }
 }
@@ -340,12 +347,14 @@ function tryRecordLocalHand(handID, self) {
  */
 function replicatePoses(self, others) {
     
-    packWorldPose(world.camera, self.poses[0]);
+    // Save our camera/HMD pose to be shared to the server.
+    packWorldPose(world.camera, self.volatile.poses[0]);    
 
-    for (const handIndex of HandID) {
-        tryRecordLocalHand(handIndex);
-    }
+    // Likewise, share our controller poses, if we have any active.
+    tryRecordLocalHand(HandID.left, self.volatile);
+    tryRecordLocalHand(HandID.right, self.volatile);
 
+    // Update the poses of all replicas to match latest server data.
     for (const other of others) {
         replicateUserPose(other);
     }
@@ -371,7 +380,7 @@ function updateUserReplica(id, userData) {
  * Call this when a user disconnects.
  * @param {string} id Identifier for the user to be removed.
  */
-function disposeReplicaForUser(id) {
+function disposeUserReplica(id) {
     const replica = replicas[id];
     if (replica) {
         replica.dispose();
@@ -383,5 +392,5 @@ export {
     initializeReplication,
     updateUserReplica,
     replicatePoses,
-    disposeReplicaForUser
+    disposeUserReplica
 }
