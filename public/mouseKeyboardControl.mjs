@@ -79,16 +79,17 @@ function updateControls(deltaTime) {
     if (mouseButtons[2]) {
         if (!isDragging) {
             isDragging = true;
-
-            const direction = getMouseDirection();
-            const cameraInverse = world.camera.quaternion.clone();
-            cameraInverse.invert();
-
-            direction.applyQuaternion(cameraInverse);
-            directionToSphericalAngles(direction, dragStartAngles);
+            
+            directionToSphericalAngles(getMouseDirection(), dragStartAngles);
         } else {
+            const direction = getMouseDirection();
+            const cameraInverse = new THREE.Quaternion();
+            world.camera.getWorldQuaternion(cameraInverse);
+            cameraInverse.invert();
+            direction.applyQuaternion(cameraInverse);
+
             const destinationAngle = new THREE.Euler();
-            directionToSphericalAngles(getMouseDirection(), destinationAngle);
+            directionToSphericalAngles(direction, destinationAngle);
 
             world.camera.rotation.set(Math.max(-pitchLimit, Math.min(pitchLimit, dragStartAngles.x - destinationAngle.x)), 0, 0);
             world.clientSpace.rotation.set(0, dragStartAngles.y - destinationAngle.y, 0);
