@@ -5,6 +5,7 @@ import { XRControllerModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.1
 
 /**
  * Controller handling adapted from WebXR BallShooter example:
+ * https://threejs.org/examples/#webxr_vr_ballshooter
  * Constructs visible versions of controllers matching the user's hardware when they're activated.
  * Call during scene setup.
  * @param world {World} world from world.mjs to get access to the client space for tracking controllers.

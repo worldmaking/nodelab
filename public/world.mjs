@@ -1,6 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 
+const defaultCameraHeight = 1.5;
+
 /**
  * Bundles up the boilerplate of setting up a THREE.js scene for VR,
  * and packs up the items we want to use most often into a "world" object with type information
@@ -56,7 +58,7 @@ class World {
             0.05,
             100
         );
-        camera.position.y = 1.5;
+        camera.position.y = defaultCameraHeight;
         camera.position.z = 0;
         this.camera = camera;
 
@@ -120,6 +122,43 @@ class World {
     }
 
     /**
+     * Rotates client space so that its -z axis points along the provided direction.
+     * Rotation is only ever in the horizontal plane.
+     * @param {THREE.Vector3} worldDirection Direction in worldspace (not necessarily normalized).
+     */
+    #rotateClientSpaceToFace(worldDirection) {
+        const yaw = Math.atan2(-worldDirection.x, -worldDirection.z);
+        this.clientSpace.quaternion.set(0, Math.sin(yaw/2), 0, Math.cos(yaw/2));
+    }
+
+    /**
+     * Get the location where the local client is "standing" in the world.
+     * @returns {THREE.Vector3} Position in world space under the camera, at floor height.
+     */
+     getFootPosition() {
+        // Record the position of the camera before the rotation, so we can keep it in exactly the same place.
+        const cameraPosition = this.camera.position.clone();
+        // Project it down to the floor plane, and convert it to world space.
+        cameraPosition.y = 0;
+        this.clientSpace.localToWorld(cameraPosition);
+
+        return cameraPosition;
+    }
+
+    getHorizontalLookDirection() {
+        const direction = new THREE.Vector3();
+        this.camera.getWorldDirection(direction);
+
+        direction.y = 0;
+        direction.x *= -1;
+        direction.z *= -1;
+
+        direction.normalize();
+
+        return direction;
+    }
+
+    /**
      * Moves/rotates the client space to place the camera at a new position/orientation,
      * without interfering with the position/orientation of the camera relative to its sensor
      * coordinate system.
@@ -144,18 +183,8 @@ class World {
             // Get the direction we want the camera to look, and shift it by the camera's rotational offset.
             const targetDirection = worldLookDirection.clone();
             targetDirection.applyQuaternion(rotationOffset);
-            targetDirection.y = 0;
-            targetDirection.normalize();
-
-            // Rotate client space so that the camera looks toward worldLookDirection.
-            if (targetDirection.z < 1) {
-                this.clientSpace.quaternion.setFromUnitVectors(forward, targetDirection);
-            } else {
-                // Special case handling for 180-degree rotation, to be absolutely certain
-                // we get 180 degrees of yaw, not pitch (which would also map forward to
-                // targetDirection, but with an unwanted inversion of the vertical axis).
-                this.clientSpace.quaternion.set(0, 1, 0, 0);
-            }            
+            
+            this.#rotateClientSpaceToFace(targetDirection);           
         }   
 
         // Get the position of the camera within client space, snapped down to floor level.
@@ -174,22 +203,38 @@ class World {
         this.clientSpace.position.copy(cameraOffset);     
     }
 
+
+
     /**
      * Rotates client space around the camera position as its pivot.
      * @param {number} radianDelta Angle in radians to rotate counter-clockwise about the vertical axis.
      */
     rotateClientSpace (radianDelta) {
-        // Record the position of the camera before the rotation, so we can keep it in exactly the same place.
-        const cameraPosition = this.camera.position.clone();
-        // Project it down to the floor plane, and convert it to world space.
-        cameraPosition.y = 0;
-        this.clientSpace.localToWorld(cameraPosition);
+        const cameraPosition = this.getFootPosition();
 
         // Rotate client space on the y only.
         this.clientSpace.rotation.y += radianDelta;
 
         // Teleport so our camera is back where it was originally.
         this.teleportClientSpace(cameraPosition);
+    }
+
+    /**
+     * Call this function when leaving VR to reset the clientSpace orientation
+     * for mouse & keyboard control. Puts the camera back at a standard height above
+     * the origin of client space, with no roll rotation, while preserving the viewpoint.
+     */
+    handleExitVR() {
+        const footPosition = this.getFootPosition();        
+
+        const lookDirection = new THREE.Vector3();
+        cameraPosition.getWorldDirection(lookDirection);        
+
+        this.clientSpace.position.set(footPosition);
+        this.#rotateClientSpaceToFace(lookDirection);
+
+        this.camera.position.set(0, defaultCameraHeight, 0);
+        this.camera.rotation.z = 0;
     }
 }
 

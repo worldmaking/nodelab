@@ -43,12 +43,12 @@
     <script type="module">
       'use strict';
       
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';      
-      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/OrbitControls.js';      
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
       import { World } from "./world.mjs"; 
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
+      import * as MouseKeyboard from './mouseKeyboardControl.mjs';
 
       // Setup login form. Randomize the colour value for variety.
       let form = document.getElementById('login');  
@@ -120,7 +120,7 @@
           // so we don't overlap users already in the room, or end up facing away from everyone.
           // For now, we'll just pick a random angle around a circle facing inward, and hope.
           const angle = Math.random() * Math.PI * 2;
-          const direction = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+          const direction = new THREE.Vector3(-Math.sin(angle), 0, -Math.cos(angle));
 
           const position = direction.clone();
           position.multiplyScalar(-3);
@@ -128,24 +128,12 @@
           world.teleportClientSpace(position, direction);
         }
 
-        // Set up mouse/keyboard controls.
-        // TODO: our "clientSpace" local coordinate system breaks Orbit controls.
-        // Replace them with the WASD / teleport controls other students are working on.
-        const controls = new OrbitControls(world.camera, world.renderer.domElement);
-        controls.target.set(0, 0.75, 0);
+        // Set up mouse/keyboard controls.        
+        MouseKeyboard.initializeControls(world);
 
         // Set up raycasting for mouse/gaze picking.
         const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();    
-
-        // Track mouse movements for mouse picking in non-VR.
-        function onMouseMove(event) {
-          // Normalize coordinates from -1 on the bottom/left to +1 at the top/right,
-          // with (0, 0) in the center of the canvas.
-          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-          mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        }
-        world.renderer.domElement.onmousemove = onMouseMove;
+        
 
         // Keep track of the last looked-at object - for future use.
         let gazeObject = null;
@@ -172,14 +160,14 @@
           if (world.renderer.xr && world.renderer.xr.isPresenting) {
             // In VR, we want our gaze ray to always go through the center of the view.
             // (At least until headsets give us eye tracking...)
-            mouse.set(0, 0);
+            MouseKeyboard.mouse.set(0, 0);
           } else {
             // In non-VR, let the orbit controls do their work.
-            controls.update(dt);
+            MouseKeyboard.updateControls(dt);
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
-          raycaster.setFromCamera(mouse, world.camera);
+          raycaster.setFromCamera(MouseKeyboard.mouse, world.camera);
           const intersects = raycaster.intersectObjects([cube, world.floor]);
 
           let newGaze = null;
