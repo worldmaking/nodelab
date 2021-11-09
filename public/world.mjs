@@ -41,6 +41,11 @@ class World {
     /** @type {THREE.material} */
     defaultMaterial;
 
+    /** @type {THREE.Group}*/
+    teleportTarget;
+
+    /** @type {THREE.Raycaster}*/
+    raycaster = new THREE.Raycaster();
 
     constructor() {
         // Set up basic rendering features.
@@ -81,7 +86,7 @@ class World {
         // This one gets parented to the root of the scene, so it can work with orbit controls.
         scene.add(mouseCamera);
 
-
+        // Handle resizing the canvas when the window size changes, and adapt to initial size.
         this.#handleResize();
         window.addEventListener('resize', this.#handleResize, false);
 
@@ -93,7 +98,7 @@ class World {
         // and to give some atmospheric perspective, to help with depth perception (esp. in non-VR view).
         const fadeColor = 0x5099c5;
         scene.background = new THREE.Color(fadeColor);
-        scene.fog = new THREE.Fog(fadeColor, 6, 20);
+        scene.fog = new THREE.FogExp2(fadeColor, 0.05);
 
         // Create a floor plane marked with a grid to give local landmarks, so you can tell when you move.
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), material);
@@ -117,6 +122,13 @@ class World {
         directional.castShadow = true;
         scene.add(directional);
 
+        // Add a targeting reticle for teleportation moves.
+        // (Used by both mouse & keyboard and VR controls, so might as well centralize it here).
+        this.teleportTarget = new THREE.Group();
+        this.teleportTarget.add(new THREE.PolarGridHelper(1, 16, 1));
+        this.teleportTarget.visible = false;
+        scene.add(this.teleportTarget);
+
         // Create primitives geometry for things we'll want to re-use a lot,
         // so we don't have every file making their own wastefully.
         // (In particular, boxes and spheres are currently used by replication.js
@@ -128,9 +140,9 @@ class World {
         }
     }
 
-    #handleResize() {
-        // Handle resizing the canvas when the window size changes, and adapt to initial size.
-        
+
+    /** Handle resizing the canvas when the window size changes, and adapt to initial size. */
+    #handleResize() {                
         if (!this.renderer.xr.isPresenting) {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.mouseCamera.aspect = window.innerWidth / window.innerHeight;
@@ -255,8 +267,44 @@ class World {
         this.clientSpace.position.set(footPosition);
         this.#rotateClientSpaceToFace(lookDirection);
 
-        this.vrCamera.position.set(0, defaultCameraHeight, 0);
+        this.vrCamera.position.set(0, this.playerHeight, 0);
         this.vrCamera.rotation.z = 0;
+    }
+
+    #updateTeleportTargetFromRaycast() {
+        this.raycaster.firstHitOnle = true;
+        const hit = this.raycaster.intersectObjects(this.walkable)[0];
+        if (hit) {
+            this.teleportTarget.position.copy(hit.point);
+            this.teleportTarget.visible = true;
+            return hit.position;
+        }
+        this.teleportTarget.visible = false;
+        return null;
+    }
+
+    updateTeleportTargetFromMouse(mouse) {
+        this.raycaster.setFromCamera(mouse, this.mouseCamera);
+        return this.#updateTeleportTargetFromRaycast();
+    }
+
+    updateTeleportTargetFromRay(origin, direction) {
+        this.raycaster.ray.origin.set(origin);
+        this.raycaster.ray.direction.set(direction);
+        return this.#updateTeleportTargetFromRaycast();
+    }
+
+    tryTeleportToTarget() {
+        if (this.teleportTarget.visible == false)
+            return false;
+        
+        this.teleportClientSpace(this.teleportTarget.position);
+        this.cancelTeleport();
+        return true;        
+    }
+
+    cancelTeleport() {
+        this.teleportTarget.visible = false;
     }
 }
 

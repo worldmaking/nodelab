@@ -28,8 +28,7 @@ const movementInput = new THREE.Vector3();
 let verticalVelocity = 0;
 let elevation = 1.5;
 
-// A group to store the current teleport target:
-const teleport = new THREE.Group();
+
 
 // Updates zoom when changing control schemes.
 function setZoom(d = IDEAL_ZOOM) {
@@ -59,6 +58,11 @@ document.addEventListener('mousemove', function (event) {
 
     // Catch mouse buttons that were pressed/released outside the window.
     updateMouseButtons(event);
+});
+document.addEventListener('dblclick', function (event) {
+    if (!world.renderer.xr.isPrsenting) {
+        world.tryTeleportToTarget();
+    }
 });
 
 
@@ -96,7 +100,7 @@ function initializeControls(newWorld) {
     world = newWorld;
     orbit = new OrbitControls(world.mouseCamera, world.renderer.domElement);
 
-    world.scene.add(teleport);
+    world.clientSpace.add(new THREE.PolarGridHelper(1, 16, 1));
     boxVisualizer = new THREE.BoxHelper(world.scene, 0xffffff);
     world.scene.add(boxVisualizer);
     elevation = world.playerHeight;        
@@ -209,6 +213,8 @@ function updateControls(dt) {
         orbit.maxDistance = 20;
     }
     orbit.update(dt);
+
+    world.updateTeleportTargetFromMouse(mouse);
 }
 
 export { mouse, initializeControls, updateControls }
