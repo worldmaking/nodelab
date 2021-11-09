@@ -88,8 +88,10 @@
         // Setup a basic THREE.js scene with camera, floor, etc.
         const world = new World();      
 
+
+        const colourTriplet = colourHexToTriplet(colour);
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world);
+        initializeReplication(world, colourTriplet);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
@@ -97,7 +99,7 @@
           room: "/multiplayer",
           url: location.origin.replace(/^http/, 'ws'),
           userName: form.elements[0].value,
-          userRGB: colourHexToTriplet(colour),
+          userRGB: colourTriplet,
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });
@@ -150,9 +152,7 @@
         );
         ico.scale.set(0.1, 0.1, 0.1);
         ico.position.z = -1;
-        world.scene.add(ico);
-
-        
+        world.scene.add(ico);        
 
         // Main rendering loop.
         function animate() {

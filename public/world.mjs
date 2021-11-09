@@ -93,7 +93,7 @@ class World {
         // and to give some atmospheric perspective, to help with depth perception (esp. in non-VR view).
         const fadeColor = 0x5099c5;
         scene.background = new THREE.Color(fadeColor);
-        scene.fog = new THREE.FogExp2(fadeColor, 0.15);
+        scene.fog = new THREE.Fog(fadeColor, 6, 20);
 
         // Create a floor plane marked with a grid to give local landmarks, so you can tell when you move.
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), material);

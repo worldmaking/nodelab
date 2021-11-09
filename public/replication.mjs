@@ -72,6 +72,11 @@ function unpackLocalPose(pose, destination, scale = 1) {
  * @type {World} */
 let world;
 
+/**
+ * Local replica to represent the client - visible in 3rd person or when looking down in VR.
+ * @type {Replica} */
+let clientReplica;
+
 // Load a font that we can use to display user names of other users, 
 // and prepare a material to use for text rendering.
 const loader = new THREE.FontLoader();
@@ -137,7 +142,7 @@ class Replica {
          // Add to the box a sphere to create a sense of a head/face behind the goggles,
          // and help clarify which direction the goggles are pointing.
          const ball = new THREE.Mesh(world.primitiveGeo.sphere, material);    
-         this.#head.add (ball);
+         this.#head.add(ball);
 
          ball.scale.set(0.24, 0.35, 0.24);
          ball.position.set(0, -0.052, 0.09);
@@ -152,22 +157,35 @@ class Replica {
         this.#body.add(torso);
         world.scene.add(this.#body);
 
-        this.#displayName = displayName;
-        // Create text to show the user's display name.
-        const nameGeo = new THREE.TextGeometry(displayName, {font:font, size: 0.3, height: 0});                
-        nameGeo.computeBoundingBox();
+        if (displayName) {
+            this.#displayName = displayName;
+            // Create text to show the user's display name.
+            const nameGeo = new THREE.TextGeometry(displayName, {font:font, size: 0.3, height: 0});                
+            nameGeo.computeBoundingBox();
 
-        const name = new THREE.Mesh(nameGeo, textMaterial);
-        name.rotation.set(0, Math.PI, 0);
-        // Position the name so it hovers above the body, centered left-to-right.
-        name.position.addScaledVector(nameGeo.boundingBox.min, -0.5);
-        name.position.addScaledVector(nameGeo.boundingBox.max, -0.5);
-        name.position.y += 1.5;
-        name.position.x *= -1.0;
-        this.#body.add(name);
-        this.#nameGeo = nameGeo;
+            const name = new THREE.Mesh(nameGeo, textMaterial);
+            name.rotation.set(0, Math.PI, 0);
+            // Position the name so it hovers above the body, centered left-to-right.
+            name.position.addScaledVector(nameGeo.boundingBox.min, -0.5);
+            name.position.addScaledVector(nameGeo.boundingBox.max, -0.5);
+            name.position.y += 1.5;
+            name.position.x *= -1.0;
+            this.#body.add(name);
+            this.#nameGeo = nameGeo;
+        }
     }
 
+    static createClientReplica(colour) {
+        let replica = new Replica(undefined, colour);
+        world.vrCamera.add(replica.#head);
+        world.clientSpace.add(replica.#body);
+        return replica;
+    }
+
+    /**
+     * Call this when a user chances their colour/name to update their appearance.
+     * @param userData data structure containing rgb colour and name string.
+     */
     updateUserData(userData) {
         this.#material.color = new THREE.Color(colourTripletToHex(userData.rgb));
 
@@ -252,6 +270,31 @@ class Replica {
     }
 
     /**
+     * Animates a torso to sit a little below the given head.
+     * Called internally when updating a replica pose, and manually for the local client's torso.
+     * @param {Object3D} head An object to place the torso below and slightly behind.
+     * @param {number} scale A scale value to draw the torso at. Defaults to 1.
+     */
+    poseBodyFrom(head, scale = 1) {
+        const p = new THREE.Vector3();
+        const q = new THREE.Quaternion();
+
+        // Position the torso under the head and slightly behind.
+        // First, create an offset vector from the head pose, pointing toward the back of the head,
+        // flatten it into the horizontal plane, and scale it to unit length.
+        p.set(0, 0, -1).applyQuaternion(head.quaternion).setComponent(1, 0).normalize();
+        // Use this to smoothly rotate the torso, so it stays upright while facing roughly in the gaze direction. 
+        q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), p);        
+        this.#body.quaternion.slerp(q, 0.01);
+
+        // Shift the body down and back from the head position, using the offset vector from earlier.        
+        this.#body.position.copy(head.position);
+        this.#body.position.y -= 0.6 * scale;
+        this.#body.position.addScaledVector(p, -0.2 * scale);        
+        this.#body.scale.set(scale, scale, scale);
+    }
+
+    /**
      * Applies pose information received from the server to this replica.
      * @param userData Data structure containing a poses array or PoseData, and optional scale factor.
      */
@@ -259,24 +302,9 @@ class Replica {
         const scale = userData.scale ?? 1;        
 
         // Position the head.
-        unpackLocalPose(userData.poses[0], this.#head, scale);
+        unpackLocalPose(userData.poses[0], this.#head, scale);       
 
-        const p = new THREE.Vector3();
-        const q = new THREE.Quaternion();
-
-        // Position the torso under the head and slightly behind.
-        // First, create an offset vector from the head pose, pointing toward the back of the head,
-        // flatten it into the horizontal plane, and scale it to unit length.
-        p.set(0, 0, -1).applyQuaternion(this.#head.quaternion).setComponent(1, 0).normalize();
-        // Use this to smoothly rotate the torso, so it stays upright while facing roughly in the gaze direction. 
-        q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), p);        
-        this.#body.quaternion.slerp(q, 0.01);
-
-        // Shift the body down and back from the head position, using the offset vector from earlier.
-        this.#head.children[0].getWorldPosition(this.#body.position);
-        this.#body.position.y -= 0.6 * scale;
-        this.#body.position.addScaledVector(p, -0.12 * scale);        
-        this.#body.scale.set(scale, scale, scale);
+        this.poseBodyFrom(this.#head, scale);
 
         this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
@@ -291,12 +319,14 @@ let replicas = [];
  * Call this during initialization, before receiving the list of remote users from the server.
  * @param {World} targetWorld World to use for accessing the scene, camera, shared primitives/materials.
  */
-function initializeReplication(targetWorld) {
+function initializeReplication(targetWorld, clientColour) {
     world = targetWorld;
     
     initializeControllers(world);
     controllers[HandID.left] = world.renderer.xr.getController(HandID.left); 
     controllers[HandID.right] = world.renderer.xr.getController(HandID.right);
+
+    clientReplica = Replica.createClientReplica(clientColour);
 }
 
 /**
@@ -362,6 +392,9 @@ function replicatePoses(self, others) {
     for (const other of others) {
         replicateUserPose(other);
     }
+
+    // Pose our local client model according to the "head" pose.
+    clientReplica.poseBodyFrom(world.vrCamera);
 }
 
 /**

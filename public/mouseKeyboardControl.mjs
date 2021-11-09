@@ -1,6 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/OrbitControls.js';
-import {vectorToString, print} from './utility.mjs';
+//import {vectorToString, print} from './utility.mjs';
 
 /** @type {World} */
 let world;
@@ -8,7 +8,7 @@ let world;
 let orbit;
 
 // Tuning parameters for movement physics.
-let walkSpeed = 2.0;
+let walkSpeed = 3.0;
 const UP_VECTOR = new THREE.Vector3(0, 1, 0);
 const IDEAL_ZOOM = 6;
 const JUMP = 8;
@@ -31,6 +31,7 @@ let elevation = 1.5;
 // A group to store the current teleport target:
 const teleport = new THREE.Group();
 
+// Updates zoom when changing control schemes.
 function setZoom(d = IDEAL_ZOOM) {
     world.mouseCamera.position
       .sub(orbit.target)
@@ -39,20 +40,17 @@ function setZoom(d = IDEAL_ZOOM) {
       .add(orbit.target);
 }
 
+// Track mouse for raycasting & teleportation.
 const mouse = new THREE.Vector2();
 const mouseButtons = [0,0,0];
-
-
 function updateMouseButtons (event) {
-
+    // Update states of all mouse buttons, stored in bitmask.
     for (let i = 0; i < 3; i++) {
         mouseButtons[i] = (event.buttons & (1 << i));
     }
 }
 document.body.addEventListener('mousedown', updateMouseButtons);
 document.body.addEventListener('mouseup', updateMouseButtons);
-
-// Track mouse movements for mouse picking in non-VR.
 document.addEventListener('mousemove', function (event) {
     // Normalize coordinates from -1 on the bottom/left to +1 at the top/right,
     // with (0, 0) in the center of the canvas.
@@ -77,7 +75,6 @@ const keyPressed = {
 document.body.addEventListener('keydown', function (event) {
     keyPressed[event.code] = 1;
 });
-
 document.body.addEventListener('keyup', function (event) {
     keyPressed[event.code] = 0;
     // mode selector
@@ -89,8 +86,10 @@ document.body.addEventListener('keyup', function (event) {
     }
 });
 
+
+
 /**
- * Sets up mouse & keyboard controls.
+ * Sets up mouse & keyboard controls. Call this before entering animation loop.
  * @param {World} newWorld World object to attach control behaviours to.
  */
 function initializeControls(newWorld) {
@@ -104,7 +103,10 @@ function initializeControls(newWorld) {
 }
 
 
+// Updates the camera to follow any changes in the avatar position.
+// And ensures the avatar's head is always the center of rotation.
 function positionChanged() {
+    world.clientSpace.updateMatrixWorld();
     world.vrCamera.updateMatrixWorld();
 
     world.mouseCamera.position.sub(orbit.target);
@@ -115,7 +117,7 @@ function positionChanged() {
 }
 
 /**
- * Call this once per frame when moving the 
+ * Call this once per frame when using non-VR.
  * @param {number} dt Seconds elapsed since the last control update.
  */
 function updateControls(dt) {   
@@ -143,13 +145,14 @@ function updateControls(dt) {
     const q = world.clientSpace.quaternion.clone();
     q.invert();
     q.multiply(world.mouseCamera.quaternion);
-    world.vrCamera.quaternion.copy(q);
+    world.vrCamera.quaternion.slerp(q, 5 * dt);
 
     // Did we fall to oblivion?
-    if (world.clientSpace.position.y < -25) {
+    if (world.clientSpace.position.y + elevation < -25) {
       world.teleportClientSpace(new THREE.Vector3(0, 10, 0));
     }
 
+    // Update grounded state by scanning for a walkable surface under the avatar.
     isOnGround = false;
     let rayPoint = world.clientSpace.position.clone();
     rayPoint.y += elevation;
@@ -160,14 +163,15 @@ function updateControls(dt) {
         const is = intersects[0];
         // .distance, .point, .object
 
-        // Adjust our avatar's elevation above clientSpace
-        // to account for the change.
-        elevation = is.distance;
+        // Snap client space to be standing on this intersected surface.
         boundingBox.setFromObject(is.object);
         boxVisualizer.setFromObject(is.object);
         rayPoint.set(is.point.x, boundingBox.max.y, is.point.z);
         world.clientSpace.position.copy(rayPoint);
 
+        // Adjust our avatar's elevation above clientSpace
+        // to account for the change.
+        elevation = is.distance;
         // If player is below this point, lift it up, with a slight easing:
         if (elevation < world.playerHeight) {
             elevation += (world.playerHeight - elevation) * dt;
@@ -177,22 +181,24 @@ function updateControls(dt) {
     }
     boxVisualizer.visible = isOnGround;
 
-    world.clientSpace.updateMatrixWorld();
-
+    // Handle velocity impulse when jumping, 
     if (isOnGround) {
-      // jump
+      // Jump if pressed, otherwise cancel vertical velocity to land.
       verticalVelocity = keyPressed.Space * JUMP;
     } else {
-      // fall:
-      verticalVelocity += GRAVITY * dt;
+      // Fall, with terminal velocity.
+      const terminalVelocity = -30;
+      verticalVelocity = Math.max(verticalVelocity + GRAVITY * dt, terminalVelocity);
     }
 
+    // Rise or fall with our velocity, and set the avatar head to match.
     elevation += verticalVelocity * dt;    
-
     world.vrCamera.position.set(0, elevation, 0);
 
+    // Update the orbit controls with our latest position.
     positionChanged();
 
+    // Switch orbit control limits based on current perspective setting.
     if (isFirstPerson) {
         orbit.maxPolarAngle = Math.PI;
         orbit.minDistance = 1e-4;
