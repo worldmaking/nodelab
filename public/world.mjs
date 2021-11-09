@@ -1,8 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 
-const defaultCameraHeight = 1.5;
-
 /**
  * Bundles up the boilerplate of setting up a THREE.js scene for VR,
  * and packs up the items we want to use most often into a "world" object with type information
@@ -22,17 +20,27 @@ class World {
     /** @type {THREE.Scene} */
     scene;
 
-    /** @type {THREE.camera} */
-    camera;
+    playerHeight = 1.5;
 
-    /** @type {THREE.Mesh} */
-    floor;
+    /**
+     * Camera used for VR view and replication. 
+     * @type {THREE.camera} */
+    vrCamera;
+
+    /**
+     * Camera used for mouse & keyboard use. 
+     * @type {THREE.camera} */
+    mouseCamera;
+
+    /** @type {THREE.Mesh[]} */
+    walkable;
 
     /** @type {THREE.Group} */
     clientSpace;
 
     /** @type {THREE.material} */
     defaultMaterial;
+
 
     constructor() {
         // Set up basic rendering features.
@@ -52,31 +60,30 @@ class World {
         const scene = new THREE.Scene();
         this.scene = scene;
 
-        const camera = new THREE.PerspectiveCamera(
+        const vrCamera = new THREE.PerspectiveCamera();
+        vrCamera.position.set(0, this.playerHeight, 0);
+        this.vrCamera = vrCamera;
+
+        // Nest the VR camera in a local coordinate system that we can move around for teleportation.
+        this.clientSpace = new THREE.Group();
+        this.clientSpace.add(vrCamera);
+        scene.add(this.clientSpace);        
+
+        // Create a second camera for mouse & keyboard use.
+        const mouseCamera = new THREE.PerspectiveCamera(
             75,
             window.innerWidth / window.innerHeight,
             0.05,
             100
         );
-        camera.position.y = defaultCameraHeight;
-        camera.position.z = 0;
-        this.camera = camera;
+        mouseCamera.position.set(0, this.playerHeight, 0);
+        this.mouseCamera = mouseCamera;
+        // This one gets parented to the root of the scene, so it can work with orbit controls.
+        scene.add(mouseCamera);
 
-        // Nest the camera in a local coordinate system that we can move around for teleportation.
-        this.clientSpace = new THREE.Group();
-        this.clientSpace.add(camera);
-        scene.add(this.clientSpace);        
 
-        // Handle resizing the canvas when the window size changes, and adapt to initial size.
-        function resize() {
-            if (!renderer.xr.isPresenting) {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-            }
-        }
-        resize();
-        window.addEventListener('resize', resize, false);
+        this.#handleResize();
+        window.addEventListener('resize', this.#handleResize, false);
 
         // Create a basic material for the floor or other structure.
         const material = new THREE.MeshLambertMaterial();
@@ -93,7 +100,7 @@ class World {
         floor.receiveShadow = true;
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
-        this.floor = floor;
+        this.walkable = [floor];
 
         const grid = new THREE.GridHelper(35, 35, 0x333366, 0x666666);
         scene.add(grid);
@@ -121,6 +128,16 @@ class World {
         }
     }
 
+    #handleResize() {
+        // Handle resizing the canvas when the window size changes, and adapt to initial size.
+        
+        if (!this.renderer.xr.isPresenting) {
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.mouseCamera.aspect = window.innerWidth / window.innerHeight;
+            this.mouseCamera.updateProjectionMatrix();
+        }
+    }
+
     /**
      * Rotates client space so that its -z axis points along the provided direction.
      * Rotation is only ever in the horizontal plane.
@@ -137,7 +154,7 @@ class World {
      */
      getFootPosition() {
         // Record the position of the camera before the rotation, so we can keep it in exactly the same place.
-        const cameraPosition = this.camera.position.clone();
+        const cameraPosition = this.vrCamera.position.clone();
         // Project it down to the floor plane, and convert it to world space.
         cameraPosition.y = 0;
         this.clientSpace.localToWorld(cameraPosition);
@@ -147,11 +164,7 @@ class World {
 
     getHorizontalLookDirection() {
         const direction = new THREE.Vector3();
-        this.camera.getWorldDirection(direction);
-
-        direction.y = 0;
-        direction.x *= -1;
-        direction.z *= -1;
+        this.vrCamera.getWorldDirection(direction);
 
         direction.normalize();
 
@@ -166,12 +179,16 @@ class World {
      * @param {?THREE.Vector3} worldLookDirection The desired worldspace direction the camera should face. Leave this undefined to keep the current orientation.
      */
     teleportClientSpace(floorPositionUnderCamera, worldLookDirection) {
+        // Remember where the mouse camera was relative to the clience space.
+        const mouseCameraOffset = this.mouseCamera.position.clone();
+        this.clientSpace.worldToLocal(mouseCameraOffset);
+
         if (worldLookDirection) {
 
             // Get the direction our camera is currently looking 
             // along the horizontal plane, relative to the client space orientation.
             const lookDirection = new THREE.Vector3(0, 0, -1);
-            lookDirection.applyQuaternion(this.camera.quaternion);
+            lookDirection.applyQuaternion(this.vrCamera.quaternion);
             lookDirection.y = 0;
             lookDirection.normalize();
 
@@ -188,7 +205,7 @@ class World {
         }   
 
         // Get the position of the camera within client space, snapped down to floor level.
-        const cameraOffset = this.camera.position.clone();
+        const cameraOffset = this.vrCamera.position.clone();
         cameraOffset.y = 0;
 
         // Transform this position offset into world space.
@@ -200,10 +217,15 @@ class World {
         cameraOffset.add(floorPositionUnderCamera);
 
         // Apply the teleported position to the client space.
-        this.clientSpace.position.copy(cameraOffset);     
+        this.clientSpace.position.copy(cameraOffset);    
+        
+        this.clientSpace.updateMatrixWorld();
+
+        // Reposition the mosue camera in the same relative position.
+        // TODO: also adjust its rotation?
+        this.clientSpace.localToWorld(mouseCameraOffset);
+        this.mouseCamera.position.copy(mouseCameraOffset);
     }
-
-
 
     /**
      * Rotates client space around the camera position as its pivot.
@@ -233,8 +255,8 @@ class World {
         this.clientSpace.position.set(footPosition);
         this.#rotateClientSpaceToFace(lookDirection);
 
-        this.camera.position.set(0, defaultCameraHeight, 0);
-        this.camera.rotation.z = 0;
+        this.vrCamera.position.set(0, defaultCameraHeight, 0);
+        this.vrCamera.rotation.z = 0;
     }
 }
 

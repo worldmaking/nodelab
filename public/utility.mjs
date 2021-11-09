@@ -76,4 +76,10 @@ function colourTripletToHex(triplet) {
     return output;
 }
 
-export { vectorToString, print, showReadout, randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex }
+function azimuthFromQuaternion(q) {
+  let s = 2 * (q._w * q._y + q._z * q._x);
+  let c = 1 - 2 * (q._x * q._x + q._y * q._y);
+  return Math.atan2(s, c);
+}
+
+export { vectorToString, print, showReadout, randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, azimuthFromQuaternion }

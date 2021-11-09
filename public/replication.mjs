@@ -324,7 +324,7 @@ function replicateUserPose(userData) {
  * @param handID A value of the HandID enum indicating which hand we're trying to read.
  * @param self The "self" data structure from connect.js's "users" structure.
  */
-function tryRecordLocalHand(handID, self) {
+function tryRecordClientHand(handID, self) {
     // First pose is always the HMD, so we need to shift our index.
     const poseIndex = HandID.toPoseIndex(handID);
 
@@ -352,11 +352,11 @@ function tryRecordLocalHand(handID, self) {
 function replicatePoses(self, others) {
     
     // Save our camera/HMD pose to be shared to the server.
-    packWorldPose(world.camera, self.volatile.poses[0]);    
+    packWorldPose(world.vrCamera, self.volatile.poses[0]);    
 
     // Likewise, share our controller poses, if we have any active.
-    tryRecordLocalHand(HandID.left, self.volatile);
-    tryRecordLocalHand(HandID.right, self.volatile);
+    tryRecordClientHand(HandID.left, self.volatile);
+    tryRecordClientHand(HandID.right, self.volatile);
 
     // Update the poses of all replicas to match latest server data.
     for (const other of others) {

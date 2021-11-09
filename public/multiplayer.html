@@ -152,23 +152,28 @@
         ico.position.z = -1;
         world.scene.add(ico);
 
+        
+
         // Main rendering loop.
         function animate() {
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
-          
-          if (world.renderer.xr && world.renderer.xr.isPresenting) {
+          let activeCamera;
+
+          if (world.renderer.xr.isPresenting) {
+            activeCamera = world.vrCamera;
             // In VR, we want our gaze ray to always go through the center of the view.
-            // (At least until headsets give us eye tracking...)
-            MouseKeyboard.mouse.set(0, 0);
+            // (At least until headsets give us eye tracking...)            
+            MouseKeyboard.mouse.set(0, 0);            
           } else {
-            // In non-VR, let the orbit controls do their work.
-            MouseKeyboard.updateControls(dt);
+            activeCamera = world.mouseCamera;
+            // In non-VR, step the mouse and keyboard controls.
+            MouseKeyboard.updateControls(dt);            
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
-          raycaster.setFromCamera(MouseKeyboard.mouse, world.camera);
-          const intersects = raycaster.intersectObjects([cube, world.floor]);
+          raycaster.setFromCamera(MouseKeyboard.mouse, activeCamera);
+          const intersects = raycaster.intersectObjects([cube, ...world.walkable]);
 
           let newGaze = null;
           if (intersects.length > 0) {
@@ -190,13 +195,14 @@
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
           
-          // draw the scene:
-          world.renderer.render(world.scene, world.camera);
+          // Render with the appropriate camera for either VR or non-VR modes.
+          world.renderer.render(world.scene, activeCamera);
 
           showReadout(readout);
         }
 
         // Start animating!
+        
         world.renderer.setAnimationLoop(animate);
       }
     </script>
