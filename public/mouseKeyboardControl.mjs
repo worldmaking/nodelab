@@ -62,6 +62,7 @@ document.addEventListener('mousemove', function (event) {
 document.addEventListener('dblclick', function (event) {
     if (!world.renderer.xr.isPrsenting) {
         world.tryTeleportToTarget();
+        world.vrCamera.getWorldPosition(orbit.target);
     }
 });
 
@@ -99,8 +100,7 @@ document.body.addEventListener('keyup', function (event) {
 function initializeControls(newWorld) {
     world = newWorld;
     orbit = new OrbitControls(world.mouseCamera, world.renderer.domElement);
-
-    world.clientSpace.add(new THREE.PolarGridHelper(1, 16, 1));
+    
     boxVisualizer = new THREE.BoxHelper(world.scene, 0xffffff);
     world.scene.add(boxVisualizer);
     elevation = world.playerHeight;        

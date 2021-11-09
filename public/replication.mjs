@@ -94,6 +94,13 @@ const textMaterial = new THREE.MeshBasicMaterial({color:0x000000});
  */
 const controllers = [null, null];
 
+// TUning parameters to control the shape of the visible figure.
+const HEAD_HEIGHT = 0.35;
+const HEAD_WIDTH = 0.24;
+const HEAD_LIFT = -0.052;
+const HEAD_SETBACK = 0.09;
+const NECK_LENGTH = 0.05;
+const TORSO_HEIGHT = 0.65;
 /**
  * Class representing the visual presentation of a single remote user.
  */
@@ -144,15 +151,16 @@ class Replica {
          const ball = new THREE.Mesh(world.primitiveGeo.sphere, material);    
          this.#head.add(ball);
 
-         ball.scale.set(0.24, 0.35, 0.24);
-         ball.position.set(0, -0.052, 0.09);
+         ball.scale.set(HEAD_WIDTH, HEAD_HEIGHT, HEAD_WIDTH);
+         ball.position.set(0, HEAD_LIFT, HEAD_SETBACK);
+         ball.rotation.set(Math.PI * 0.1, 0, 0);
          ball.castShadow = true;
          world.scene.add(this.#head);
 
          // Create a box to serve as the torso.
         this.#body = new THREE.Group();
         const torso = new THREE.Mesh(world.primitiveGeo.box, material);
-        torso.scale.set(0.35, 0.65, 0.12);
+        torso.scale.set(0.35, TORSO_HEIGHT, 0.12);
         torso.castShadow = true;
         this.#body.add(torso);
         world.scene.add(this.#body);
@@ -279,18 +287,25 @@ class Replica {
         const p = new THREE.Vector3();
         const q = new THREE.Quaternion();
 
-        // Position the torso under the head and slightly behind.
-        // First, create an offset vector from the head pose, pointing toward the back of the head,
+        // Get a position below the bottom of the head to represent the location of the neck.
+        // This will rotate with the head to help the torso track it better.
+        p.set(0, HEAD_LIFT - 0.5 * HEAD_HEIGHT - NECK_LENGTH, HEAD_SETBACK);
+        p.multiplyScalar(scale);
+        p.applyQuaternion(head.quaternion);
+        p.add(head.position);
+        p.y -= (TORSO_HEIGHT * 0.5 + 0.02) * scale;
+        this.#body.position.copy(p);
+
+        // Create an offset vector from the head pose, pointing toward the back of the head,
         // flatten it into the horizontal plane, and scale it to unit length.
         p.set(0, 0, -1).applyQuaternion(head.quaternion).setComponent(1, 0).normalize();
         // Use this to smoothly rotate the torso, so it stays upright while facing roughly in the gaze direction. 
         q.setFromUnitVectors(new THREE.Vector3(0, 0, -1), p);        
         this.#body.quaternion.slerp(q, 0.01);
 
-        // Shift the body down and back from the head position, using the offset vector from earlier.        
-        this.#body.position.copy(head.position);
-        this.#body.position.y -= 0.6 * scale;
-        this.#body.position.addScaledVector(p, -0.2 * scale);        
+        // Shift the body back from the head position, using the offset vector from earlier.
+        this.#body.position.addScaledVector(p, -0.03 * scale);        
+
         this.#body.scale.set(scale, scale, scale);
     }
 

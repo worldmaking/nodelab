@@ -71,7 +71,8 @@ class World {
 
         // Nest the VR camera in a local coordinate system that we can move around for teleportation.
         this.clientSpace = new THREE.Group();
-        this.clientSpace.add(vrCamera);
+        this.#addSpaceReticle(this.clientSpace);
+        this.clientSpace.add(vrCamera);        
         scene.add(this.clientSpace);        
 
         // Create a second camera for mouse & keyboard use.
@@ -125,9 +126,9 @@ class World {
         // Add a targeting reticle for teleportation moves.
         // (Used by both mouse & keyboard and VR controls, so might as well centralize it here).
         this.teleportTarget = new THREE.Group();
-        this.teleportTarget.add(new THREE.PolarGridHelper(1, 16, 1));
+        this.#addSpaceReticle(this.teleportTarget);        
         this.teleportTarget.visible = false;
-        scene.add(this.teleportTarget);
+        scene.add(this.teleportTarget);        
 
         // Create primitives geometry for things we'll want to re-use a lot,
         // so we don't have every file making their own wastefully.
@@ -138,6 +139,15 @@ class World {
             ico: new THREE.IcosahedronGeometry(),         
             sphere: new THREE.SphereGeometry(0.5, 17, 9),
         }
+    }
+
+    /**
+     * Adds a circular reticle with a "forward" direction to the given object.
+     * @param {THREE.Object3D} space Coordinate space object to attach the reticle to.
+     */
+    #addSpaceReticle(space) {
+        space.add(new THREE.PolarGridHelper(1, 16, 1));
+        space.add((new THREE.ArrowHelper(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, 0), 1.1, 0x0000ff, 0.2, 0.2)));
     }
 
 
@@ -158,6 +168,8 @@ class World {
     #rotateClientSpaceToFace(worldDirection) {
         const yaw = Math.atan2(-worldDirection.x, -worldDirection.z);
         this.clientSpace.quaternion.set(0, Math.sin(yaw/2), 0, Math.cos(yaw/2));
+
+        this.teleportTarget.quaternion.copy(this.clientSpace.quaternion);
     }
 
     /**
@@ -213,7 +225,7 @@ class World {
             const targetDirection = worldLookDirection.clone();
             targetDirection.applyQuaternion(rotationOffset);
             
-            this.#rotateClientSpaceToFace(targetDirection);           
+            this.#rotateClientSpaceToFace(targetDirection);      
         }   
 
         // Get the position of the camera within client space, snapped down to floor level.
@@ -229,9 +241,9 @@ class World {
         cameraOffset.add(floorPositionUnderCamera);
 
         // Apply the teleported position to the client space.
-        this.clientSpace.position.copy(cameraOffset);    
-        
+        this.clientSpace.position.copy(cameraOffset);        
         this.clientSpace.updateMatrixWorld();
+        this.vrCamera.updateMatrixWorld();
 
         // Reposition the mosue camera in the same relative position.
         // TODO: also adjust its rotation?
