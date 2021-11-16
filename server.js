@@ -13,7 +13,7 @@ const ws = require("ws");
 const { v4: uuidv4 } = require("uuid")
 // const jsonpatch = require("json8-patch");
 // const { exit } = require("process");
-// const dotenv = require("dotenv").config();
+const dotenv = require("dotenv").config();
 
 
 // this will be true if this server is running on Heroku
