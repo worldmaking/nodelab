@@ -128,7 +128,9 @@ function positionChanged() {
  * Call this once per frame when using non-VR.
  * @param {number} dt Seconds elapsed since the last control update.
  */
-function updateControls(dt) {   
+function updateControls(dt) {  
+    // Enforce a maximum time step to avoid falling through floor when out of focus.
+    dt = Math.min(dt, 0.1); 
 
     // Get the horizontal rotation of the orbit perspective, between -PI and +PI.
     const angle = orbit.getAzimuthalAngle();
