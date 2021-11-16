@@ -48,7 +48,8 @@
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
-      import * as MouseKeyboard from './mouseKeyboardControl.mjs';
+      import * as MKControl from './mouseKeyboardControl.mjs';
+      import * as VRControl from './vrControl.mjs';
 
       // Setup login form. Randomize the colour value for variety.
       let form = document.getElementById('login');  
@@ -131,7 +132,8 @@
         }
 
         // Set up mouse/keyboard controls.        
-        MouseKeyboard.initializeControls(world);
+        MKControl.initializeControls(world);
+        VRControl.initializeControls(world);
 
         // Set up raycasting for mouse/gaze picking.
         const raycaster = new THREE.Raycaster();
@@ -164,15 +166,16 @@
             activeCamera = world.vrCamera;
             // In VR, we want our gaze ray to always go through the center of the view.
             // (At least until headsets give us eye tracking...)            
-            MouseKeyboard.mouse.set(0, 0);            
+            MKControl.mouse.set(0, 0);            
+            VRControl.updateControls(dt);
           } else {
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
-            MouseKeyboard.updateControls(dt);            
+            MKControl.updateControls(dt);            
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
-          raycaster.setFromCamera(MouseKeyboard.mouse, activeCamera);
+          raycaster.setFromCamera(MKControl.mouse, activeCamera);
           const intersects = raycaster.intersectObjects([cube, ...world.walkable]);
 
           let newGaze = null;

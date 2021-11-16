@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
+import {print, vectorToString} from './utility.mjs';
 
 /**
  * Bundles up the boilerplate of setting up a THREE.js scene for VR,
@@ -89,7 +90,7 @@ class World {
 
         // Handle resizing the canvas when the window size changes, and adapt to initial size.
         this.#handleResize();
-        window.addEventListener('resize', this.#handleResize, false);
+        window.addEventListener('resize', this.#handleResize.bind(this), false);
 
         // Create a basic material for the floor or other structure.
         const material = new THREE.MeshLambertMaterial();
@@ -260,6 +261,7 @@ class World {
 
         // Rotate client space on the y only.
         this.clientSpace.rotation.y += radianDelta;
+        this.clientSpace.updateMatrixWorld();
 
         // Teleport so our camera is back where it was originally.
         this.teleportClientSpace(cameraPosition);
@@ -284,13 +286,19 @@ class World {
     }
 
     #updateTeleportTargetFromRaycast() {
-        this.raycaster.firstHitOnle = true;
+        print(`ray origin: ${vectorToString(this.raycaster.ray.origin)}`);
+        print(`ray direction: ${vectorToString(this.raycaster.ray.direction)}`);
+
+        this.raycaster.firstHitOnly = true;
         const hit = this.raycaster.intersectObjects(this.walkable)[0];
         if (hit) {
+            print(`hit: ${vectorToString(hit.point)}`);
             this.teleportTarget.position.copy(hit.point);
             this.teleportTarget.visible = true;
             return hit.position;
         }
+        print(`no hit`);
+
         this.teleportTarget.visible = false;
         return null;
     }
@@ -300,9 +308,8 @@ class World {
         return this.#updateTeleportTargetFromRaycast();
     }
 
-    updateTeleportTargetFromRay(origin, direction) {
-        this.raycaster.ray.origin.set(origin);
-        this.raycaster.ray.direction.set(direction);
+    updateTeleportTargetFromRay(origin, direction) {        
+        this.raycaster.set(origin, direction);
         return this.#updateTeleportTargetFromRaycast();
     }
 

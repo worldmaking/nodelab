@@ -9,7 +9,7 @@
  * @returns {string} Text represtation of the vector.
  */
 function vectorToString(v) {
-  return `(${v.x}, ${v.y}, ${v.z})`;
+  return `(${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`;
 }
 
 // Accumulate text to display.
