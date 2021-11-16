@@ -1,4 +1,3 @@
-
 /**
  * Common structure for sending data between client & server.
  * Attempting to centralize any changes that might be needed into one shared file.
@@ -75,4 +74,7 @@ class PoseData {
     }
 }
 
-export { Message, PoseData };
+try {
+    module.exports = exports = { Message, PoseData };
+ } catch (e) {}
+ 

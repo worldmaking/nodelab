@@ -2,8 +2,7 @@
   "name": "nodelab",
   "version": "0.0.1",
   "description": "Alice Lab Node.js server",
-  "main": "server.mjs",
-  "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "node server.mjs"
   },

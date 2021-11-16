@@ -1,31 +1,25 @@
-/**
- * 2021-10-26
- * I've converted the server code to ES Module syntax,
- * so that we can import the same "networkMessages" module into both client and server.
- * This required changing all "require" code to "import"
- *   - Douglas
- */
-import fs from 'fs';
-import path from 'path';
-import url from 'url';
-import assert from 'assert';
-import http from 'http';
-import https from 'https';
+const fs = require('fs');
+const path = require("path")
+const url = require('url');
+const assert = require("assert");
+const http = require("http");
+const https = require("https");
 
-import express from 'express';
-import ws from 'ws';
-import { v4 as uuidv4 } from 'uuid';
-import { Message, PoseData } from './public/networkMessages.mjs';
+const express = require("express");
+const ws = require("ws");
+const { v4: uuidv4 } = require("uuid")
+const { Message, PoseData } = require('./public/networkMessages.js');
 // const jsonpatch = require("json8-patch");
 // const { exit } = require("process");
 // const dotenv = require("dotenv").config();
-import * as dotenv from 'dotenv';
-dotenv.config();
+const dotenv = require("dotenv").config();
 
 // These constants are available by default in CommonJS Module syntax,
 // but we need to polyfill them in when working in an ES Module.
+/*
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+*/
 
 // this will be true if this server is running on Heroku
 const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
@@ -240,4 +234,3 @@ setInterval(function() {
 		message.sendToAll(clientlist);
 	}
 }, 1000/30);
-

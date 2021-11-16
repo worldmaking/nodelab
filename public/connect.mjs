@@ -1,6 +1,3 @@
-import {Message, PoseData} from './networkMessages.mjs';
-
-
 function connectToWorld(opt={}) {
 
 	let options = Object.assign({
