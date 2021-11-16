@@ -297,7 +297,7 @@ class World {
             this.teleportTarget.visible = true;
             return hit.position;
         }
-        print(`no hit`);
+        // print(`no hit`);
 
         this.teleportTarget.visible = false;
         return null;
