@@ -19,7 +19,8 @@ import { Message, PoseData } from './public/networkMessages.mjs';
 // const jsonpatch = require("json8-patch");
 // const { exit } = require("process");
 // const dotenv = require("dotenv").config();
-import {} from 'dotenv/config';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 // These constants are available by default in CommonJS Module syntax,
 // but we need to polyfill them in when working in an ES Module.
