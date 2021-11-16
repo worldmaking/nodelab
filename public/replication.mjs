@@ -2,7 +2,6 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.m
 import { World }    from './world.mjs';
 import { PoseData } from './networkMessages.mjs';
 import { colourTripletToHex, print, vectorToString } from './utility.mjs';
-import { initializeControllers } from './controllers.mjs';
 
 /**
  * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.
@@ -337,7 +336,6 @@ let replicas = [];
 function initializeReplication(targetWorld, clientColour) {
     world = targetWorld;
     
-    initializeControllers(world);
     controllers[HandID.left] = world.renderer.xr.getController(HandID.left); 
     controllers[HandID.right] = world.renderer.xr.getController(HandID.right);
 
