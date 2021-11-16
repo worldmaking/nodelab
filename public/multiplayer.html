@@ -31,14 +31,50 @@
     <link rel="stylesheet" type="text/css" href="styles.css">
   </head>
   <body>
-    <form id="login">
-      <label for="userName">Display Name: </label>
-      <input name="username" value="Anonymous"/>
-      &emsp;
-      <label for="colour">Display Colour (Hex): </label>
-      <input name="colour" value="6495ED"/>      
-    </form>
-    <button id="joinButton">Join</button>
+    <div id="avatar-customization">
+      <div class="avatar-background">
+        <h1>Avatar Customization (tab to escape)</h1>
+        <div class="color-grid">
+          <div class="grid-item">
+            <h2 style="color: red">Red</h2>
+            <input type="range" min="0" max="255" value="255" id="red-slider" />
+            <h2 style="color: green">Green</h2>
+            <input
+              id="green-slider"
+              type="range"
+              min="0"
+              max="255"
+              value="255"
+            />
+            <h2 style="color: blue">Blue</h2>
+            <input
+              id="blue-slider"
+              type="range"
+              min="0"
+              max="255"
+              value="255"
+            />
+          </div>
+          <div class="grid-item">
+            <div id="login-section">
+              <label for="username">Username:</label><br />
+              <input type="text" id="username" name="username" /><br /><br/><br/><br/>
+              <button id="login-button" type="button">Login</button>
+            </div>
+          </div>
+          <div class="grid-item">
+            <h2>Size</h2>
+            <input
+              type="range"
+              min="50"
+              max="100"
+              value="75"
+              id="size-slider"
+            /><br/><br/>
+            <div id="colour-swatch" style="width:100%; height:50px; background-color: black"></div>
+          </div>
+        </div>
+      </div>
 
     <script type="module">
       'use strict';
@@ -46,15 +82,41 @@
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
       import { World } from "./world.mjs"; 
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
-      import { randomColourHex, colourHexToString, colourHexToTriplet, print, showReadout } from "./utility.mjs"; 
+      import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
       // Setup login form. Randomize the colour value for variety.
-      let form = document.getElementById('login');  
-      form.elements[1].value = randomColourHex();    
-      document.getElementById('joinButton').onclick = logIn;
+      const form = document.getElementById('avatar-customization');
+      const displayNameField = document.getElementById('username');
+      const colourSliders = [
+        document.getElementById('red-slider'),
+        document.getElementById('green-slider'),
+        document.getElementById('blue-slider')
+      ];
+      for (let i = 0; i < 3; i++) {
+        const slider = colourSliders[i];
+        slider.value = Math.floor(Math.random() * 256);
+        slider.oninput = updateSwatch;
+      }
+      document.getElementById('login-button').onclick = logIn;
+
+
+      
+
+      function getFormColour() {        
+        return [
+          colourSliders[0].value/255,
+          colourSliders[1].value/255,
+          colourSliders[2].value/255
+        ];
+      }
+
+      function updateSwatch() {
+        const colour = colourTripletToHex(getFormColour());
+        document.getElementById('colour-swatch').style.backgroundColor = colourHexToString(colour);
+      }      
 
       // Attempt to retrieve user name and preferences stored on the last successful login.
       // If available, use these values to overwrite the form defaults.
@@ -62,13 +124,20 @@
       try {
         let storage = window.localStorage;
         let name = storage.getItem('userName');
-        if (name) form.elements[0].value = name;
+        if (name) displayNameField.value = name;
 
-        let colour = storage.getItem('userColour');
-        if (colour) form.elements[1].value = colour;
+        let colour = parseInt(storage.getItem('userColour'));        
+        if (colour) {          
+          const triplet = colourHexToTriplet(parseInt(colour));
+          for (let i = 0; i < 3; i++) {
+            colourSliders[i].value = triplet[i] * 255;
+          }
+        }
 
         localStorageAvailable = true;
       } finally {}
+
+      updateSwatch();
 
       // Enter our 3D scene and initiate server communication once user has picked their name and signed in.
       function logIn() {       
@@ -79,18 +148,11 @@
         readout.style.top = '0px';
         document.body.appendChild(readout);       
 
-        // Get our display colour from the login form.
-        let colour = parseInt(form.elements[1].value, 16);
-        if (isNaN(colour)) {           
-          colour = randomColourHex();
-          form.elements[1].value = colourHexToString(colour);
-        }
-
         // Setup a basic THREE.js scene with camera, floor, etc.
-        const world = new World();      
+        const world = new World();    
 
+        const colourTriplet = getFormColour();
 
-        const colourTriplet = colourHexToTriplet(colour);
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world, colourTriplet);
 
@@ -99,7 +161,7 @@
           reload_on_disconnect: true, // useful for local dev
           room: "/multiplayer",
           url: location.origin.replace(/^http/, 'ws'),
-          userName: form.elements[0].value,
+          userName: document.getElementById('username').value,
           userRGB: colourTriplet,
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
@@ -108,14 +170,13 @@
         // If we get this far, save this user name and colour for next log-in too.
         if (localStorageAvailable) {
           let storage = window.localStorage;
-          storage.setItem('userName', form.elements[0].value);
-          storage.setItem('userColour', form.elements[1].value);
+          storage.setItem('userName', displayNameField.value);
+          const colour =  colourTripletToHex(colourTriplet);          
+          storage.setItem('userColour', colour);
         }
 
-        // We're done with the login form now, and can safely remove it.
-        form.remove();
-        form = undefined;
-        document.getElementById('joinButton').remove();
+        // We're done with the login form now, and can safely hide it.
+        form.style.display = 'none';
 
         {
           // Place our user into this scene.
