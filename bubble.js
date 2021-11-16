@@ -1,3 +1,8 @@
+/*
+Bubble mesh by itself.
+Background colour has been disabled
+*/
+
 // import the Three.js module:
 import * as THREE from "https://cdn.skypack.dev/three/build/three.module.js";
 import { OrbitControls } from "https://cdn.skypack.dev/three/examples/jsm/controls/OrbitControls.js";
@@ -18,7 +23,7 @@ document.body.appendChild(stats.dom);
 // setup Scene
 const scene = new THREE.Scene();
 // change backround color to red
-//scene.background = new THREE.Color( 0xff0000 );
+//scene.background = new THREE.Color( 0xff0000 );    // <-- Background colour
 
 // setup camera
 const camera = new THREE.PerspectiveCamera(
