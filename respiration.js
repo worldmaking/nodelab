@@ -1,4 +1,5 @@
 //original by Eyal. Forked from https://codepen.io/xFlaye/pen/yLoKdJv
+//Current working version on codepen here: https://codepen.io/Ka-Vi/pen/XWaqxbj
 
 // import the Three.js module:
 import * as THREE from "https://cdn.skypack.dev/three/build/three.module.js";
@@ -6,13 +7,12 @@ import { OrbitControls } from "https://cdn.skypack.dev/three/examples/jsm/contro
 import Stats from "https://cdn.skypack.dev/three/examples/jsm/libs/stats.module";
 import { GUI } from "https://cdn.skypack.dev/three/examples/jsm/libs/dat.gui.module.js";
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
-import * as mqqt from "https://unpkg.com/mqtt/dist/mqtt.min.js";
+import * as mqqt from "https://unpkg.com/mqtt/dist/mqtt.min.js"; //this looks like an issue!!
 
 //console.clear();
 /////// shiftr connect /////////
 
 let outsider = 0;
-let wind = 0;
 
 const client = mqtt.connect(
   "wss://kaviproto:test@kaviproto.cloud.shiftr.io",
@@ -20,12 +20,6 @@ const client = mqtt.connect(
     clientId: "clientKavi"
   }
 );
-
-// "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io" -> Jane's
-
-// const client2 = mqtt.connect("wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io", {
-//   clientId: "clientkavi2"
-// });
 
 client.on("connect", function () {
   console.log("connected!");
@@ -36,9 +30,7 @@ client.on("connect", function () {
 client.on("message", function (topic, message) {
   //console.log(topic + ': ' + message.toString());
   outsider = parseFloat(message);
-  //wind = parseFloat(message);
   console.log("heartfloat: ", outsider);
-  //console.log("windfloat: ", wind);
 });
 
 // ! add noise elements
