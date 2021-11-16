@@ -48,9 +48,9 @@ function updateMouseButtons (event) {
         mouseButtons[i] = (event.buttons & (1 << i));
     }
 }
-document.body.addEventListener('mousedown', updateMouseButtons);
-document.body.addEventListener('mouseup', updateMouseButtons);
-document.addEventListener('mousemove', function (event) {
+document.body.addEventListener('pointerdown', updateMouseButtons);
+document.body.addEventListener('pointerup', updateMouseButtons);
+document.addEventListener('pointermove', function (event) {
     // Normalize coordinates from -1 on the bottom/left to +1 at the top/right,
     // with (0, 0) in the center of the canvas.
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -108,6 +108,10 @@ function initializeControls(newWorld) {
     boxVisualizer = new THREE.BoxHelper(world.scene, 0xffffff);
     world.scene.add(boxVisualizer);
     elevation = world.playerHeight;        
+}
+
+function enableOrbit(b) {
+    if (orbit) orbit.enabled = b;
 }
 
 
@@ -221,4 +225,4 @@ function updateControls(dt) {
     world.updateTeleportTargetFromMouse(mouse);
 }
 
-export { mouse, initializeControls, updateControls }
+export { mouse, mouseButtons, initializeControls, updateControls, enableOrbit }
