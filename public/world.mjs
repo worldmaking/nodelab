@@ -286,13 +286,13 @@ class World {
     }
 
     #updateTeleportTargetFromRaycast() {
-        print(`ray origin: ${vectorToString(this.raycaster.ray.origin)}`);
-        print(`ray direction: ${vectorToString(this.raycaster.ray.direction)}`);
+        //print(`ray origin: ${vectorToString(this.raycaster.ray.origin)}`);
+        //print(`ray direction: ${vectorToString(this.raycaster.ray.direction)}`);
 
         this.raycaster.firstHitOnly = true;
         const hit = this.raycaster.intersectObjects(this.walkable)[0];
         if (hit) {
-            print(`hit: ${vectorToString(hit.point)}`);
+            //print(`hit: ${vectorToString(hit.point)}`);
             this.teleportTarget.position.copy(hit.point);
             this.teleportTarget.visible = true;
             return hit.position;

@@ -74,6 +74,10 @@ const keyPressed = {
     KeyS: 0,
     KeyD: 0,
     Space: 0,
+    ArrowLeft: 0,
+    ArrowRight: 0,
+    ArrowUp: 0,
+    ArrowDown: 0,
     ShiftLeft: 0,
     ShiftRight: 0,
 };
@@ -133,9 +137,9 @@ function updateControls(dt) {
     // (Can't change WASD motion while falling/jumping!)
     if (isOnGround) {
       movementInput.set(
-        keyPressed.KeyD - keyPressed.KeyA,
+        (keyPressed.KeyD - keyPressed.KeyA) + (keyPressed.ArrowRight - keyPressed.ArrowLeft),
         0,
-        keyPressed.KeyS - keyPressed.KeyW
+        (keyPressed.KeyS - keyPressed.KeyW) + (keyPressed.ArrowDown - keyPressed.ArrowUp)
       );
       // Ensure that diagonal movement is not faster than orthogonal.
       movementInput.clampLength(0, 1);
