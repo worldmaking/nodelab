@@ -59,8 +59,16 @@ function packWorldPose(source, pose) {
  * @param {number} [scale=1] The scale factor for this object.
  */
 function unpackLocalPose(pose, destination, scale = 1) {
-    destination.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
-    destination.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+    if (destination.visible) {
+        const p = new THREE.Vector3(pose.pos[0], pose.pos[1], pose.pos[2]);
+        destination.position.lerp(p, 0.2);
+        const q = new THREE.Quaternion(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+        destination.quaternion.slerp(q, 0.2);
+    } else {
+        destination.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
+        destination.quaternion.set(pose.quat[0], pose.quat[1], pose.quat[2], pose.quat[3]);
+        destination.visible = true;
+    }
     destination.scale.set(scale, scale, scale);
 }
 
@@ -179,12 +187,15 @@ class Replica {
             this.#body.add(name);
             this.#nameGeo = nameGeo;
         }
+
+        this.#head.visible = false;
     }
 
     static createClientReplica(colour) {
         let replica = new Replica(undefined, colour);
         world.vrCamera.add(replica.#head);
         world.clientSpace.add(replica.#body);
+        replica.#head.visible = true;
         return replica;
     }
 
@@ -267,11 +278,12 @@ class Replica {
             }
     
             // Update the hand group's pose with the new server data.
-            unpackLocalPose(poseData, hand, scale);          
+            unpackLocalPose(poseData, hand, scale);    
         } else if (hand && hand.parent) {        
             // Otherwise, if we stopped getting hand pose data,
             // and we're currently showing a hand we made earlier, hide it.
             world.scene.remove(hand);
+            hand.visible = false;
         }
     }
 
