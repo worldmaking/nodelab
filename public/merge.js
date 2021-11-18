@@ -24,7 +24,8 @@ function setupMerge(scene) {
     const doc1 = Automerge.from(scene);
     const actorID = Automerge.getActorId(doc1).toString();
 
-    let syncState = Automerge.initSyncState();
+    let localSyncState = Automerge.initSyncState();
+    let clientSyncStates = {};
 
     // pass new changes to here
     let backends= {};
@@ -35,7 +36,9 @@ function setupMerge(scene) {
     let merger = {};
 
     merger.addClient = function(actorID) {
-        
+        // TODO: Does the return value need to be stored somewhere?
+        Automerge.initSyncState();
+        clientSyncStates[actorID] = localSyncState;
     }
 
     merger.handleSyncMessage = function(message) {
@@ -43,11 +46,11 @@ function setupMerge(scene) {
         backends.doc1 = Automerge.clone(backends.doc1)
         const [nextBackend, nextSyncState, patch] = Automerge.receiveSyncMessage(
             backends.doc1,
-            syncState,
+            localSyncState,
             remoteSyncMessage,
         ) 
         backends.doc1 = nextBackend
-        syncState = nextSyncState
+        localSyncState = nextSyncState
         console.log('sync\n','nextBackend', nextBackend, '\n\nnextSyncState', nextSyncState, '\n\npatch', patch)
     
         console.log('adding a new node');
@@ -55,12 +58,16 @@ function setupMerge(scene) {
 
     merger.applyChange = function(commitMessage, deltaFunction) {
         hasLocalChanges = true;
-        return Automerge.change(doc1, commitMessage, deltaFunction);
+        return Automerge.change(doc1, commitMessage, deltaFunction);        
     }
 
-    merger.makeSyncMessage = function() {
+    merger.hasLocalChanges = function() { return hasLocalChanges; }
 
+    merger.makeSyncMessage = function() {
         hasLocalChanges = false;
+        const [newSyncState, syncMessage] = Automerge.generateSyncMessage(newDoc, localSyncState);
+        localSyncState = newSyncState;
+        return syncMessage;
     }
 
     return merger;
@@ -72,6 +79,14 @@ try {
 
 
 
+// In animation loop / event handler. Pack up the latest and greatest to share.
+/*
+if (merger.hasLocalChanges()) {
+    let payload = merger.makeSyncMessage();
+
+    (new Message('merge', payload)).sendWith(socket);
+}
+*/
 
 /*
 
@@ -81,13 +96,10 @@ const merger = setupMerge(defaultScene);
 // Later, in event handler...
 merger.addClient(actorID);
 
-function changeNodeColor(doc, nodeKey, color) {
-    doc.nodes[nodeKey].color = color;
+function changeNodeColor(nodeKey, color) {
+    return (doc) => { doc.nodes[nodeKey] = color; };
 }
 
-function makeColourChanger(nodeKey, color) {
-    return (doc) => {changeNodeColor(doc, nodeKey, color)};
-}
 
-merger.applyChange('make it blue', makeColourChanger('myNode', 'blue'));
+merger.applyChange('make it blue', changeNodeColor('myNode', 'blue'));
 */
