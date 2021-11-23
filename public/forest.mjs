@@ -196,15 +196,11 @@ function generateTrees() {
             const tree = new THREE.Group();
             tree.add(foliageMesh, trunkMesh, bubbleMesh);
             // Create position and normal vectors for the tree based on the plane position
-            const treePosition = new THREE.Vector3( );
-            const treeNormal = new THREE.Vector3(0, 0, 1);
+            
+            
             // Add the position and normal vectors to the tree
-            tree.position.set(10 * x, 2, 10 * z);
-            const target = treePosition.clone().add(treeNormal.multiplyScalar(10.0));
-            //tree.lookAt(target);
-            // Rotate the tree and position it to allign with the plane
-            //tree.rotation.x = Math.PI / 2;
-            //tree.position.z += 5;
+            tree.position.set(10 * x, 3, 10 * z);
+            
             obstructions.push(tree);
             tree.scale.set(0.5, 0.5, 0.5);
             woods.add(tree);
