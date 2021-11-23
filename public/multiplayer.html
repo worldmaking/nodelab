@@ -30,6 +30,7 @@
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="styles.css">
     <script type="text/javascript" src="automergeBundle.js"></script>
+    <script type="text/javascript" src="merge.js"></script>
     <script type="text/javascript" src="networkMessages.js"></script>
   </head>
   <body>
@@ -158,6 +159,12 @@
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world, colourTriplet);
 
+        let merger;
+        function onConnect(id) {
+          merger = setupMerge(null, id);
+          console.log("created automerge document");
+        }
+
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
           reload_on_disconnect: true, // useful for local dev
@@ -165,6 +172,7 @@
           url: location.origin.replace(/^http/, 'ws'),
           userName: document.getElementById('username').value,
           userRGB: colourTriplet,
+          onconnect: onConnect,
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });

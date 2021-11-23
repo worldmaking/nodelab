@@ -1,9 +1,14 @@
-const Automerge = require('automerge');
+let Automerge;
+try {
+    Automerge = require('automerge');
+} catch (e) {
+    Automerge = window.Automerge;
+}
 
 /**
- * scene might look like...
+ * sourceDocument might look like...
  * 
- * scene = {
+ * sourceDoc = {
  *  nodes: {
  *    _props
  *  },
@@ -15,14 +20,18 @@ const Automerge = require('automerge');
 /**
  * Call this function to intialize automerge, and get an object
  * back that you can use as an interface for transactions.
- * @param {object} scene initial state of the scene document
+ * @param {object} sourceDocument initial state of the scene document
  * @returns a merge object containing functions {handleSyncMessage}
  */
 function setupMerge(sourceDocument, actorID) {    
 
     // make a local automerge "back-end" doc from our document
     const backends= {};
-    backends.doc1 = Automerge.from(sourceDocument, actorID);
+    if (sourceDocument) {
+        backends.doc1 = Automerge.from(sourceDocument, actorID);
+    } else {
+        backends.doc1 = Automerge.init(actorID);
+    }   
     
     const syncStates = {};
 

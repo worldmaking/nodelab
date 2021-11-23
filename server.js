@@ -154,27 +154,29 @@ wss.on('connection', (socket, req) => {
 	// Actual room name might differ from this, if it's empty and we need to substitute a "default" instead.
 	const requestedRoomName = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
 	
-	const id = newID()
+	const clientID = newID();
 	let client = {
 		socket: socket,
 		room: getRoom(requestedRoomName),
 		shared: {
 			// Structure for any rapidly-changing data (poses, etc.)
 			volatile: {
-				id: id,
+				id: clientID,
 				poses: [new PoseData()],
 			},
 			// Structure for rarely-changing user configuration (display name, colour, etc.)
 			user: {}
 		}
 	}
-	clients[id] = client
+	clients[clientID] = client
 	// enter this room
-	client.room.clients[id] = client;
+	client.room.clients[clientID] = client;
+
+	client.room.merger.addClient(clientID);
 
 	// Convenience function for getting everyone in the room *except* this client.
 	function getOthersInRoom() {
-		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != id);
+		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != clientID);
 	}
 
 	console.log(`client ${client.shared.volatile.id} connecting to room ${client.room.name}`);
@@ -188,17 +190,16 @@ wss.on('connection', (socket, req) => {
 				client.shared.volatile = msg.val;
 				// Insert our ID into this structure, so we can just batch-send all the volatile
 				// info together and it already has our ID packed in.
-				client.shared.volatile.id = id;			
+				client.shared.volatile.id = clientID;			
 				break;
 			case "user": 
 				// TODO: Send update to other users about changed info.
 				client.shared.user = msg.val;
 
 				// Tell everyone about the new/updated user.
-				(new Message("user", {id: id, user: msg.val})).sendToAll(getOthersInRoom());
+				(new Message("user", {id: clientID, user: msg.val})).sendToAll(getOthersInRoom());
 				break;
-		}
-	
+		}	
 	});
 
 	socket.on('error', (err) => {
@@ -208,22 +209,22 @@ wss.on('connection', (socket, req) => {
 
 	socket.on('close', () => {
 		// console.log(Object.keys(clients))
-		delete clients[id]
+		delete clients[clientID]
 
 		// remove from room
-		if (client.room) delete client.room.clients[id]
+		if (client.room) delete client.room.clients[clientID]
 
 
 		// Tell everyone this user left.		
-		notifyRoom(client.room, new Message("exit", id));
+		notifyRoom(client.room, new Message("exit", clientID));
 
-		console.log(`client ${id} left room ${client.room.name}`);		
+		console.log(`client ${clientID} left room ${client.room.name}`);		
 	});
 
 	// Welcome the new user and tell them their unique id.
 	// TODO: Tell them their spawn position too.
 	(new Message("handshake", {
-		id: id, 
+		id: clientID, 
 		others: getOthersInRoom().map(o=>o.shared)
 	})).sendWith(socket);
 
