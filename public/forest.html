@@ -253,7 +253,9 @@
           let { self, others } = app.users;
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
-          
+                    
+          updateForest(t, dt);
+
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
 

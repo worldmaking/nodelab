@@ -1,11 +1,12 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
-
+import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
+import {print} from './utility.mjs';
 
 const woods = new THREE.Group();
 let world;
 const obstructions = [];
-
+let noise = openSimplexNoise.makeNoise4D(Date.now());
 
 // Foliage
 const foliageMtrl = new THREE.MeshBasicMaterial({
@@ -23,6 +24,20 @@ const trunkMtrl = new THREE.MeshBasicMaterial({
 
 // Bubbles
 const bubbleGeometry = new THREE.IcosahedronGeometry(1, 5); // radius, detail (radius changes dynamically in Render function)
+let bubblePositions = bubbleGeometry.attributes.position;
+{
+    let nPos = [];
+    let v3 = new THREE.Vector3();
+
+
+    for (let x = 0; x < bubblePositions.count; x++) {
+        v3.fromBufferAttribute(bubblePositions, x).normalize();
+        nPos.push(v3.clone());
+    }
+    // save custom user data about the Object3D
+    // in this case, save the position attributes into the npos array
+    bubbleGeometry.userData.nPos = nPos;
+}
 
 const bubbleMtrl = new THREE.MeshPhongMaterial({
     color: 0x008080,
@@ -38,8 +53,8 @@ function buildForest(targetWorld) {
 }
 
 
-function updateForest() {
-
+function updateForest(t, dt) {
+    renderBubble(t, dt);
 }
 
 function generateTrees() {
@@ -85,6 +100,30 @@ function generateTrees() {
         }
     }
 }
+
+let bubbleTime = 0;
+function renderBubble(t, dt) {
+    let v3 = new THREE.Vector3();
+
+    let bubbleSpec = {
+        speed: 1.0,
+        radius: 5.0,
+        detail: 2.0
+    };      
+
+
+    bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
+    
+    // loop over every nPos element in the array. p = vertex position, idx = vertex index position
+    bubbleGeometry.userData.nPos.forEach((p, idx) => {
+        let ns = noise(p.x, p.y, p.z, bubbleTime);
+        v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
+        bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
+    });
+    bubbleGeometry.computeVertexNormals();
+    bubblePositions.needsUpdate = true;
+}
+
 
 function getRandomInt(min, max) {
     min = Math.ceil(min);
