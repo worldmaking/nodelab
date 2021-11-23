@@ -59,8 +59,7 @@ function setupMerge(sourceDocument, actorID) {
 
     merger.hasLocalChanges = function() { return hasLocalChanges; }
 
-    merger.makeSyncMessage = function(receiverID) {
-        console.log('sync state for', receiverID, syncStates[receiverID]);
+    merger.makeSyncMessage = function(receiverID) {        
         const [newSyncState, syncMessage] = Automerge.generateSyncMessage(backends.doc1, syncStates[receiverID]);
         syncStates[receiverID] = newSyncState;
         return syncMessage;
