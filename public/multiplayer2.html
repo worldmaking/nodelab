@@ -235,6 +235,8 @@
           // currently active object:
           activeObj: null,
 
+          tools: {},
+
           init(world) {
             this.control.addEventListener("dragging-changed", function (event) {
               MKControl.enableOrbit(!event.value)
@@ -281,6 +283,14 @@
               buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
 
               world.scene.add(buttonGroup);
+
+              this.tools = {
+                buttonTranslate,
+                buttonRotate,
+                buttonScale,
+                buttonAdd,
+                buttonRemove
+              }
             }
           },
 
@@ -314,24 +324,24 @@
             if(MKControl.mouseButtons[0] && this.intersected) {
               const obj = this.intersected;
               switch (obj) {
-                case buttonTranslate:
+                case this.tools.buttonTranslate:
                   this.control.setMode("translate");
                   break;
 
-                case buttonRotate:
+                case this.tools.buttonRotate:
                 this.control.setMode("rotate");
                   break;
 
-                case buttonScale:
+                case this.tools.buttonScale:
                 this.control.setMode("scale");
                   break;
 
-                // case buttonAdd:
+                // case this.tools.buttonAdd:
                 //   this.addMode = true;
                 //   addNewObj(helperWidth);
                 //   break;
 
-                // case buttonRemove:
+                // case this.tools.buttonRemove:
                 // this.removeMode = true;
                 //   // updateActiveButton( obj );
                 //   break;
