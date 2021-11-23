@@ -112,7 +112,7 @@ function connectToWorld(opt={}) {
 					case "sync":
 						const reply = options.onsync(msg.val, serverID);
 						if (reply) {
-							(new Message('sync', reply)).sendWith(server);
+							(new Message('sync', `[${reply.toString()}]`)).sendWith(server);
 						}
 						break;	
 					default: 

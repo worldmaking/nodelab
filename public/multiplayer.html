@@ -167,10 +167,12 @@
         }
 
         function onSync(syncMessage, senderID) {
-          console.log('received sync message:', syncMessage);
+          syncMessage = JSON.parse(syncMessage);
+          console.log('received sync message:', syncMessage, typeof(syncMessage));
           merger.handleSyncMessage(syncMessage, senderID);
 
           const reply = merger.makeSyncMessage(senderID);
+          
           return reply;
         }
 

@@ -148,7 +148,6 @@ function newID(id="") {
 	return id;
 }
 
-
 // Handle incoming connections as a new user joining a room.
 wss.on('connection', (socket, req) => {
 	// Read the path from the connection request and treat it as a room name, sanitizing and standardizing the format.
@@ -178,8 +177,9 @@ wss.on('connection', (socket, req) => {
 	client.trySync = function() {
 		const payload = client.room.merger.makeSyncMessage(clientID);
 		if (payload) {
-			const message = new Message('sync', payload);
-			console.log('sending: ', payload, 'to: ', clientID);
+			const toSend = `[${payload.toString()}]`;
+			const message = new Message('sync', toSend);
+			console.log('sending: ', toSend, typeof(toSend), 'to: ', clientID);
 			message.sendWith(socket);
 			return true;
 		}
@@ -213,7 +213,7 @@ wss.on('connection', (socket, req) => {
 				break;
 			case "sync":
 				// Handle an automerge synchronization message from the client.
-				client.room.merger.handleSyncMessage(clientID, msg.val);
+				client.room.merger.handleSyncMessage(JSON.parse(msg.val), clientID);
 				// Flag that we may have new updates to propagate out to the other users in the room.
 				client.room.syncNeeded = true;
 				// Check to see if we need to reply back with more synchronization conversation,
@@ -246,6 +246,7 @@ wss.on('connection', (socket, req) => {
 	// TODO: Tell them their spawn position too.
 	(new Message("handshake", {
 		id: clientID, 
+		serverID: serverID,
 		others: getOthersInRoom().map(o=>o.shared)
 	})).sendWith(socket);
 
@@ -262,7 +263,7 @@ setInterval(function() {
 		message.sendToAll(clientlist);
 
 		if (room.syncNeeded) {
-			for (let client of clientList) {
+			for (let client of clientlist) {
 				client.trySync();
 			}
 		}
