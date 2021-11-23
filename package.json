@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/worldmaking/nodelab#readme",
   "dependencies": {
+    "automerge": "^1.0.1-preview.6",
     "dotenv": "^8.0.0",
     "esm": "^3.2.25",
     "express": "^4.17.1",

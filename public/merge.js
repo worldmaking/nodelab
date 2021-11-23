@@ -18,42 +18,32 @@ const Automerge = require('automerge');
  * @param {object} scene initial state of the scene document
  * @returns a merge object containing functions {handleSyncMessage}
  */
-function setupMerge(scene) {    
+function setupMerge(sourceDocument, actorID) {    
 
-    // make a local automerge doc from our scene
-    const doc1 = Automerge.from(scene);
-    const actorID = Automerge.getActorId(doc1).toString();
-
-    let localSyncState = Automerge.initSyncState();
-    let clientSyncStates = {};
-
-    // pass new changes to here
-    let backends= {};
-    backends['doc1'] = doc1;
+    // make a local automerge "back-end" doc from our document
+    const backends= {};
+    backends.doc1 = Automerge.from(sourceDocument, actorID);
+    
+    const syncStates = {};
 
     let hasLocalChanges = false;
 
     let merger = {};
 
-    merger.addClient = function(actorID) {
-        // TODO: Does the return value need to be stored somewhere?
-        Automerge.initSyncState();
-        clientSyncStates[actorID] = localSyncState;
+    merger.addClient = function(actorID) {               
+        syncStates[actorID] = Automerge.initSyncState();
     }
 
-    merger.handleSyncMessage = function(message) {
-        remoteSyncMessage = new Uint8Array(Array.from(message))
-        backends.doc1 = Automerge.clone(backends.doc1)
+    merger.handleSyncMessage = function(syncMessage, senderID) {
+        remoteSyncMessage = new Uint8Array(Array.from(syncMessage))        
         const [nextBackend, nextSyncState, patch] = Automerge.receiveSyncMessage(
             backends.doc1,
-            localSyncState,
+            syncStates[senderID],
             remoteSyncMessage,
         ) 
-        backends.doc1 = nextBackend
-        localSyncState = nextSyncState
+        backends.doc1 = nextBackend;
+        syncStates[senderID] = nextSyncState;
         console.log('sync\n','nextBackend', nextBackend, '\n\nnextSyncState', nextSyncState, '\n\npatch', patch)
-    
-        console.log('adding a new node');
     }
 
     merger.applyChange = function(commitMessage, deltaFunction) {
@@ -63,10 +53,10 @@ function setupMerge(scene) {
 
     merger.hasLocalChanges = function() { return hasLocalChanges; }
 
-    merger.makeSyncMessage = function() {
+    merger.makeSyncMessage = function(receiverID) {
         hasLocalChanges = false;
-        const [newSyncState, syncMessage] = Automerge.generateSyncMessage(newDoc, localSyncState);
-        localSyncState = newSyncState;
+        const [newSyncState, syncMessage] = Automerge.generateSyncMessage(newDoc, syncStates[receiverID]);
+        syncStates[receiverID] = newSyncState;
         return syncMessage;
     }
 

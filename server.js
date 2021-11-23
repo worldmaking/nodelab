@@ -14,12 +14,8 @@ const { Message, PoseData } = require('./public/networkMessages.js');
 // const dotenv = require("dotenv").config();
 const dotenv = require("dotenv").config();
 
-// These constants are available by default in CommonJS Module syntax,
-// but we need to polyfill them in when working in an ES Module.
-/*
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-*/
+const merge = require('./public/merge.js');
+
 
 // this will be true if this server is running on Heroku
 const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
@@ -103,6 +99,8 @@ const demoproject = {
   }
 };
 
+
+
 const clients = {}
 // a set of uniquely-named rooms
 // each room would have a list of its occupants
@@ -111,13 +109,19 @@ const rooms = {
 	
 }
 
+// Server ID used for automerge operations.
+const serverID = newID();
+console.log('server ID: ' + serverID);
+
 // get (or create) a room:
 function getRoom(name="default") {
 	if (!rooms[name]) {
+		
 		rooms[name] = {
 			name: name,
 			clients: {},
-			project: demoproject
+			project: demoproject,
+			merger: merge.setupMerge(demoproject, serverID)
 		}
 	}
 	return rooms[name]
@@ -138,8 +142,9 @@ function notifyRoom(room, message) {
 // verify id is unused (or generate a new one instead)
 // returns 128-bit UUID as a string:
 function newID(id="") {
-	while (!id || clients[id]) id = uuidv4()
-	return id
+	// Removing hyphens so these IDs can double as automerge actor IDs (AM will not accept hyphens)
+	while (!id || clients[id]) id = uuidv4().replace(/-/g, '');
+	return id;
 }
 
 
