@@ -88,7 +88,7 @@
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
-      import { buildForest, updateForest } from "./forest.mjs"; 
+      import { buildForest } from "./forest.mjs"; 
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -214,7 +214,7 @@
         ico.position.z = -1;
         world.scene.add(ico);       
         
-        buildForest(world);
+        const updateForest = buildForest(world);
 
         // Main rendering loop.
         function animate() {
