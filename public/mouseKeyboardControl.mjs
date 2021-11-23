@@ -134,6 +134,8 @@ function positionChanged() {
  */
 function updateControls(dt) {   
 
+    dt = Math.min(dt, 0.1);
+    
     // Get the horizontal rotation of the orbit perspective, between -PI and +PI.
     const angle = orbit.getAzimuthalAngle();
 
