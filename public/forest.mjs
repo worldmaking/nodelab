@@ -3,6 +3,50 @@ import { World }    from './world.mjs';
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
 import {print} from './utility.mjs';
 
+const vshader = `
+#include <common>
+#include <lights_pars_begin>
+varying vec3 vPosition;
+varying mat4 vModelMatrix;
+varying vec3 vWorldNormal;
+varying vec3 vLightIntensity;
+void main() {
+  vec3 vLightFront;
+  vec3 vIndirectFront;
+  vec3 objectNormal = normal;
+  #include <defaultnormal_vertex>
+  #include <begin_vertex>
+  #include <project_vertex>
+  #include <lights_lambert_vertex>
+  vLightIntensity = vLightFront + ambientLightColor;
+  vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+  vPosition = position;
+  vModelMatrix = modelMatrix;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+const fshader = `
+uniform vec3 u_color;
+uniform vec3 u_light_position;
+uniform vec3 u_rim_color;
+uniform float u_rim_strength;
+uniform float u_rim_width;
+// Example varyings passed from the vertex shader
+varying vec3 vPosition;
+varying vec3 vWorldNormal;
+varying mat4 vModelMatrix;
+varying vec3 vLightIntensity;
+void main()
+{
+  vec3 worldPosition = ( vModelMatrix * vec4( vPosition, 1.0 )).xyz;
+  vec3 viewVector = normalize(cameraPosition - worldPosition);
+  float rimNdotV =  max(0.0, u_rim_width - clamp(dot(vWorldNormal, viewVector), 0.0, 1.0));
+  vec3 rimLight = rimNdotV * u_rim_color * u_rim_strength;
+  vec3 color = vLightIntensity * u_color + rimLight;
+  gl_FragColor = vec4( color, 1.0 );
+}
+`;
+
 const woods = new THREE.Group();
 let world;
 const obstructions = [];
@@ -45,6 +89,34 @@ const bubbleMtrl = new THREE.MeshPhongMaterial({
 });
 
 
+// Synth Change
+const uniforms = THREE.UniformsUtils.merge([
+    THREE.UniformsLib["common"],
+    THREE.UniformsLib["lights"]
+  ]);
+  uniforms.u_color = { value: new THREE.Color(0x00aeae) };
+  uniforms.u_light_position = { value: new THREE.Vector3(0, 1, 0) };
+  uniforms.u_rim_color = { value: new THREE.Color(0x00aeae) };
+  uniforms.u_rim_strength = { value: 15 };
+  uniforms.u_rim_width = { value: 3 };
+  
+  const synthTreeMtrl = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: vshader,
+    fragmentShader: fshader,
+    lights: true,
+    wireframe: true
+  });
+  
+  const synthAvatarMtrl = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: vshader,
+    fragmentShader: fshader,
+    lights: true,
+    wireframe: false
+  });
+  
+
 function buildForest(targetWorld) {
     world = targetWorld;
     world.scene.add(woods);
@@ -52,9 +124,47 @@ function buildForest(targetWorld) {
     generateTrees();
 }
 
+function getTreeElements(tree) {
+    const foliage = tree.children[0];
+    const bubble = tree.children[2];
+
+    return {foliage, bubble};
+}
+
+
+let collidedTree = null;
 
 function updateForest(t, dt) {
     renderBubble(t, dt);
+
+    let newTreeCollision = null;
+    const v = new THREE.Vector3();
+    for (let tree of woods.children) {
+        world.vrCamera.getWorldPosition(v);
+        v.sub(tree.position);
+        v.y = 0;
+
+        if (v.lengthSq() < 0.5) {
+            newTreeCollision = tree;
+        }
+    }
+
+    if (newTreeCollision != collidedTree) {
+        if (collidedTree != null) {
+            const {foliage, bubble} = getTreeElements(collidedTree);
+            foliage.material = foliageMtrl;
+            bubble.material = bubbleMtrl;
+        }
+
+        if (newTreeCollision != null) {
+            const {foliage, bubble} = getTreeElements(newTreeCollision);
+
+            foliage.material = synthAvatarMtrl;
+            bubble.material = synthTreeMtrl;
+        }
+
+        collidedTree = newTreeCollision;
+    }    
 }
 
 function generateTrees() {
@@ -89,13 +199,14 @@ function generateTrees() {
             const treePosition = new THREE.Vector3( );
             const treeNormal = new THREE.Vector3(0, 0, 1);
             // Add the position and normal vectors to the tree
-            tree.position.set(10 * x, 5, 10 * z);
+            tree.position.set(10 * x, 2, 10 * z);
             const target = treePosition.clone().add(treeNormal.multiplyScalar(10.0));
             //tree.lookAt(target);
             // Rotate the tree and position it to allign with the plane
             //tree.rotation.x = Math.PI / 2;
             //tree.position.z += 5;
             obstructions.push(tree);
+            tree.scale.set(0.5, 0.5, 0.5);
             woods.add(tree);
         }
     }
@@ -113,7 +224,7 @@ function renderBubble(t, dt) {
 
 
     bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
-    
+
     // loop over every nPos element in the array. p = vertex position, idx = vertex index position
     bubbleGeometry.userData.nPos.forEach((p, idx) => {
         let ns = noise(p.x, p.y, p.z, bubbleTime);
