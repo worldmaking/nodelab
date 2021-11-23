@@ -160,9 +160,18 @@
         initializeReplication(world, colourTriplet);
 
         let merger;
-        function onConnect(id) {
-          merger = setupMerge(null, id);
+        function onConnect(myID, serverID) {
+          merger = setupMerge(null, myID);
+          merger.addClient(serverID);
           console.log("created automerge document");
+        }
+
+        function onSync(syncMessage, senderID) {
+          console.log('received sync message:', syncMessage);
+          merger.handleSyncMessage(syncMessage, senderID);
+
+          const reply = merger.makeSyncMessage(senderID);
+          return reply;
         }
 
         // Connect to server, wiring up handlers for various messages.
@@ -173,6 +182,7 @@
           userName: document.getElementById('username').value,
           userRGB: colourTriplet,
           onconnect: onConnect,
+          onsync: onSync,
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });

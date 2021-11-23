@@ -8,7 +8,7 @@ function connectToWorld(opt={}) {
 		userName: "Anonymous",
 		userRGB: [Math.random(), Math.random(), Math.random()],		
 		log: console.log,
-		onconnect: function(id) {
+		onconnect: function(myID, serverID) {
 			options.log ("Received connection handshake, but no 'onconnect' handler was provided.");
 		},
 		onsync: function(syncMessage) {
@@ -45,6 +45,8 @@ function connectToWorld(opt={}) {
 		let server = new WebSocket(options.url + options.room);
 		server.binaryType = "arraybuffer";
 
+		let serverID;
+
 		const reconnect = function() {
 			server = null
 			setTimeout(() => {
@@ -75,8 +77,9 @@ function connectToWorld(opt={}) {
 					case "handshake":
 						// Accept our new ID.
 						users.self.id = msg.val.id;
+						serverID = msg.val.serverID;
 
-						options.onconnect(users.self.id);
+						options.onconnect(users.self.id, serverID);
 
 						// Initialize replication for all other users already in the room.
 						for (let o of msg.val.others) {
@@ -105,7 +108,13 @@ function connectToWorld(opt={}) {
 					case "project":
 						// Accept JSON representing the current state of the world contents.
 						if (options.onproject) options.onproject(msg.val);
-						break;					
+						break;				
+					case "sync":
+						const reply = options.onsync(msg.val, serverID);
+						if (reply) {
+							(new Message('sync', reply)).sendWith(server);
+						}
+						break;	
 					default: 
 						options.log("unknown message", msg);
 				}			

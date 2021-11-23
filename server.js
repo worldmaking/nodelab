@@ -121,7 +121,8 @@ function getRoom(name="default") {
 			name: name,
 			clients: {},
 			project: demoproject,
-			merger: merge.setupMerge(demoproject, serverID)
+			merger: merge.setupMerge(demoproject, serverID),
+			syncNeeded: false
 		}
 	}
 	return rooms[name]
@@ -174,6 +175,17 @@ wss.on('connection', (socket, req) => {
 
 	client.room.merger.addClient(clientID);
 
+	client.trySync = function() {
+		const payload = client.room.merger.makeSyncMessage(clientID);
+		if (payload) {
+			const message = new Message('sync', payload);
+			console.log('sending: ', payload, 'to: ', clientID);
+			message.sendWith(socket);
+			return true;
+		}
+		return false;
+	}
+
 	// Convenience function for getting everyone in the room *except* this client.
 	function getOthersInRoom() {
 		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != clientID);
@@ -198,6 +210,15 @@ wss.on('connection', (socket, req) => {
 
 				// Tell everyone about the new/updated user.
 				(new Message("user", {id: clientID, user: msg.val})).sendToAll(getOthersInRoom());
+				break;
+			case "sync":
+				// Handle an automerge synchronization message from the client.
+				client.room.merger.handleSyncMessage(clientID, msg.val);
+				// Flag that we may have new updates to propagate out to the other users in the room.
+				client.room.syncNeeded = true;
+				// Check to see if we need to reply back with more synchronization conversation,
+				// and if so, do so.
+				client.trySync();
 				break;
 		}	
 	});
@@ -229,7 +250,8 @@ wss.on('connection', (socket, req) => {
 	})).sendWith(socket);
 
 	// Share the current 3D scene with the user.
-	(new Message("project", client.room.project)).sendWith(socket);
+	//(new Message("project", client.room.project)).sendWith(socket);
+	client.trySync();
 });
 
 setInterval(function() {
@@ -238,5 +260,12 @@ setInterval(function() {
 		const clientlist = Object.values(room.clients);
 		const message = new Message("others", clientlist.map(o=>o.shared.volatile));
 		message.sendToAll(clientlist);
+
+		if (room.syncNeeded) {
+			for (let client of clientList) {
+				client.trySync();
+			}
+		}
+		room.syncNeeded = false;
 	}
 }, 1000/30);
