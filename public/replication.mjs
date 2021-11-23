@@ -449,9 +449,14 @@ function disposeUserReplica(id) {
     }
 }
 
+function getOwnReplica() {
+    return clientReplica;
+}
+
 export {
     initializeReplication,
     updateUserReplica,
     replicatePoses,
-    disposeUserReplica
+    disposeUserReplica,
+    getOwnReplica
 }
