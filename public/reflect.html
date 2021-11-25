@@ -163,7 +163,7 @@ light.position.set( 50, 50, 50 );
 world.scene.add( light );*/
         const colourTriplet = getFormColour();
         function customAvatar(head,body,material){
-          const cube = new THREE.Mesh(world.primitiveGeo.cube, world.defaultMaterial);
+          const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);
           head.add(cube);
         }
 
