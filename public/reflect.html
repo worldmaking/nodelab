@@ -153,18 +153,22 @@
 
         // Setup a basic THREE.js scene with camera, floor, etc.
         
-        const world = new World();   
-        // const pointlight = new THREE.PointLight(0xffffff,1);
-        // pointlight.position.set(20,20,20);
-        // world.scene.add(pointlight); 
+        const world = new World(false);   
+        const pointlight = new THREE.PointLight(0xffffff,1);
+        pointlight.position.set(20,20,20);
+        world.scene.add(pointlight); 
         
 /*       const light = new THREE.PointLight( 0xff0000, 1, 100 );
 light.position.set( 50, 50, 50 );
 world.scene.add( light );*/
         const colourTriplet = getFormColour();
+        function customAvatar(head,body,material){
+          const cube = new THREE.Mesh(world.primitiveGeo.cube, world.defaultMaterial);
+          head.add(cube);
+        }
 
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world, colourTriplet);
+        initializeReplication(world, colourTriplet, customAvatar);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
