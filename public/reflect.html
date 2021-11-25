@@ -88,7 +88,7 @@
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
       
-      import { Reflector } from 'https://unpkg.com/three@0.126.0/examples/jsm/objects/Reflector.js';
+      import { Reflector } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/objects/Reflector.js';
       let groundMirror;
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -155,7 +155,7 @@
         
         const world = new World(false);   
         const pointlight = new THREE.PointLight(0xffffff,1);
-        pointlight.position.set(20,20,20);
+        pointlight.position.set(200,200,200);
         world.scene.add(pointlight); 
         
 /*       const light = new THREE.PointLight( 0xff0000, 1, 100 );
@@ -163,7 +163,7 @@ light.position.set( 50, 50, 50 );
 world.scene.add( light );*/
         const colourTriplet = getFormColour();
         function customAvatar(head,body,material){
-          const cube = new THREE.Mesh(world.primitiveGeo.cube, world.defaultMaterial);
+          const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);
           head.add(cube);
         }
 
