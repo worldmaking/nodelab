@@ -87,7 +87,9 @@
       import { connectToWorld } from "./connect.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
-
+      
+      import { Reflector } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/objects/Reflector.js';
+      let groundMirror;
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
       const displayNameField = document.getElementById('username');
@@ -150,12 +152,23 @@
         document.body.appendChild(readout);       
 
         // Setup a basic THREE.js scene with camera, floor, etc.
-        const world = new World();    
-
+        
+        const world = new World(false);   
+        const pointlight = new THREE.PointLight(0xffffff,1);
+        pointlight.position.set(200,200,200);
+        world.scene.add(pointlight); 
+        
+/*       const light = new THREE.PointLight( 0xff0000, 1, 100 );
+light.position.set( 50, 50, 50 );
+world.scene.add( light );*/
         const colourTriplet = getFormColour();
+        function customAvatar(head,body,material){
+          const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);
+          head.add(cube);
+        }
 
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world, colourTriplet);
+        initializeReplication(world, colourTriplet, customAvatar);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
@@ -205,6 +218,103 @@
         let gazeObject = null;
         
         // Fill scene with some basic demo content.
+        
+        //Chrysanthemum
+        const chrysanthemum = new THREE.BufferGeometry();
+        const N = 30000;
+        const u = 128;
+        const colors = [];
+        const palette = [
+        new THREE.Color('#008d8c'),
+        new THREE.Color('#0b717e'),
+        new THREE.Color('#007f86'),
+        new THREE.Color('#5bc489'),
+        new THREE.Color('#23aa8f'),
+      ];
+     
+
+      function set_vertices() {
+        const vrtsjs = [];
+        let indices = [];
+        for (let i = 0; i < N; i++) {
+          const unorm = (i * Math.PI * 21) / N;
+          let p4 = Math.sin((17 * unorm) / 3);
+          let p8 = Math.sin(2 * Math.cos(3 * unorm) - 28 * u);
+          let r =
+            5 * (1 + Math.sin((11 * unorm) / 5)) -
+            4 * p4 * p4 * p4 * p4 * p8 * p8 * p8 * p8 * p8 * p8 * p8 * p8;
+          let x = r * Math.cos(unorm);
+          let y = r * Math.sin(unorm);
+          const TWOPI = Math.PI * 2;
+          let z =0.2*(r / 20 + 0.2) * Math.sin((r * TWOPI) / 7);
+          vrtsjs.push(x, y, z);
+          const color = palette[Math.floor(Math.random() * palette.length)];
+          colors.push(color.r, color.g, color.b);
+          const a =1000;
+          const b = (i + 1000 / N) * unorm;
+          const c = i * unorm;
+          const d = (i + 2.5) * unorm;
+          if (d < N) {
+            indices.push(a, b, d);
+            indices.push(a, d, c);
+          }
+        }
+        //console.log(indices);
+        //console.log(vrtsjs);
+        //NUMPOINTS*3
+        const vertices = new Float32Array(vrtsjs);
+        chrysanthemum.setAttribute(
+          'position',
+          new THREE.BufferAttribute(vertices, 3)
+        ); //3=x,y,z=1 vertex
+
+        chrysanthemum.setIndex(indices);
+        chrysanthemum.computeVertexNormals();
+
+        chrysanthemum.setAttribute(
+          'color',
+          new THREE.Float32BufferAttribute(colors, 3)
+        );
+      }
+
+      set_vertices();
+     
+//////MATERIAL/////////////1stattempt(PointsMaterial)using a spiral texture img.
+//const materialforagent= new THREE.MeshPhysicalMaterial(ballMaterial);
+      const materialforagent = new THREE.MeshPhysicalMaterial({
+    
+        wireframe: false,
+        vertexColors: true,
+        reflectivity:1,
+        opacity:0.02
+      
+      });
+      /*let groundMirror = new Reflector( chrysanthemum, {
+					clipBias: 0.003,
+					textureWidth: window.innerWidth * window.devicePixelRatio,
+					textureHeight: window.innerHeight * window.devicePixelRatio,
+					color: 0x777777
+				} );
+				groundMirror.position.y = 0.5;
+				groundMirror.rotateX( - Math.PI / 2 );
+				world.scene.add( groundMirror );*/
+      //geometryPOINTS(plural)
+      groundMirror = new Reflector( chrysanthemum, {
+					clipBias: 0.003,
+					textureWidth: window.innerWidth * window.devicePixelRatio,
+					textureHeight: window.innerHeight * window.devicePixelRatio,
+					color: 0x000000
+				} );
+				groundMirror.position.y = 0;
+				groundMirror.rotateX( - Math.PI / 2 );
+				world.scene.add( groundMirror );
+      const points = new THREE.Mesh(chrysanthemum, materialforagent);
+      points.rotation.x = -Math.PI / 2;
+      points.position.set(0,5,0);
+      
+      //world.scene.add(points);
+      
+      //this.walkable = [points];
         const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
         cube.position.set(0, 1.5, 0);
         cube.castShadow = true;
@@ -249,6 +359,10 @@
           if (newGaze) gazeObject = newGaze;
 
           // update the scene:
+  
+          chrysanthemum.attributes.position.needsUpdate = true;
+          //points.position.x = Math.sin(dt) * 0.5 + 0.025;
+          points.position.y = Math.sin(dt) * 0.5 + 0.025;
           cube.rotation.x += 0.01;
           cube.rotation.y += 0.01;
 
