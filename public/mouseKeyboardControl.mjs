@@ -48,9 +48,9 @@ function updateMouseButtons (event) {
         mouseButtons[i] = (event.buttons & (1 << i));
     }
 }
-document.body.addEventListener('mousedown', updateMouseButtons);
-document.body.addEventListener('mouseup', updateMouseButtons);
-document.addEventListener('mousemove', function (event) {
+document.body.addEventListener('pointerdown', updateMouseButtons);
+document.body.addEventListener('pointerup', updateMouseButtons);
+document.addEventListener('pointermove', function (event) {
     // Normalize coordinates from -1 on the bottom/left to +1 at the top/right,
     // with (0, 0) in the center of the canvas.
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -110,6 +110,10 @@ function initializeControls(newWorld) {
     elevation = world.playerHeight;        
 }
 
+function enableOrbit(b) {
+    if (orbit) orbit.enabled = b;
+}
+
 
 // Updates the camera to follow any changes in the avatar position.
 // And ensures the avatar's head is always the center of rotation.
@@ -132,6 +136,8 @@ function updateControls(dt) {
     // Enforce a maximum time step to avoid falling through floor when out of focus.
     dt = Math.min(dt, 0.1); 
 
+    dt = Math.min(dt, 0.1);
+    
     // Get the horizontal rotation of the orbit perspective, between -PI and +PI.
     const angle = orbit.getAzimuthalAngle();
 
@@ -223,4 +229,4 @@ function updateControls(dt) {
     world.updateTeleportTargetFromMouse(mouse);
 }
 
-export { mouse, initializeControls, updateControls }
+export { mouse, mouseButtons, initializeControls, updateControls, enableOrbit }
