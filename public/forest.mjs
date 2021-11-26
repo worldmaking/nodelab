@@ -1,6 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
+//import { PointerLockControls } from "https://cdn.skypack.dev/three/examples/jsm/controls/PointerLockControls.js";
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
+import * as Tone from "https://cdn.skypack.dev/tone";
 import {print} from './utility.mjs';
 
 const vshader = `
@@ -150,10 +152,10 @@ function buildForest(world) {
                 
                 
                 // Add the position and normal vectors to the tree
-                tree.position.set(10 * (x + Math.random()), 3, 10 * (z + Math.random()));
+                tree.position.set(10 * (x + Math.random()), 2, 10 * (z + Math.random()));
                 
                 obstructions.push(tree);
-                tree.scale.set(0.5, 0.5, 0.5);
+                tree.scale.set(0.3, 0.3, 0.3);
                 woods.add(tree);
             }
         }
@@ -162,6 +164,7 @@ function buildForest(world) {
     let bubbleTime = 0;
     function renderBubble(t, dt) {
         let v3 = new THREE.Vector3();
+        //let t = clock.getElapsedTime()*outsider/35;
 
         let bubbleSpec = {
             speed: 1.0,
@@ -182,6 +185,27 @@ function buildForest(world) {
         bubblePositions.needsUpdate = true;
     }
 
+    let listener = new THREE.AudioListener();
+    world.vrCamera.add(listener);
+
+    function makeSynth() {
+        return new Tone.Synth({
+            oscillator: {
+                type: "fattriangle"
+            },
+            envelope: {
+                attack: 2,
+                decay: 0.1,
+                sustain: 0.5, 
+                release: 100
+            }
+        });
+    }
+
+    let sound = new THREE.PositionalAudio(listener);
+    Tone.setContext(sound.context);
+    let synth = makeSynth();
+    sound.setNodeSource(synth);
 
     let collidedTree = null;
     function updateForest(t, dt) {
@@ -208,13 +232,36 @@ function buildForest(world) {
 
             if (newTreeCollision != null) {
                 const {foliage, bubble} = getTreeElements(newTreeCollision);
-
+                synth.triggerAttackRelease(
+                    foliage.userData.frequency,
+                    "2n"
+                    );
+                    foliage.add(sound);
                 foliage.material = synthAvatarMtrl;
                 bubble.material = synthTreeMtrl;
             }
 
             collidedTree = newTreeCollision;
         }    
+            if (collidedTree) {
+                let outsider = 70;
+                const {foliage, bubble} = getTreeElements(collidedTree);
+                const position = foliage.geometry.getAttribute("position");
+                const amp = 0.05;
+
+                for (let i = 0; i < position.array.length; i += 3) {
+                    let noise = openSimplexNoise.makeNoise2D(Date.now());
+                const offset =
+                    noise(
+                        position.array[i] + outsider * 0.0003,
+                        position.array[i + 1] + outsider * 0.0003
+                    ) *
+                    outsider *
+                    amp;
+                position.array[i + 2] = offset;
+            }
+            position.needsUpdate = true;
+            }
     }
 
     generateTrees();
