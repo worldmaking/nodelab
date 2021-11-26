@@ -73,6 +73,27 @@ server.listen(PORT, function() {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
 
+
+// Audio Server 
+
+require('child_process').fork('audioSignalingServer.js');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const demoproject = {
   threejs: {
 	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
@@ -234,3 +255,6 @@ setInterval(function() {
 		message.sendToAll(clientlist);
 	}
 }, 1000/30);
+
+
+
