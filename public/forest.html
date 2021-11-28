@@ -156,8 +156,13 @@
 
         const colourTriplet = getFormColour();
 
+        function customAvatar(head, body, material) {
+          return true;
+          
+        }
+
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world, colourTriplet);
+        initializeReplication(world, colourTriplet, customAvatar);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({

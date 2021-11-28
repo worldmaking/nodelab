@@ -1,6 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
-//import { PointerLockControls } from "https://cdn.skypack.dev/three/examples/jsm/controls/PointerLockControls.js";
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
 import * as Tone from "https://cdn.skypack.dev/tone";
 import {print} from './utility.mjs';
@@ -135,19 +134,29 @@ function buildForest(world) {
                 }
                 const positionsAttribute = new THREE.BufferAttribute(positionsArray, 3);
                 foliageGeo.setAttribute("position", positionsAttribute); // Combine the positions with the geometry
+                const auraMtrl = new THREE.MeshBasicMaterial( { color: 0xffff00, transparent: true, opacity: 0.1 } );
+                const auraGeo = new THREE.SphereGeometry( 12, 32, 16 );
+                const innerAuraMtrl = new THREE.MeshBasicMaterial( { color: 0xffff00, transparent: true, opacity: 0.3} );
+                const innerAuraGeo = new THREE.SphereGeometry( 5, 16, 8 );
+              //  moreFoliageGeo.setAttribute("position", positionsAttribute);
             
                 // Create the mesh for the tree (foliage and trunk) and position it
                 const foliageMesh = new THREE.Mesh(foliageGeo, foliageMtrl);
+                const aura = new THREE.Mesh (auraGeo, auraMtrl);
+                const innerAura = new THREE.Mesh (innerAuraGeo, innerAuraMtrl);
                 const trunkMesh = new THREE.Mesh(trunkGeo, trunkMtrl);
                 const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMtrl);
+
                 foliageMesh.position.y += 2;
+                aura.position.y += 2;
+                innerAura.position.y += 2;
                 trunkMesh.position.y -= 3;
                 bubbleMesh.position.y = 3;
                 // add a frequency property to the foliage of the tree (used for synth made during collision detection)
                 foliageMesh.userData.frequency = getRandomInt(300, 1700);
             
                 const tree = new THREE.Group();
-                tree.add(foliageMesh, trunkMesh, bubbleMesh);
+                tree.add(foliageMesh, aura, innerAura, trunkMesh, bubbleMesh);
                 // Create position and normal vectors for the tree based on the plane position
                 
                 
@@ -155,7 +164,7 @@ function buildForest(world) {
                 tree.position.set(10 * (x + Math.random()), 2, 10 * (z + Math.random()));
                 
                 obstructions.push(tree);
-                tree.scale.set(0.3, 0.3, 0.3);
+                tree.scale.set(0.4, 0.4, 0.4);
                 woods.add(tree);
             }
         }

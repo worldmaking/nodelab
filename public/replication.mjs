@@ -149,9 +149,13 @@ class Replica {
         world.scene.add(this.#head);
         this.#body = new THREE.Group();
         world.scene.add(this.#body);
+        let makeAvatar = true;
         if(customAvatar){
-            customAvatar(this.#head,this.#body, material)
-        }else{
+            makeAvatar = customAvatar(this.#head,this.#body, material)
+        }
+        if (makeAvatar){
+            
+            
 
         
 
