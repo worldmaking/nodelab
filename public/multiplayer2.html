@@ -226,11 +226,17 @@
           raycaster: new THREE.Raycaster(),
           //pointer: new THREE.Vector2(), MKControl.mouse
 
+          world: null,
+
           // TODO: do we need separate VRControl ?
           control: new TransformControls(world.mouseCamera, world.renderer.domElement),
 
           clickable: [],
-          intersected: null,
+          malleable: [],
+          intersected: null,  
+
+          addMode: false,
+          removeMode: false,
 
           // currently active object:
           activeObj: null,
@@ -238,6 +244,8 @@
           tools: {},
 
           init(world) {
+            this.world = world;
+
             this.control.addEventListener("dragging-changed", function (event) {
               MKControl.enableOrbit(!event.value)
             });
@@ -272,18 +280,12 @@
               buttonRemove.position.z = 10;
               buttonRemove.position.x = 6;
 
-              // scene.add(buttonTranslate);
-              // scene.add(buttonRotate);
-              // scene.add(buttonScale);
-              // scene.add(buttonAdd);
-
               const buttonGroup = new THREE.Group();
 
-              this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
+              // this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
               buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-
+              for (let b of buttonGroup.children) { this.clickable.push(b); }
               world.scene.add(buttonGroup);
-
               this.tools = {
                 buttonTranslate,
                 buttonRotate,
@@ -292,6 +294,22 @@
                 buttonRemove
               }
             }
+          },
+
+          addNewObj(pos) {
+            let newBox = new THREE.Mesh(
+              new THREE.BoxGeometry(0.5, 0.5, 0.5),
+              new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
+            );
+            newBox.position.x = pos.x;
+            newBox.position.y = pos.y;
+            newBox.position.z = pos.z;
+            // newBox.rotation = new THREE.Euler().setFromVector3(pos);
+            this.world.scene.add(newBox);
+            this.clickable.push(newBox);
+            this.malleable.push(newBox);
+            
+            // console.log(objects.toString());
           },
 
           activateObj( obj ) {
@@ -323,6 +341,7 @@
             }
             if(MKControl.mouseButtons[0] && this.intersected) {
               const obj = this.intersected;
+              // console.log(obj);
               switch (obj) {
                 case this.tools.buttonTranslate:
                   this.control.setMode("translate");
@@ -336,33 +355,41 @@
                 this.control.setMode("scale");
                   break;
 
-                // case this.tools.buttonAdd:
-                //   this.addMode = true;
-                //   addNewObj(helperWidth);
-                //   break;
+                case this.tools.buttonAdd:
+                  this.addMode = true;
+                  this.addNewObj(new THREE.Vector3().random());
+                  break;
 
-                // case this.tools.buttonRemove:
-                // this.removeMode = true;
-                //   // updateActiveButton( obj );
-                //   break;
+                case this.tools.buttonRemove:
+                  this.removeMode = true;
+                  // updateActiveButton( obj );
+                  break;
               }
 
-              // if ( buttonGroup.children.includes(obj) && obj != buttonRemove ) {  // if the obj is a button, but not the remove button, turn remove mode off.
-              //   removeMode = false;
+              if ( Object.values(this.tools).includes(obj) ) {
                 
-              // }
+                if ( obj != this.tools.buttonAdd ) {  // if the obj is a button, but not the remove button, turn remove mode off.
+                  this.addMode = false;
+                }
+
+                if (obj != this.tools.buttonRemove ) {  // if the obj is a button, but not the remove button, turn remove mode off.
+                  this.removeMode = false;
+                  // console.log('you clicked a button thats not buttonRemove');
+                }
+
+              }
               
-              // if (objects.includes(obj)) { // if the obj is part of the malleable objects array,
-              //   if (removeMode) {
-              //     scene.remove(obj);
-              //     if ( obj == activeObj ) {
-              //       control.detach();
-              //       activeObj = null;
-              //     }
-              //   } else if (obj !== activeObj) {
-              //     activateObj ( obj );
-              //   }
-              // }
+              if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
+                if (this.removeMode) {
+                  this.world.scene.remove(obj);
+                  if ( obj == this.activeObj ) {
+                    this.control.detach();
+                    this.activeObj = null;
+                  }
+                } else if (obj !== this.activeObj) {
+                  this.activateObj ( obj );
+                }
+              }
             }
           },
         };
@@ -416,7 +443,7 @@
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
 
-          //console.log(getOwnReplica())
+          // console.log(getOwnReplica());
           
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
