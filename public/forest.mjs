@@ -227,7 +227,7 @@ function buildForest(world) {
             v.sub(tree.position);
             v.y = 0;
 
-            if (v.lengthSq() < 0.5) {
+            if (v.lengthSq() < 5) {
                 newTreeCollision = tree;
             }
         }
