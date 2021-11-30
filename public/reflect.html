@@ -296,8 +296,6 @@
       let [a, b, c, e] = chems;
       let numchems = chems.length;
 
-      //const SEPARATION = 200,
-      // AMOUNTX = 1,
       const AMOUNTY = 5;
       let particles,
         count = 0;
@@ -321,117 +319,72 @@
           j++;
         }
 
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute(
+        const ParticleGeo = new THREE.BufferGeometry();
+        ParticleGeo.setAttribute(
           'position',
           new THREE.BufferAttribute(positions, 3)
         );
-        geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+        ParticleGeo.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
 
-        const material = new THREE.ShaderMaterial({
-          uniforms: {
-            color: { value: new THREE.Color(world.clientColour) },reflectivity:true, transparent:true
-          },
-          vertexShader: document.getElementById('vertexshader').textContent,
-          fragmentShader: document.getElementById('fragmentshader').textContent,
-        });
+      
+        //world.scene.add(particles);
 
-        //
-
-        particles = new THREE.Points(geometry,material);
-        world.scene.add(particles);
+        //CustomAvatar
         function customAvatar(head,body,material){
           const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);
+          const particleMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              color: { value:material.color },reflectivity:true, transparent:true
+            },
+            vertexShader: document.getElementById('vertexshader').textContent,
+            fragmentShader: document.getElementById('fragmentshader').textContent,
+          });
+
+          //
+
+          particles = new THREE.Points(ParticleGeo,particleMaterial);
           head.add(particles);
           body.add(cube);
         }
 
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world, colourTriplet, customAvatar);
-        //Clouds-texture:image
-        const MAX_NUM_AGENTS = 50;
+        //Agents Palette
+          const MAX_NUM_AGENTS = 50;
 
-        const NUM_INSTANCES = MAX_NUM_AGENTS;
+          const NUM_INSTANCES = MAX_NUM_AGENTS;
 
-        const colors = [];
-        const palette = [
-          new THREE.Color('#b36200'),
-          new THREE.Color('#00008b'),
-        // new THREE.Color('#00D4F0'),
-        // new THREE.Color('#6BFBCE'),
+          const colors = [];
+          const palette = [
+            new THREE.Color('#b36200'),
+            new THREE.Color('#00008b'),
+            new THREE.Color('#b30000'),
+        ];
 
-        // new THREE.Color('#FFC0B7'),
-        // new THREE.Color('#FFAF86'),
-        // new THREE.Color('#FFA453'),
-        // new THREE.Color('#EE9E11'),
-      ];
+        //Dome
+        const sphere = new THREE.SphereGeometry(0.2, 16, 8);
+        const geometrysphere = new THREE.SphereGeometry(
+          15,
+          36,
+          16,
+          0,
+          Math.PI*2,
+          1.5707963267949,
+          1.5707963267949
+        );
 
-      const sphere = new THREE.SphereGeometry(0.2, 16, 8);
-      const geometrysphere = new THREE.SphereGeometry(
-        15,
-        36,
-        16,
-        0,
-        Math.PI*2,
-        1.5707963267949,
-        1.5707963267949
-      );
-      //geometrysphere.rotation.x=-Math.PI/2
-      const materialsphere = new THREE.MeshBasicMaterial({
-        color: 0xd3d3,
-        wireframe: true,
-        transparent: true,
-        
-      });
-      const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
-      spheredome.rotation.x = -Math.PI;
-      world.scene.add(spheredome);
-      const sampler = new MeshSurfaceSampler(spheredome).build();
+        const materialsphere = new THREE.MeshBasicMaterial({
+          color: 0xd3d3,
+          wireframe: true,
+          transparent: true,
+          
+        });
 
-      // //sampler geometry
-      const sphereGeometry = new THREE.SphereGeometry(0.15, 6, 6);
-
-      const sphereMaterial = new THREE.MeshBasicMaterial({
-        color: 0x0000d3,
-        transparent: true,
-        // size: 3,
-        alphaTest: 0.2,
-        // map: new THREE.TextureLoader().load(
-        //   'https://wp.stanforddaily.com/wp-content/uploads/2021/01/poetics-of-space-art.jpg'
-        // ),
-        vertexColors: false,
-      });
-      //here we make the desired Num of sphere geometries
-      const spheres = new THREE.InstancedMesh(
-        sphereGeometry,
-        sphereMaterial,
-        500
-      );
-      //world.scene.add(spheres);
-    
+        const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
+        spheredome.rotation.x = -Math.PI;
+        world.scene.add(spheredome);
       
-    //   const geometrymirror = new THREE.CircleGeometry(48, 64);
-    //   const groundMirror = new Reflector(geometrymirror, {
-    //     clipBias: 0.003,
-    //     textureWidth: window.innerWidth * window.devicePixelRatio,
-    //     textureHeight: window.innerHeight * window.devicePixelRatio,
-    //     color: 0xd3d3d3,
-    //   });
-    //  groundMirror.position.y = 0.5;
-    //   groundMirror.rotateX(-Math.PI / 2);
-    //   world.scene.add(groundMirror);
-   
-
-      const tempPosition = new THREE.Vector3();
-      const tempObject = new THREE.Object3D();
-      for (let i = 0; i < 150000; i++) {
-        sampler.sample(tempPosition);
-        tempObject.position.set(tempPosition.x, tempPosition.y, tempPosition.z);
-        tempObject.scale.setScalar(Math.random() * 0.3 + 0.3);
-        tempObject.updateMatrix();
-        spheres.setMatrixAt(i, tempObject.matrix);
-      }
-      spheres.rotation.x = -Math.PI;
+      //Agents of Light
       let agents = [];
       let objects = [];
       for (let i = 0; i < MAX_NUM_AGENTS; i++) {
@@ -549,9 +502,7 @@
           index++;
         }
       }
-      //world.scene.add(points);
-      
-      //this.walkable = [points];
+
         const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
         cube.position.set(0, 1.5, 0);
         cube.castShadow = true;
@@ -567,7 +518,7 @@
         let mesh;
     // MeshFloor
     let USE_WIREFRAME = false;
-      const meshFloor = new THREE.Mesh(
+    const meshFloor = new THREE.Mesh(
             new THREE.PlaneGeometry(
               window.innerWidth,
               window.innerHeight,
@@ -580,12 +531,12 @@
             })
           );
 
-        // Floor Rotation
-        meshFloor.rotation.x -= Math.PI / 2;
-            meshFloor.position.y= 0.1;
-        // Cast shadows on Floor
-        meshFloor.receiveShadow = true;
-        world.scene.add(meshFloor);
+      // Floor Rotation
+      meshFloor.rotation.x -= Math.PI / 2;
+      meshFloor.position.y= 0.1;
+      // Cast shadows on Floor
+      meshFloor.receiveShadow = true;
+      world.scene.add(meshFloor);
 
 			
         // Main rendering loop.
@@ -629,8 +580,10 @@
           for (let i = 0; i < dt * 500000; i++) {
           react();
         }
-        const positions = particles.geometry.attributes.position.array;
-        const scales = particles.geometry.attributes.scale.array;
+
+        //Artificial Chemistry Update
+        const positions = ParticleGeo.attributes.position.array;
+        const scales = ParticleGeo.attributes.scale.array;
 
         let i = 0,
           j = 0;
@@ -641,7 +594,7 @@
           scales[i] = radius * 2;
         }
         //console.log(scales);
-        particles.geometry.attributes.scale.needsUpdate = true;
+        ParticleGeo.attributes.scale.needsUpdate = true;
           // Get the data objects that sync to/from the server.
           let { self, others } = app.users;
           // Update our data into the self object, and update avatars for remote users from the others object.
