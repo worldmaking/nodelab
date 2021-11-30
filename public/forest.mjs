@@ -57,7 +57,7 @@ void main()
 
 let outsider = 0;
 
-/* 
+
 const client = mqtt.connect(
   "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io",
   {
@@ -75,7 +75,7 @@ client.on("message", function (topic0, message0) {
   console.log ("float: Wind", outsider);
 });
 
-*/ 
+
 let noise = openSimplexNoise.makeNoise4D(Date.now());
 
 function buildForest(world) {
@@ -273,12 +273,21 @@ function buildForest(world) {
 
         bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
 
-        // loop over every nPos element in the array. p = vertex position, idx = vertex index position
         bubbleGeometry.userData.nPos.forEach((p, idx) => {
+            let leafFluttr = 0.1*Math.sin(outsider + idx)
+            let ns = noise(p.x, p.y, p.z, bubbleTime + leafFluttr);
+            v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
+            bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
+        });
+
+        // loop over every nPos element in the array. p = vertex position, idx = vertex index position
+       
+/*        bubbleGeometry.userData.nPos.forEach((p, idx) => {
             let ns = noise(p.x, p.y, p.z, bubbleTime);
             v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
             bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
         });
+        */
         bubbleGeometry.computeVertexNormals();
         bubblePositions.needsUpdate = true;
     }
