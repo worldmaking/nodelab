@@ -5,15 +5,19 @@
 //const roomInput = document.getElementById('room-input')
 //const connectButton = document.getElementById('connect-button')
 
+
+
 const audioChatContainer = document.getElementById('audio-chat-container')
 //const localVideoComponent = document.getElementById('local-video')
 //const remoteVideoComponent = document.getElementById('remote-video')
 
 // Variables.
 
+console.log("audiorun")
 
+//const socket = io(':3123', { transports : ['websocket'] })
+const socket = io('http://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 
-const socket = io(':3123', { transports : ['websocket'] })
 const mediaConstraints = {
 	audio: true,
 	video: false,
@@ -73,8 +77,19 @@ socket.on('full_room', () => {
 })
 
 // FUNCTIONS ==================================================================
-function joinRoom() {
-	room = '/multiplayer'
+
+
+
+
+
+
+
+
+export default function joinRoom() {
+
+	console.log("joinRoom")
+	
+	let room = '/multiplayer'
 	//if (room == '') {
 	//	alert('Please type a room ID')
 //		
@@ -96,6 +111,9 @@ function leaveRoom(){
 	//socket.close()
 	socket.emit('dis_con',roomId)
 }
+
+
+
 
 
 // function showVideoConference() {
@@ -228,7 +246,7 @@ function setRemoteStream(event,id) {
 	// remoteStream = event.stream
 	var audio_chat_container = document.getElementById('audio-chat-container');
 	
-	audio  = document.createElement('audio');
+	var audio  = document.createElement('audio');
 
 	audio.setAttribute('data-socket', id);
 	audio.setAttribute('id', 'remote-audio');

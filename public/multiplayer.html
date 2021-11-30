@@ -32,7 +32,7 @@
 
 
     <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="audioConnect.js"></script>
+    <script type="module" src="audioConnect.mjs"></script>
 
     <script type="text/javascript" src="networkMessages.js"></script>
 
@@ -183,6 +183,8 @@
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
+      import joinRoom from "./audioConnect.mjs"
+
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
       const displayNameField = document.getElementById('username');
@@ -238,6 +240,8 @@
       // Enter our 3D scene and initiate server communication once user has picked their name and signed in.
       function logIn() {       
 
+        
+
         // Prep a DOM element to display debug messages.
         const readout = document.createElement('div');
         readout.style.position = 'absolute';
@@ -262,6 +266,8 @@
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });
+
+        
 
         // If we get this far, save this user name and colour for next log-in too.
         if (localStorageAvailable) {
@@ -364,7 +370,12 @@
         // Start animating!
         
         world.renderer.setAnimationLoop(animate);
+
+        joinRoom()
       }
+
+      
+
     </script>
   
  
