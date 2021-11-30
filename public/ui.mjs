@@ -25,6 +25,7 @@ const UI = {
     activeObj: null,
 
     tools: {},
+    buttonGroup: new THREE.Group(),
 
     // array of text to print
     logs: [],
@@ -43,7 +44,7 @@ const UI = {
 
       // addButtons
       {
-        const buttonGeo = new THREE.DodecahedronGeometry(1, 0);
+        const buttonGeo = new THREE.DodecahedronGeometry(0.1, 0);
         const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
         const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
         const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
@@ -51,31 +52,31 @@ const UI = {
         const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
 
         const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
-        buttonTranslate.position.z = 10;
-        buttonTranslate.position.x = -6;
+        buttonTranslate.position.y = 0.8;
+        buttonTranslate.position.x = -0.5;
 
         const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
-        buttonRotate.position.z = 10;
-        buttonRotate.position.x = -3;
+        buttonRotate.position.y = 0.6;
+        buttonRotate.position.x = -0.5;
 
         const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
-        buttonScale.position.z = 10;
-        buttonScale.position.x = 0;
+        buttonScale.position.y = 0.4;
+        buttonScale.position.x = -0.5;
 
         const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
-        buttonAdd.position.z = 10;
-        buttonAdd.position.x = 3;
+        buttonAdd.position.y = 0.2;
+        buttonAdd.position.x = -0.5;
 
         const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
-        buttonRemove.position.z = 10;
-        buttonRemove.position.x = 6;
+        buttonRemove.position.y = 0;
+        buttonRemove.position.x = -0.5;
 
-        const buttonGroup = new THREE.Group();
+        // const buttonGroup = new THREE.Group();
 
         // this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-        buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-        for (let b of buttonGroup.children) { this.clickable.push(b); }
-        world.scene.add(buttonGroup);
+        this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
+        for (let b of this.buttonGroup.children) { this.clickable.push(b); }
+        world.scene.add(this.buttonGroup);
         this.tools = {
           buttonTranslate,
           buttonRotate,
@@ -84,7 +85,7 @@ const UI = {
           buttonRemove
         }
 
-        // roll-over helpers
+        // roll-over helpers (for hovering an object before adding)
 
         const rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
         const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
@@ -92,6 +93,14 @@ const UI = {
         this.rollOverMesh.visible = false;
         world.scene.add( this.rollOverMesh );
       }
+    },
+
+    addTextGroupTo(destination) {
+        destination.add(this.textGroup);
+    },
+
+    addButtonsTo( destination ) {
+        destination.add( this.buttonGroup );
     },
 
     addNewObj(pos) {

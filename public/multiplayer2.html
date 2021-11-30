@@ -224,7 +224,10 @@
         
 
         UI.init(world);
-        getOwnReplicaBody().add(UI.textGroup);  
+        // getOwnReplicaBody().add(UI.textGroup);
+        UI.addTextGroupTo( getOwnReplicaBody() );
+        UI.addButtonsTo( getOwnReplicaBody() );
+
         UI.print("it's printing!");
 
          // hides or shows the 3D text in the scene when 'l' is pressed
