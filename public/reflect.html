@@ -89,6 +89,8 @@
       import * as VRControl from './vrControl.mjs';
       
       import { Reflector } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/objects/Reflector.js';
+      import { MeshSurfaceSampler } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/math/MeshSurfaceSampler.js';
+      import { ImprovedNoise } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/math/ImprovedNoise.js';
       let groundMirror;
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -154,10 +156,13 @@
         // Setup a basic THREE.js scene with camera, floor, etc.
         
         const world = new World(false);   
-        const pointlight = new THREE.PointLight(0xffffff,1);
-        pointlight.position.set(200,200,200);
-        world.scene.add(pointlight); 
-        
+        //const sphere = new THREE.SphereGeometry( 0.5, 16, 8 );
+
+				//lights
+
+			// const	light1 = new THREE.PointLight( 0xff0040, 2, 50 );
+			// 	light1.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xff0040 } ) ) );
+			// 	world.scene.add( light1 );
 /*       const light = new THREE.PointLight( 0xff0000, 1, 100 );
 light.position.set( 50, 50, 50 );
 world.scene.add( light );*/
@@ -168,7 +173,7 @@ world.scene.add( light );*/
         }
 
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world, colourTriplet, customAvatar);
+        initializeReplication(world, colourTriplet);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
@@ -218,107 +223,209 @@ world.scene.add( light );*/
         let gazeObject = null;
         
         // Fill scene with some basic demo content.
-        
-        //Chrysanthemum
-        const chrysanthemum = new THREE.BufferGeometry();
-        const N = 30000;
-        const u = 128;
-        const colors = [];
-        const palette = [
-        new THREE.Color('#008d8c'),
-        new THREE.Color('#0b717e'),
-        new THREE.Color('#007f86'),
-        new THREE.Color('#5bc489'),
-        new THREE.Color('#23aa8f'),
-      ];
-     
+        //Clouds-texture:image
+        const MAX_NUM_AGENTS = 50;
 
-      function set_vertices() {
-        const vrtsjs = [];
-        let indices = [];
-        for (let i = 0; i < N; i++) {
-          const unorm = (i * Math.PI * 21) / N;
-          let p4 = Math.sin((17 * unorm) / 3);
-          let p8 = Math.sin(2 * Math.cos(3 * unorm) - 28 * u);
-          let r =
-            5 * (1 + Math.sin((11 * unorm) / 5)) -
-            4 * p4 * p4 * p4 * p4 * p8 * p8 * p8 * p8 * p8 * p8 * p8 * p8;
-          let x = r * Math.cos(unorm);
-          let y = r * Math.sin(unorm);
-          const TWOPI = Math.PI * 2;
-          let z =0.2*(r / 20 + 0.2) * Math.sin((r * TWOPI) / 7);
-          vrtsjs.push(x, y, z);
-          const color = palette[Math.floor(Math.random() * palette.length)];
-          colors.push(color.r, color.g, color.b);
-          const a =1000;
-          const b = (i + 1000 / N) * unorm;
-          const c = i * unorm;
-          const d = (i + 2.5) * unorm;
-          if (d < N) {
-            indices.push(a, b, d);
-            indices.push(a, d, c);
+      const NUM_INSTANCES = MAX_NUM_AGENTS;
+
+      const colors = [];
+      const palette = [
+        new THREE.Color('#1161EE'),
+        new THREE.Color('#00A3FF'),
+        new THREE.Color('#00D4F0'),
+        new THREE.Color('#6BFBCE'),
+
+        new THREE.Color('#FFC0B7'),
+        new THREE.Color('#FFAF86'),
+        new THREE.Color('#FFA453'),
+        new THREE.Color('#EE9E11'),
+      ];
+
+      const sphere = new THREE.SphereGeometry(0.2, 16, 8);
+      const geometrysphere = new THREE.SphereGeometry(
+        15,
+        36,
+        16,
+        0,
+        Math.PI*2,
+        1.5707963267949,
+        1.5707963267949
+      );
+      //geometrysphere.rotation.x=-Math.PI/2
+      const materialsphere = new THREE.MeshBasicMaterial({
+        color: 0xd3d3,
+        wireframe: false,
+        transparent: false,
+      });
+      const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
+      spheredome.rotation.x = -Math.PI;
+      //world.scene.add(spheredome);
+      const sampler = new MeshSurfaceSampler(spheredome).build();
+
+      //sampler geometry
+      const sphereGeometry = new THREE.SphereGeometry(0.15, 6, 6);
+
+      const sphereMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffa,
+        transparent: true,
+        // size: 3,
+        alphaTest: 0.2,
+        // map: new THREE.TextureLoader().load(
+        //   'https://wp.stanforddaily.com/wp-content/uploads/2021/01/poetics-of-space-art.jpg'
+        // ),
+        vertexColors: false,
+      });
+      //here we make the desired Num of sphere geometries
+      const spheres = new THREE.InstancedMesh(
+        sphereGeometry,
+        sphereMaterial,
+        500
+      );
+      //world.scene.add(spheres);
+      const geometrymirror = new THREE.CircleGeometry(48, 64);
+      const groundMirror = new Reflector(geometrymirror, {
+        clipBias: 0.003,
+        textureWidth: window.innerWidth * window.devicePixelRatio,
+        textureHeight: window.innerHeight * window.devicePixelRatio,
+        color: 0xd3d3d3,
+      });
+     groundMirror.position.y = 0.5;
+      groundMirror.rotateX(-Math.PI / 2);
+      world.scene.add(groundMirror);
+      const tempPosition = new THREE.Vector3();
+      const tempObject = new THREE.Object3D();
+      for (let i = 0; i < 150000; i++) {
+        sampler.sample(tempPosition);
+        tempObject.position.set(tempPosition.x, tempPosition.y, tempPosition.z);
+        tempObject.scale.setScalar(Math.random() * 0.5 + 0.5);
+        tempObject.updateMatrix();
+        spheres.setMatrixAt(i, tempObject.matrix);
+      }
+      spheres.rotation.x = -Math.PI;
+      let agents = [];
+      let objects = [];
+      for (let i = 0; i < MAX_NUM_AGENTS; i++) {
+        agents[i] = {
+          quat: new THREE.Quaternion(),
+        };
+      }
+      for (let i = 0; i < MAX_NUM_AGENTS; i++) {
+        var randomColor = palette[Math.floor(Math.random() * palette.length)];
+        const light = new THREE.PointLight(randomColor, 0.5, 25);
+        light.add(
+          new THREE.Mesh(
+            sphere,
+            new THREE.MeshBasicMaterial({ color: randomColor })
+          )
+        );
+        light.position.x = Math.random() * 30-15;
+        light.position.y = Math.random() * 30-15;
+        light.position.z = Math.random() * 30-15;
+        objects.push(light);
+        world.scene.add(light);
+      }
+      function syncColors() {
+        for (let i = 0; i < MAX_NUM_AGENTS; i++) {
+          for (let j = 1; j < MAX_NUM_AGENTS; j++) {
+            // get distance:
+            let a = objects[i];
+            let b = objects[j];
+            let x = (a.position.x - b.position.x)/0.2;
+            let y = (a.position.y - b.position.y)/0.2;
+            let z = (a.position.z - b.position.z)/0.2;
+            let dist = Math.sqrt(x * x + y * y + z * z);
+            if (dist < 8) {
+              if (a == b) {
+              } else {
+                if (a.color.getHex() == b.color.getHex()) {
+                } else {
+                  // show it:
+                  a.color.setHex(b.color.getHex());
+                  a.add(
+                    new THREE.Mesh(
+                      sphere,
+                      new THREE.MeshBasicMaterial({ color: b.color.getHex() })
+                    )
+                  );
+                }
+              }
+            }
           }
         }
-        //console.log(indices);
-        //console.log(vrtsjs);
-        //NUMPOINTS*3
-        const vertices = new Float32Array(vrtsjs);
-        chrysanthemum.setAttribute(
-          'position',
-          new THREE.BufferAttribute(vertices, 3)
-        ); //3=x,y,z=1 vertex
-
-        chrysanthemum.setIndex(indices);
-        chrysanthemum.computeVertexNormals();
-
-        chrysanthemum.setAttribute(
-          'color',
-          new THREE.Float32BufferAttribute(colors, 3)
-        );
       }
 
-      set_vertices();
-     
-//////MATERIAL/////////////1stattempt(PointsMaterial)using a spiral texture img.
-//const materialforagent= new THREE.MeshPhysicalMaterial(ballMaterial);
-      const materialforagent = new THREE.MeshPhysicalMaterial({
-    
-        wireframe: false,
-        vertexColors: true,
-        reflectivity:1,
-        opacity:0.02
-      
-      });
-      /*let groundMirror = new Reflector( chrysanthemum, {
-					clipBias: 0.003,
-					textureWidth: window.innerWidth * window.devicePixelRatio,
-					textureHeight: window.innerHeight * window.devicePixelRatio,
-					color: 0x777777
-				} );
-				groundMirror.position.y = 0.5;
-				groundMirror.rotateX( - Math.PI / 2 );
-				world.scene.add( groundMirror );*/
-      //geometryPOINTS(plural)
-      groundMirror = new Reflector( chrysanthemum, {
-					clipBias: 0.003,
-					textureWidth: window.innerWidth * window.devicePixelRatio,
-					textureHeight: window.innerHeight * window.devicePixelRatio,
-					color: 0x000000
-				} );
-				groundMirror.position.y = 0;
-				groundMirror.rotateX( - Math.PI / 2 );
-				world.scene.add( groundMirror );
-      const points = new THREE.Mesh(chrysanthemum, materialforagent);
-      points.rotation.x = -Math.PI / 2;
-      points.position.set(0,5,0);
-      
+      function colorSteal() {
+        for (let o of objects) {
+          let x = o.position.x - cylinder.position.x;
+          let y = o.position.y - cylinder.position.y;
+          let z = o.position.z - cylinder.position.z;
+          let dist = Math.sqrt(x * x + y * y + z * z);
+          if (dist < 15) {
+            o.color.setHex(cylinder.material.color.getHex());
+            o.add(
+              new THREE.Mesh(
+                sphere,
+                new THREE.MeshBasicMaterial({
+                  color: cylinder.material.color.getHex(),
+                })
+              )
+            );
+          } else if (dist > 18) {
+            if (o.color.getHex() == cylinder.material.color.getHex()) {
+              var randomColor =
+                palette[Math.floor(Math.random() * palette.length)];
+              o.color.setHex(randomColor);
+              o.add(
+                new THREE.Mesh(
+                  sphere,
+                  new THREE.MeshBasicMaterial({ color: randomColor })
+                )
+              );
+            }
+          }
+        }
+      }
+
+      function move(dt) {
+        var index = 0;
+        for (let o of objects) {
+          let fwd = new THREE.Vector3();
+          let speed = 0.36; // meters per second
+
+          // update each agent:
+          fwd.set(0, 0, 1);
+          // screw:
+          let rot = new THREE.Quaternion();
+          rot.setFromEuler(
+            new THREE.Euler(0.1 * (Math.random() - 0.5), 0, 10 * dt)
+          );
+          // apply it:
+          agents[index].quat.multiply(rot);
+
+          // convert forward vector to world space:
+          fwd.applyQuaternion(agents[index].quat);
+          // scale fwd by the speed and delta-time
+          // add it to the position:
+          o.position.addScaledVector(fwd, speed * dt);
+
+          var b = 6;
+          if (o.position.x > b) o.position.x -= b * 2.5;
+          if (o.position.x < -b) o.position.x += b * 2.5;
+          if (o.position.y > b) o.position.y -= b * 2;
+          if (o.position.y < -0.5) o.position.y += b * 2;
+          if (o.position.z > b) o.position.z -= b * 2.5;
+          if (o.position.z < -b) o.position.z += b * 2.5;
+
+          index++;
+        }
+      }
       //world.scene.add(points);
       
       //this.walkable = [points];
         const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
         cube.position.set(0, 1.5, 0);
         cube.castShadow = true;
-        world.scene.add(cube);
+        //world.scene.add(cube);
 
         // Create pointer object that follows mouse/gaze.
         const ico = new THREE.Mesh(world.primitiveGeo.ico,
@@ -327,7 +434,164 @@ world.scene.add( light );*/
         ico.scale.set(0.1, 0.1, 0.1);
         ico.position.z = -1;
         world.scene.add(ico);        
+        let mesh;
+// Texture
 
+				const size = 128;
+				const data = new Uint8Array( size * size * size );
+
+				let i = 0;
+				const scale = 5;
+				const perlin = new ImprovedNoise();
+				const vector = new THREE.Vector3();
+
+				for ( let z = 0; z < size; z ++ ) {
+
+					for ( let y = 0; y < size; y ++ ) {
+
+						for ( let x = 0; x < size; x ++ ) {
+
+							const d = 2.0 - vector.set( x, y, z ).subScalar( size / 2 ).divideScalar( size ).length();
+							data[ i ] = ( 228 + 228 * perlin.noise( x * scale / 1.5, y * scale, z * scale / 1.5 ) ) * d * d;
+							i ++;
+
+						}
+
+					}
+
+				}
+
+				const texture = new THREE.DataTexture3D( data, size, size, size );
+				texture.format = THREE.RedFormat;
+				texture.minFilter = THREE.LinearFilter;
+				texture.magFilter = THREE.LinearFilter;
+				texture.unpackAlignment = 0.1;
+
+				// Material
+
+				const vertexShader = /* glsl */`
+					in vec3 position;
+					uniform mat4 modelMatrix;
+					uniform mat4 modelViewMatrix;
+					uniform mat4 projectionMatrix;
+					uniform vec3 cameraPos;
+					out vec3 vOrigin;
+					out vec3 vDirection;
+					void main() {
+						vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+						vOrigin = vec3( inverse( modelMatrix ) * vec4( cameraPos, 1.0 ) ).xyz;
+						vDirection = position - vOrigin;
+						gl_Position = projectionMatrix * mvPosition;
+					}
+				`;
+
+				const fragmentShader = /* glsl */`
+					precision highp float;
+					precision highp sampler3D;
+					uniform mat4 modelViewMatrix;
+					uniform mat4 projectionMatrix;
+					in vec3 vOrigin;
+					in vec3 vDirection;
+					out vec4 color;
+					uniform vec3 base;
+					uniform sampler3D map;
+					uniform float threshold;
+					uniform float range;
+					uniform float opacity;
+					uniform float steps;
+					uniform float frame;
+					uint wang_hash(uint seed)
+					{
+							seed = (seed ^ 61u) ^ (seed >> 16u);
+							seed *= 9u;
+							seed = seed ^ (seed >> 4u);
+							seed *= 0x27d4eb2du;
+							seed = seed ^ (seed >> 15u);
+							return seed;
+					}
+					float randomFloat(inout uint seed)
+					{
+							return float(wang_hash(seed)) / 4294967296.;
+					}
+					vec2 hitBox( vec3 orig, vec3 dir ) {
+						const vec3 box_min = vec3( - 0.5 );
+						const vec3 box_max = vec3( 0.5 );
+						vec3 inv_dir = 1.0 / dir;
+						vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
+						vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
+						vec3 tmin = min( tmin_tmp, tmax_tmp );
+						vec3 tmax = max( tmin_tmp, tmax_tmp );
+						float t0 = max( tmin.x, max( tmin.y, tmin.z ) );
+						float t1 = min( tmax.x, min( tmax.y, tmax.z ) );
+						return vec2( t0, t1 );
+					}
+					float sample1( vec3 p ) {
+						return texture( map, p ).r;
+					}
+					float shading( vec3 coord ) {
+						float step = 0.01;
+						return sample1( coord + vec3( - step ) ) - sample1( coord + vec3( step ) );
+					}
+					void main(){
+						vec3 rayDir = normalize( vDirection );
+						vec2 bounds = hitBox( vOrigin, rayDir );
+						if ( bounds.x > bounds.y ) discard;
+						bounds.x = max( bounds.x, 0.0 );
+						vec3 p = vOrigin + bounds.x * rayDir;
+						vec3 inc = 1.0 / abs( rayDir );
+						float delta = min( inc.x, min( inc.y, inc.z ) );
+						delta /= steps;
+						// Jitter
+						// Nice little seed from
+						// https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/
+						uint seed = uint( gl_FragCoord.x ) * uint( 1973 ) + uint( gl_FragCoord.y ) * uint( 9277 ) + uint( frame ) * uint( 26699 );
+						vec3 size = vec3( textureSize( map, 0 ) );
+						float randNum = randomFloat( seed ) * 2.0 - 1.0;
+						p += rayDir * randNum * ( 1.0 / size );
+						//
+						vec4 ac = vec4( base, 0.0 );
+						for ( float t = bounds.x; t < bounds.y; t += delta ) {
+							float d = sample1( p + 0.5 );
+							d = smoothstep( threshold - range, threshold + range, d ) * opacity;
+							float col = shading( p + 0.5 ) * 3.0 + ( ( p.x + p.y ) * 0.25 ) + 0.2;
+							ac.rgb += ( 1.0 - ac.a ) * d * col;
+							ac.a += ( 1.0 - ac.a ) * d;
+							if ( ac.a >= 0.95 ) break;
+							p += rayDir * delta;
+						}
+						color = ac;
+						if ( color.a == 0.0 ) discard;
+					}
+				`;
+
+				const geometry = new THREE.SphereBufferGeometry( 15,
+        32,
+        16,
+        0.647168086639497,
+        6.283185307179586,
+        1.65247773578823,
+        2.95938027968159);
+				const material = new THREE.RawShaderMaterial( {
+					glslVersion: THREE.GLSL3,
+					uniforms: {
+						base: { value: new THREE.Color( 0x798aa0 ) },
+						map: { value: texture },
+						cameraPos: { value: new THREE.Vector3() },
+						threshold: { value: 0.84 },
+						opacity: { value: 0.2 },
+						range: { value: 0.38 },
+						steps: { value: 300 },
+						frame: { value: 0 }
+					},
+					vertexShader,
+					fragmentShader,
+					side: THREE.BackSide,
+					transparent: true
+				} );
+        mesh = new THREE.Mesh( geometrysphere, material );
+        mesh.rotation.x=-Math.PI
+//mesh.position.y=2;
+world.scene.add( mesh ); 
         // Main rendering loop.
         function animate() {
           const dt = world.clock.getDelta();
@@ -359,10 +623,14 @@ world.scene.add( light );*/
           if (newGaze) gazeObject = newGaze;
 
           // update the scene:
-  
-          chrysanthemum.attributes.position.needsUpdate = true;
-          //points.position.x = Math.sin(dt) * 0.5 + 0.025;
-          points.position.y = Math.sin(dt) * 0.5 + 0.025;
+          move(dt);
+        syncColors();
+          // mesh.material.uniforms.cameraPos.value.copy( this.camera.position );
+mesh.rotation.y = - performance.now() / 75000;
+// mesh.material.steps+=Math.random(100);
+//   mesh.material.range+=Math.random(10);
+//   console.log(mesh.material.range);
+			//	mesh.material.uniforms.frame.value ++;    
           cube.rotation.x += 0.01;
           cube.rotation.y += 0.01;
 
