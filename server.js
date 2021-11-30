@@ -121,7 +121,7 @@ function getRoom(name="default") {
 			name: name,
 			clients: {},
 			project: demoproject,
-			merger: merge.setupMerge(demoproject, serverID),
+			merger: merge.setupMerge(null, serverID),
 			syncNeeded: false
 		}
 	}
@@ -179,7 +179,7 @@ wss.on('connection', (socket, req) => {
 		if (payload) {
 			const toSend = `[${payload.toString()}]`;
 			const message = new Message('sync', toSend);
-			console.log('sending: ', toSend, typeof(toSend), 'to: ', clientID);
+			//console.log('sending: ', toSend, typeof(toSend), 'to: ', clientID);
 			message.sendWith(socket);
 			return true;
 		}

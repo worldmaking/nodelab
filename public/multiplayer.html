@@ -87,6 +87,7 @@
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
+      import { SharedScene } from "./sharedScene.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
@@ -159,20 +160,18 @@
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world, colourTriplet);
 
-        let merger;
+
+        let shared;
         function onConnect(myID, serverID) {
-          merger = setupMerge(null, myID);
-          merger.addClient(serverID);
+          shared = new SharedScene(world.scene, myID, serverID);
+          
           console.log("created automerge document");
         }
 
         function onSync(syncMessage, senderID) {
           syncMessage = JSON.parse(syncMessage);
           console.log('received sync message:', syncMessage, typeof(syncMessage));
-          merger.handleSyncMessage(syncMessage, senderID);
-
-          const reply = merger.makeSyncMessage(senderID);
-          
+          const reply = shared.handleSyncMessage(syncMessage, senderID);          
           return reply;
         }
 
@@ -188,6 +187,8 @@
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });
+
+        console.
 
         // If we get this far, save this user name and colour for next log-in too.
         if (localStorageAvailable) {
@@ -283,6 +284,9 @@
           
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
+
+          if (shared)
+            app.sync(shared.tryGenerateSyncMessage());
 
           showReadout(readout);
         }

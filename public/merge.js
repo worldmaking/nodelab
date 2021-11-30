@@ -37,6 +37,10 @@ function setupMerge(sourceDocument, actorID) {
 
     const merger = {};
 
+    merger.getDocument = function() {
+        return backends.doc1;
+    }
+
     merger.addClient = function(actorID) {               
         syncStates[actorID] = Automerge.initSyncState();
     }
@@ -50,11 +54,13 @@ function setupMerge(sourceDocument, actorID) {
         ) 
         backends.doc1 = nextBackend;
         syncStates[senderID] = nextSyncState;
-        console.log('sync\n','nextBackend', nextBackend, '\n\nnextSyncState', nextSyncState, '\n\npatch', patch)
+        // console.log('sync\n','nextBackend', nextBackend, '\n\nnextSyncState', nextSyncState, '\n\npatch', patch)
+        console.log('patch', patch);
+        return patch;
     }
 
     merger.applyChange = function(commitMessage, deltaFunction) {
-        return Automerge.change(doc1, commitMessage, deltaFunction);        
+        backends.doc1 = Automerge.change(backends.doc1, commitMessage, deltaFunction);        
     }
 
     merger.hasLocalChanges = function() { return hasLocalChanges; }
