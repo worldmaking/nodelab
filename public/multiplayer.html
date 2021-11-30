@@ -177,9 +177,10 @@
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
+      import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
@@ -312,6 +313,32 @@
         ico.scale.set(0.1, 0.1, 0.1);
         ico.position.z = -1;
         world.scene.add(ico);        
+
+        ////////////////////////////////////////////////////////////////////////
+        
+        UI.init(world);
+        UI.addTextGroupTo( getOwnReplicaBody() );
+        UI.addButtonsTo( getOwnReplicaBody() );
+
+        // UI.print("it's printing!");
+
+         // hides or shows the 3D text in the scene when 'l' is pressed
+         document.addEventListener('keypress', (event) => {
+          if(event.key == "l"){
+            if(UI.isVisible){
+              UI.textGroup.visible = false;
+              UI.isVisible = false;
+            }
+            else {
+              UI.textGroup.visible = true;
+              UI.isVisible = true;
+              
+            }
+            
+          }
+        });
+
+        ////////////////////////////////////////////////////////////////////////
 
         // Main rendering loop.
         function animate() {

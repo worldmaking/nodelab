@@ -221,14 +221,11 @@
         
         ////////////////////////////////////////////////////////////////////////
         
-        
-
         UI.init(world);
-        // getOwnReplicaBody().add(UI.textGroup);
         UI.addTextGroupTo( getOwnReplicaBody() );
         UI.addButtonsTo( getOwnReplicaBody() );
 
-        UI.print("it's printing!");
+        // UI.print("it's printing!");
 
          // hides or shows the 3D text in the scene when 'l' is pressed
          document.addEventListener('keypress', (event) => {
@@ -244,7 +241,7 @@
             }
             
           }
-        })
+        });
 
 
         ////////////////////////////////////////////////////////////////////////
