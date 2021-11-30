@@ -1,12 +1,9 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
+import { MeshSurfaceSampler } from 'https://cdn.skypack.dev/three/examples/jsm/math/MeshSurfaceSampler.js';
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
 import * as Tone from "https://cdn.skypack.dev/tone";
 import {print} from './utility.mjs';
-//import * mqtt from 'https://unpkg.com/mqtt/dist/mqtt.min.js';
-//import * as mqtt from './mqttshitr.js';
-//import { outsider } from './shiftr.js';
-
 
 const vshader = `
 #include <common>
@@ -52,39 +49,12 @@ void main()
 }
 `;
 
-// shiftr
-
-let outsider = 0;
-
-const client = mqtt.connect(
-  "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io",
-  {
-    clientId: "DIGM5520"
-  }
-);
-
-client.on("connect", function () {
-  console.log("connected to Wind!");
-  client.subscribe("Wind", outsider);
-});
-
-client.on("message", function (topic0, message0) {
-  outsider = parseFloat(message0);
-  console.log ("float: Wind", outsider);
-});
-
-
 let noise = openSimplexNoise.makeNoise4D(Date.now());
 
 function buildForest(world) {
 
     const woods = new THREE.Group();
-    const fogColor = new THREE.Color(0xffcccc);
-    //const fog = new THREE.FogExp2(0xffcccc, 0.02);
     world.scene.add(woods);
-    world.scene.background = fogColor;
-    //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
-    world.scene.fog = new THREE.FogExp2(fogColor, 0.05);
     
     const obstructions = [];
     
@@ -103,7 +73,7 @@ function buildForest(world) {
     });
 
     // Bubbles
-    const bubbleGeometry = new THREE.IcosahedronGeometry(1, 5); // radius, detail (radius changes dynamically in Render function)
+    const bubbleGeometry = new THREE.IcosahedronGeometry(5, 5); // radius, detail (radius changes dynamically in Render function)
     let bubblePositions = bubbleGeometry.attributes.position;
     {
         let nPos = [];
@@ -123,6 +93,20 @@ function buildForest(world) {
         color: 0x008080,
         wireframe: true
     });
+
+    // setup shapes for sampled meshes
+    const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ color: "purple" });
+    const spheres = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);
+
+     // set array for each point
+     let points = [];
+     points.length = 0;
+
+     const bubbleFruit = [];
+
+
+
 
 
     // Synth Change
@@ -158,7 +142,7 @@ function buildForest(world) {
             for (let z = -5; z < 5; z++) {
                 // Tree Geometry
                 let foliageGeo = new THREE.BufferGeometry();
-                const count = outsider; // number of triangles
+                const count = 50; // number of triangles
                 const positionsArray = new Float32Array(count * 3 * 3); // each traingle will have 3 points each with 3 elements (x,y,z)
                 for (let j = 0; j < count * 3 * 3; j++) {
                     positionsArray[j] = Math.random() * 4.4 - 2.2; // position each point between -3 and 3 units
@@ -178,11 +162,65 @@ function buildForest(world) {
                 const trunkMesh = new THREE.Mesh(trunkGeo, trunkMtrl);
                 const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMtrl);
 
+                // !-------------------------> SAMPLED MESHES
+                // Generate spheres on bubbleMesh using SurfaceSampler.js
+                // Initialize sampler
+                const sampler = new MeshSurfaceSampler(bubbleMesh).build();
+                
+                // // setup shapes for sampled meshes
+                // const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
+                // const sphereMaterial = new THREE.MeshBasicMaterial({ color: "blue" });
+
+                // generate the instances
+
+                const spheres = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);
+                //scene.add(spheres);
+
+                // dummy vector to store sampled random coordinates
+                const tempPosition = new THREE.Vector3();
+
+
+                // dummy object to generate the matrix of each sphere
+                const tempObject = new THREE.Object3D();
+
+               
+
+
+                // loop sampled elements
+                for (let i = 0; i <10; i++) {
+                    // sample random point on the surface of bubbleMesh
+                    sampler.sample(tempPosition);
+                    // store point coordinates in tempObject
+                    tempObject.position.set(tempPosition.x, tempPosition.y, tempPosition.z);
+
+                    //console.log(tempObject.position.x, tempObject.position.y,tempObject.position.z);
+
+                    points.push(new THREE.Vector3(tempObject.position.x, tempObject.position.y,tempObject.position.z));
+                    // define a random scale for the instanced spheres
+                    tempObject.scale.setScalar(Math.random() * 3 + 0.5);
+                    // update the matrix and insert it into instancedMesh matrix
+                    tempObject.updateMatrix();
+                    spheres.setMatrixAt(i, tempObject.matrix);
+
+                    
+                    //console.log("coords: ",i,points[i]);
+
+                    
+                    }	
+
+                // ! -------------------------> SAMPLED MESHES END
+
                 foliageMesh.position.y += 2;
                 aura.position.y += 2;
                 innerAura.position.y += 2;
                 trunkMesh.position.y -= 3;
                 bubbleMesh.position.y = 3;
+
+                bubbleMesh.add(spheres);
+
+                bubbleFruit.push(spheres);
+
+
                 // add a frequency property to the foliage of the tree (used for synth made during collision detection)
                 foliageMesh.userData.frequency = getRandomInt(300, 1700);
             
@@ -195,16 +233,19 @@ function buildForest(world) {
                 tree.position.set(10 * (x + Math.random()), 2, 10 * (z + Math.random()));
                 
                 obstructions.push(tree);
-                tree.scale.set(0.45, 0.45, 0.45);
+                tree.scale.set(0.4, 0.4, 0.4);
                 woods.add(tree);
+
+    
             }
         }
     }
+    
 
     let bubbleTime = 0;
     function renderBubble(t, dt) {
         let v3 = new THREE.Vector3();
-       // let t = clock.getElapsedTime()*outsider/35;
+        //let t = clock.getElapsedTime()*outsider/35;
 
         let bubbleSpec = {
             speed: 1.0,
@@ -221,6 +262,14 @@ function buildForest(world) {
             v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
             bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
         });
+
+        // UPDATE ROTATION OF SPHERES
+  
+        // spheres.rotation.x += 0.5 * 0.01;
+        // spheres.rotation.y += 0.5 * 0.01;
+        // spheres.rotation.z += 0.5 * 0.01;
+
+        
         bubbleGeometry.computeVertexNormals();
         bubblePositions.needsUpdate = true;
     }
@@ -248,6 +297,7 @@ function buildForest(world) {
     sound.setNodeSource(synth);
 
     let collidedTree = null;
+
     function updateForest(t, dt) {
         renderBubble(t, dt);
 
@@ -303,6 +353,7 @@ function buildForest(world) {
             position.needsUpdate = true;
             }
     }
+    
 
     generateTrees();
 
