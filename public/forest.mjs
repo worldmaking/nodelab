@@ -3,6 +3,7 @@ import { World }    from './world.mjs';
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
 import * as Tone from "https://cdn.skypack.dev/tone";
 import {print} from './utility.mjs';
+import * as mqtt from 'https://unpkg.com/mqtt/dist/mqtt.min.js';
 
 const vshader = `
 #include <common>
@@ -48,12 +49,38 @@ void main()
 }
 `;
 
+/*
+// biometereological data from Shiftr.io server from Jane Tingley's Foresta Inclusive project
+let outsider = 0;
+const client = mqtt.connect(
+  "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io",
+  {
+    clientId: "DIGM5520"
+  }
+);
+
+client.on("connect", function () {
+  console.log("connected to Wind!");
+  client.subscribe("Wind", outsider);
+});
+
+client.on("message", function (topic0, message0) {
+  outsider = parseFloat(message0);
+  console.log ("float: Wind", outsider);
+});
+*/
+
 let noise = openSimplexNoise.makeNoise4D(Date.now());
 
 function buildForest(world) {
 
     const woods = new THREE.Group();
+    const fogColor = new THREE.Color(0xffcccc);
+    //const fog = new THREE.FogExp2(0xffcccc, 0.02);
     world.scene.add(woods);
+    world.scene.background = fogColor;
+    //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
+    world.scene.fog = new THREE.FogExp2(fogColor, 0.05);
     
     const obstructions = [];
     
@@ -173,7 +200,7 @@ function buildForest(world) {
     let bubbleTime = 0;
     function renderBubble(t, dt) {
         let v3 = new THREE.Vector3();
-        //let t = clock.getElapsedTime()*outsider/35;
+       // let t = clock.getElapsedTime()*outsider/35;
 
         let bubbleSpec = {
             speed: 1.0,
