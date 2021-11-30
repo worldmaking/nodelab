@@ -217,6 +217,7 @@ function buildForest(world) {
             detail: 2.0
         };      
 
+        // TODO: integrate weather data (and interpolate)
 
         bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
 
