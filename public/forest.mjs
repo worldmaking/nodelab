@@ -175,8 +175,8 @@ function buildForest(world) {
                 }
                 const positionsAttribute = new THREE.BufferAttribute(positionsArray, 3);
                 foliageGeo.setAttribute("position", positionsAttribute); // Combine the positions with the geometry
-                const auraMtrl = new THREE.MeshBasicMaterial( { color: 0xffff00, transparent: true, opacity: 0.1 } );
-                const auraGeo = new THREE.SphereGeometry( 12, 32, 16 );
+                const auraMtrl = new THREE.MeshBasicMaterial( { color: randomColor(), transparent: true, opacity: 0.075 } );
+                const auraGeo = new THREE.SphereGeometry( 8, 32, 16 );
                 const innerAuraMtrl = new THREE.MeshBasicMaterial( { color: 0xffff00, transparent: true, opacity: 0.3} );
                 const innerAuraGeo = new THREE.SphereGeometry( 5, 16, 8 );
               //  moreFoliageGeo.setAttribute("position", positionsAttribute);
@@ -238,6 +238,9 @@ function buildForest(world) {
                 //innerAura.position.y += 2;
                 trunkMesh.position.y -= 3;
                 bubbleMesh.position.y = 3;
+
+                // randomly rotate bubbleMesh
+                bubbleMesh.rotation.y = Math.random(0,360);
 
                 bubbleMesh.name = "bubbles";
                 bubbleMesh.add(apples);
