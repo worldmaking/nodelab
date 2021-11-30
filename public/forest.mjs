@@ -81,6 +81,11 @@ function buildForest(world) {
     const woods = new THREE.Group();
     const fogColor = new THREE.Color(0xffcccc);
     //const fog = new THREE.FogExp2(0xffcccc, 0.02);
+    
+    let lowWindColor = new THREE.Color(0xffcccc);
+    let highWindColor = new THREE.Color()
+    highWindColor.setHSL(0.8, 0.2, 0.8)
+
     world.scene.add(woods);
     world.scene.background = fogColor;
     //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
@@ -249,6 +254,22 @@ function buildForest(world) {
 
     let collidedTree = null;
     function updateForest(t, dt) {
+
+        // outsider, roughly 75-82? 
+        const minWind = 75
+        const maxWind = 83
+        let normalizedWind = (outsider - minWind) / (maxWind - minWind);  // between 0 and 1
+
+        let newWindColor = new THREE.Color()
+        newWindColor.lerpColors(lowWindColor, highWindColor, normalizedWind);
+
+        fogColor.lerp(newWindColor, dt)
+        
+        world.scene.background = fogColor;
+        world.scene.fog.color = fogColor;
+        //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
+        //world.scene.fog = new THREE.FogExp2(fogColor, 0.05);
+
         renderBubble(t, dt);
 
         let newTreeCollision = null;
