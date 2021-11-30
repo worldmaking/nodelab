@@ -219,11 +219,13 @@ function buildForest(world) {
 
         // TODO: integrate weather data (and interpolate)
 
-        bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
+        bubbleTime += dt * Math.sqrt(outsider)/5 //(outsider - 60)/20; //(Math.sin(t) * 0.5 + 1.0) * 2.0;
+
 
         // loop over every nPos element in the array. p = vertex position, idx = vertex index position
         bubbleGeometry.userData.nPos.forEach((p, idx) => {
-            let ns = noise(p.x, p.y, p.z, bubbleTime);
+            let leafFluttr = 0.1*Math.sin(outsider + idx)
+            let ns = noise(p.x, p.y, p.z, bubbleTime + leafFluttr);
             v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
             bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
         });
