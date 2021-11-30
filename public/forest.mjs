@@ -93,11 +93,11 @@ function buildForest(world) {
         color: 0x008080,
         wireframe: true
     });
-
+// ! ----------------------------------------- APPLES
     // setup shapes for sampled meshes
     const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: "purple" });
-    const spheres = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);
+    const spheres = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);  // ! <------------------------  SPHERES
 
      // set array for each point
      let points = [];
@@ -135,7 +135,7 @@ function buildForest(world) {
         lights: true,
         wireframe: false
     });
-
+// ! ------------------------------------------------------------------------------------------------ MAIN LOOP
     function generateTrees() {
         // Go through the position array of the plane and place trees
         for (let x = -5; x < 5; x++) {
@@ -354,7 +354,7 @@ function buildForest(world) {
             }
     }
     
-
+// ! -------------------------------------------------------------------------- UPDATES AND RENDER CALLS
     generateTrees();
 
     return updateForest;
