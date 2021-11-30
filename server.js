@@ -1,6 +1,3 @@
-
-"use strict";
-
 const fs = require('fs');
 const path = require("path")
 const url = require('url');
@@ -11,10 +8,18 @@ const https = require("https");
 const express = require("express");
 const ws = require("ws");
 const { v4: uuidv4 } = require("uuid")
+const { Message, PoseData } = require('./public/networkMessages.js');
 // const jsonpatch = require("json8-patch");
 // const { exit } = require("process");
+// const dotenv = require("dotenv").config();
 const dotenv = require("dotenv").config();
 
+// These constants are available by default in CommonJS Module syntax,
+// but we need to polyfill them in when working in an ES Module.
+/*
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+*/
 
 // this will be true if this server is running on Heroku
 const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
@@ -28,8 +33,6 @@ const PORT_HTTP = IS_HEROKU ? (process.env.PORT || 3000) : (process.env.PORT_HTT
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
 const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
 //const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
-
-
 
 // allow cross-domain access (CORS)
 const app = express();
@@ -71,6 +74,26 @@ server.listen(PORT, function() {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
 
 console.log("GRAHAMS GREAT TEST")
+
+// Audio Server 
+
+require('child_process').fork('audioSignalingServer.js');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const demoproject = {
   threejs: {
@@ -122,13 +145,15 @@ function getRoom(name="default") {
 	return rooms[name]
 }
 
-function notifyRoom(roomname, msg) {
-	let room = rooms[roomname]
+/**
+ * Send a message to all users in a room.
+ * @param {Room} room
+ * @param {Message} message 
+ */
+function notifyRoom(room, message) {	
 	if (!room) return;
-	let others = Object.values(room.clients)
-	for (let mate of others) {
-		mate.socket.send(msg)
-	}
+	const clientsInRoom = Object.values(room.clients);
+	message.sendToAll(clientsInRoom);
 }
 
 // generate a unique id if needed
@@ -139,42 +164,58 @@ function newID(id="") {
 	return id
 }
 
+
+// Handle incoming connections as a new user joining a room.
 wss.on('connection', (socket, req) => {
-	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
-	let id = newID()
+	// Read the path from the connection request and treat it as a room name, sanitizing and standardizing the format.
+	// Actual room name might differ from this, if it's empty and we need to substitute a "default" instead.
+	const requestedRoomName = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
+	
+	const id = newID()
 	let client = {
 		socket: socket,
-		room: room,
+		room: getRoom(requestedRoomName),
 		shared: {
-			id: id,
-			pos: [0, 0, 0],
-			quat: [0, 0, 0, 1],
+			// Structure for any rapidly-changing data (poses, etc.)
+			volatile: {
+				id: id,
+				poses: [new PoseData()],
+			},
+			// Structure for rarely-changing user configuration (display name, colour, etc.)
 			user: {}
 		}
 	}
 	clients[id] = client
-
-	console.log(`client ${client.shared.id} connecting to room ${client.room}`);
-
 	// enter this room
-	getRoom(client.room).clients[id] = client
+	client.room.clients[id] = client;
 
-	socket.on('message', (msg) => {
-		//console.log(msg)
-		const s = msg.indexOf(" ")
-		if (s > 0) {
-			const cmd = msg.substr(0, s), rest = msg.substr(s+1)
-			switch(cmd) {
-				case "pose": 
-					let vals = rest.split(" ").map(Number)
-					client.shared.pos = vals.slice(0,3)
-					client.shared.quat = vals.slice(3, 7)
-					break;
-				case "user": 
-					client.shared.user = JSON.parse(rest)
-					break;
-			}
+	// Convenience function for getting everyone in the room *except* this client.
+	function getOthersInRoom() {
+		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != id);
+	}
+
+	console.log(`client ${client.shared.volatile.id} connecting to room ${client.room.name}`);
+	
+	socket.on('message', (data) => {
+		const msg = Message.fromData(data);
+		
+		switch(msg.cmd) {
+			case "pose":
+				// New pose update (and possibly other rapidly-changing data) from the client.
+				client.shared.volatile = msg.val;
+				// Insert our ID into this structure, so we can just batch-send all the volatile
+				// info together and it already has our ID packed in.
+				client.shared.volatile.id = id;			
+				break;
+			case "user": 
+				// TODO: Send update to other users about changed info.
+				client.shared.user = msg.val;
+
+				// Tell everyone about the new/updated user.
+				(new Message("user", {id: id, user: msg.val})).sendToAll(getOthersInRoom());
+				break;
 		}
+	
 	});
 
 	socket.on('error', (err) => {
@@ -183,26 +224,38 @@ wss.on('connection', (socket, req) => {
 	});
 
 	socket.on('close', () => {
-		console.log("close", id)
-		console.log(Object.keys(clients))
+		// console.log(Object.keys(clients))
 		delete clients[id]
 
 		// remove from room
-		if (client.room) delete rooms[client.room].clients[id]
+		if (client.room) delete client.room.clients[id]
 
-		console.log(`client ${id} left`)
+
+		// Tell everyone this user left.		
+		notifyRoom(client.room, new Message("exit", id));
+
+		console.log(`client ${id} left room ${client.room.name}`);		
 	});
 
-	socket.send("handshake " + id)
-	socket.send("project " + JSON.stringify(getRoom(client.room).project))
+	// Welcome the new user and tell them their unique id.
+	// TODO: Tell them their spawn position too.
+	(new Message("handshake", {
+		id: id, 
+		others: getOthersInRoom().map(o=>o.shared)
+	})).sendWith(socket);
+
+	// Share the current 3D scene with the user.
+	(new Message("project", client.room.project)).sendWith(socket);
 });
 
 setInterval(function() {
 	for (let roomid of Object.keys(rooms)) {
-		const room = rooms[roomid]
-		let clientlist = Object.values(room.clients)
-		let shared = "others " + JSON.stringify(clientlist.map(o=>o.shared));
-		clientlist.forEach(c => c.socket.send(shared))
+		const room = rooms[roomid];
+		const clientlist = Object.values(room.clients);
+		const message = new Message("others", clientlist.map(o=>o.shared.volatile));
+		message.sendToAll(clientlist);
 	}
 }, 1000/30);
+
+
 

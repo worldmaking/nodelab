@@ -56,20 +56,25 @@ canvas {
 	height: 100%;
 }
 </style>
+<script type="text/javascript" src="networkMessages.js"></script>
 </head>
 <body>
 	<canvas id="canvas"></canvas>
 	<div id="status">No status</div>
 	<div id="log"></div>
-	<div id="data"></div>
-	<!--<script src="https://alicelab.herokuapp.com/connect.js"></script>-->
-  <script src="connect.js"></script>
-	<script type="module">
-console.log("GRAHAMS GREAT TEST")
+	<div id="data"></div>	
+
+  <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="audioConnect.js"></script>
+
+
+  <script type="module">
+
 // import the Three.js module:
 import * as THREE from "https://unpkg.com/three@0.126.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "https://unpkg.com/three@0.126.0/examples/jsm/controls/TransformControls.js";
+import { connectToWorld } from "/connect.mjs";
 
 // usual stuff
 // create a renderer with better than default quality:
@@ -170,7 +175,7 @@ function animate() {
   const t = clock.getElapsedTime();
   orbit.update(dt);
 
-  let { self, others } = app.world;
+  let { self, others } = app.users;
   document.getElementById("data").textContent =
     "project: " +
     JSON.stringify(project, null, " ") +
@@ -184,8 +189,7 @@ function animate() {
   const rotation = new THREE.Quaternion();
   const scale = new THREE.Vector3();
   camera.matrixWorld.decompose(position, rotation, scale);
-  self.pos = position.toArray();
-  self.quat = rotation.toArray();
+  self.poses = [{ pos:position.toArray(), quat: rotation.toArray()}];
   
   
   usersInstancedMesh.count = Math.min(others.length, MAX_USERS);
@@ -195,12 +199,12 @@ function animate() {
     let mat = new THREE.Matrix4(); // usersInstancedMesh.getMatrixAt(i);
     //console.log(mate)
     mat.compose(
-      new THREE.Vector3().fromArray(mate.pos),
-      new THREE.Quaternion().fromArray(mate.quat),
+      new THREE.Vector3().fromArray(mate.poses[0].pos),
+      new THREE.Quaternion().fromArray(mate.poses[0].quat),
       new THREE.Vector3(1, 1, 1)
     );
     usersInstancedMesh.setMatrixAt(i, mat);
-    if (mate.user.rgb) {
+    if (mate.user && mate.user.rgb) {
       usersInstancedMesh.setColorAt(i, new THREE.Color(...mate.user.rgb));
       usersInstancedMesh.instanceColor.needsUpdate = true;
     }
@@ -274,8 +278,6 @@ function cleanup(world) {
 const app = connectToWorld({
 	reload_on_disconnect: true, // useful for local dev
 	room: "/kitchen",
-	url: location.origin.replace(/^http/, 'ws'),
-
 	log(msg) {
 		document.getElementById("status").textContent = msg;
 	},
@@ -287,6 +289,7 @@ const app = connectToWorld({
     world = new THREE.ObjectLoader().parse(newproject.threejs)
     scene.add(world)
 
+    project = newproject.threejs;
   },
 })
 

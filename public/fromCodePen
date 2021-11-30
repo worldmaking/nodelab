@@ -1,0 +1,741 @@
+/*
+ * Kwame Kyei-Boateng (209083205)
+ *
+ * Type 'npm run dev' into the terminal below to run the code.
+ *
+ * This code demonstrates WASD locomotion, simple Collision detection, and multiple camera views.
+ * It allows for freedom in movement within the world and viewing of the world.
+ * Adapted from - https://github.com/NikLever/THREE.js-Tips-Tricks-Techniques/blob/master/ttt-2.2/complete/script.js
+ * The world contains synth trees that generate a synth sound when the avatar nears
+ * Positioning of trees adapted from https://github.com/NikLever/THREE.js-Tips-Tricks-Techniques/blob/master/ttt-1.4/complete/script.js
+ * Dynamic bubbles adapted from https://codepen.io/xFlaye/pen/yLoKdJv
+ * Synth transformation adapted from https://codepen.io/k_b/pen/abyPbew and https://codepen.io/k_b/pen/rNzoaaj
+ * 
+ *
+ * To move, click:
+ * W: forward
+ * A: turn left
+ * S: backward
+ * D: turn right
+ * Q: shift left
+ * E: shift right
+ *
+ * Click the camera button at the bottom right corner to switch camera views.
+ */
+
+import * as THREE from "https://cdn.skypack.dev/three/build/three.module.js";
+import { PointerLockControls } from "https://cdn.skypack.dev/three/examples/jsm/controls/PointerLockControls.js";
+import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
+import * as Tone from "https://cdn.skypack.dev/tone";
+
+const vshader = `
+#include <common>
+#include <lights_pars_begin>
+varying vec3 vPosition;
+varying mat4 vModelMatrix;
+varying vec3 vWorldNormal;
+varying vec3 vLightIntensity;
+void main() {
+  vec3 vLightFront;
+  vec3 vIndirectFront;
+  vec3 objectNormal = normal;
+  #include <defaultnormal_vertex>
+  #include <begin_vertex>
+  #include <project_vertex>
+  #include <lights_lambert_vertex>
+  vLightIntensity = vLightFront + ambientLightColor;
+  vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+  vPosition = position;
+  vModelMatrix = modelMatrix;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+const fshader = `
+uniform vec3 u_color;
+uniform vec3 u_light_position;
+uniform vec3 u_rim_color;
+uniform float u_rim_strength;
+uniform float u_rim_width;
+// Example varyings passed from the vertex shader
+varying vec3 vPosition;
+varying vec3 vWorldNormal;
+varying mat4 vModelMatrix;
+varying vec3 vLightIntensity;
+void main()
+{
+  vec3 worldPosition = ( vModelMatrix * vec4( vPosition, 1.0 )).xyz;
+  vec3 viewVector = normalize(cameraPosition - worldPosition);
+  float rimNdotV =  max(0.0, u_rim_width - clamp(dot(vWorldNormal, viewVector), 0.0, 1.0));
+  vec3 rimLight = rimNdotV * u_rim_color * u_rim_strength;
+  vec3 color = vLightIntensity * u_color + rimLight;
+  gl_FragColor = vec4( color, 1.0 );
+}
+`;
+
+// Shiftr with weather
+let outsider = 0;
+let outsider2 = 0;
+const client = mqtt.connect(
+  "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io",
+//"wss://kaviproto:test@kaviproto.cloud.shiftr.io"
+  {
+    clientId: "DIGM5520"
+  }
+);
+
+client.on("connect", function () {
+  console.log("connected to Wind!");
+  client.subscribe("Wind", outsider);
+});
+
+client.on("connect", function () {
+  console.log("connected to aerosol particulate sized PM10!");
+  client.subscribe("Particles10", outsider2);
+});
+
+client.on("message", function (topic0, message0) {
+  outsider = parseFloat(message0);
+  console.log ("float: Wind", outsider);
+});
+
+client.on("message", function(topic1, message1) {
+  message1 = 0;
+  outsider2 = parseFloat(message1);
+  console.log ("float: Particles10", outsider2);   
+});
+
+//shiftr with biodata
+let biodata1 = 0;
+
+const client2 = mqtt.connect(
+  "wss://kaviproto:test@kaviproto.cloud.shiftr.io",
+  {
+    clientId2: "DIGM5520"
+  }
+);
+
+client2.on("connect", function () {
+  console.log("connected to bpm!");
+  client2.subscribe("bpm/1", biodata1);
+});
+
+client2.on("message", function (topic0, message0) {
+  biodata1 = parseFloat(message0);
+  console.log ("float: bpm/1", biodata1);
+});
+
+/*
+ * Base
+ */
+
+// Scene
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xcccccc);
+scene.fog = new THREE.FogExp2(0xcccccc, 0.02);
+
+// Canvas dimensions
+const sizes = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+  aspect: window.innerWidth / window.innerHeight
+};
+
+/*
+ * Renderer
+ */
+const renderer = new THREE.WebGLRenderer({
+  antialias: true
+});
+
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+// Update scene when window resized
+window.addEventListener(
+  "resize",
+  () => {
+    // Update dimensions
+    sizes.width = window.innerWidth;
+    sizes.height = window.innerHeight;
+    sizes.aspect = sizes.width / sizes.height;
+
+    // Update camera
+    camera.aspect = sizes.aspect;
+    camera.updateProjectionMatrix();
+
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  },
+  false
+);
+
+// Fullscreen on window double click
+window.addEventListener("dblclick", () => {
+  const fullscreenElement =
+    document.fullscreenElement || document.webkitFullscreenElement;
+
+  if (!fullscreenElement) {
+    if (canvas.requestFullscreen) canvas.requestFullscreen();
+    else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+});
+
+/*
+ * Light
+ */
+const ambient = new THREE.HemisphereLight(0xcccccc, 0x080820);
+scene.add(ambient);
+
+// Directional light
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(1, 10, 6);
+// Keep the direction of the light from changing
+const lightOffset = light.position.clone();
+scene.add(light);
+
+/*
+ * Objects
+ */
+// Foliage
+const foliageMtrl = new THREE.MeshBasicMaterial({
+  color: 0xff8080,
+  wireframe: true
+});
+
+// Trunk
+const trunkGeo = new THREE.CylinderGeometry(0.5, 0.5, 6, 10);
+
+const trunkMtrl = new THREE.MeshBasicMaterial({
+  color: 0x008080,
+  wireframe: false
+});
+
+// Bubbles
+const bubbleGeometry = new THREE.IcosahedronGeometry(1, 5); // radius, detail (radius changes dynamically in Render function)
+
+let nPos = [];
+let v3 = new THREE.Vector3();
+let pos = bubbleGeometry.attributes.position;
+
+for (let x = 0; x < pos.count; x++) {
+  v3.fromBufferAttribute(pos, x).normalize();
+  nPos.push(v3.clone());
+}
+// save custom user data about the Object3D
+// in this case, save the position attributes into the npos array
+bubbleGeometry.userData.nPos = nPos;
+
+const bubbleMtrl = new THREE.MeshPhongMaterial({
+  color: 0x008080,
+  wireframe: true
+});
+
+// Synth Change
+const uniforms = THREE.UniformsUtils.merge([
+  THREE.UniformsLib["common"],
+  THREE.UniformsLib["lights"]
+]);
+uniforms.u_color = { value: new THREE.Color(0x00aeae) };
+uniforms.u_light_position = { value: light.position.clone() };
+uniforms.u_rim_color = { value: new THREE.Color(0x00aeae) };
+uniforms.u_rim_strength = { value: 15 };
+uniforms.u_rim_width = { value: 3 };
+
+const synthTreeMtrl = new THREE.ShaderMaterial({
+  uniforms: uniforms,
+  vertexShader: vshader,
+  fragmentShader: fshader,
+  lights: true,
+  wireframe: true
+});
+
+const synthAvatarMtrl = new THREE.ShaderMaterial({
+  uniforms: uniforms,
+  vertexShader: vshader,
+  fragmentShader: fshader,
+  lights: true,
+  wireframe: false
+});
+
+// All trees as a group
+const woods = new THREE.Group();
+scene.add(woods);
+
+// Plane
+const planeGeo = new THREE.PlaneBufferGeometry(200, 200, 9, 9);
+// Get position and normal arrays of plane geometry
+const planePosition = planeGeo.getAttribute("position");
+const planeNormal = planeGeo.getAttribute("normal");
+const planeMtrl = new THREE.MeshLambertMaterial({
+  color: "hsl(0, 0%, 70%)"
+});
+const plane = new THREE.Mesh(planeGeo, planeMtrl);
+
+const obstructions = []; // Array of obstructions for collision detection
+
+// Go through the position array of the plane and place trees
+for (let i = 0; i < planePosition.array.length; i += 3) {
+  // Tree Geometry
+  let foliageGeo = new THREE.BufferGeometry();
+  const count = 50; // number of triangles
+  const positionsArray = new Float32Array(count * 3 * 3); // each traingle will have 3 points each with 3 elements (x,y,z)
+  for (let j = 0; j < count * 3 * 3; j++) {
+    positionsArray[j] = Math.random() * 4.4 - 2.2; // position each point between -3 and 3 units
+  }
+  const positionsAttribute = new THREE.BufferAttribute(positionsArray, 3);
+  foliageGeo.setAttribute("position", positionsAttribute); // Combine the positions with the geometry
+
+  // Create the mesh for the tree (foliage and trunk) and position it
+  const foliageMesh = new THREE.Mesh(foliageGeo, foliageMtrl);
+  const trunkMesh = new THREE.Mesh(trunkGeo, trunkMtrl);
+  const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMtrl);
+  foliageMesh.position.y += 2;
+  trunkMesh.position.y -= 3;
+  bubbleMesh.position.y = 3;
+  // add a frequency property to the foliage of the tree (used for synth made during collision detection)
+  foliageMesh.userData.frequency = getRandomInt(300, 1700);
+
+  const tree = new THREE.Group();
+  tree.add(foliageMesh, trunkMesh, bubbleMesh);
+  // Create position and normal vectors for the tree based on the plane position
+  const treePosition = new THREE.Vector3(
+    planePosition.array[i],
+    planePosition.array[i + 1],
+    planePosition.array[i + 2]
+  );
+  const treeNormal = new THREE.Vector3(
+    planeNormal.array[i],
+    planeNormal.array[i + 1],
+    planeNormal.array[i + 2]
+  );
+  // Add the position and normal vectors to the tree
+  tree.position.copy(treePosition);
+  const target = treePosition.clone().add(treeNormal.multiplyScalar(10.0));
+  tree.lookAt(target);
+  // Rotate the tree and position it to allign with the plane
+  tree.rotation.x = Math.PI / 2;
+  tree.position.z += 5;
+  obstructions.push(tree);
+  woods.add(tree);
+}
+
+plane.rotation.x = -Math.PI / 2;
+woods.rotation.x = -Math.PI / 2;
+scene.add(plane);
+
+// ! WARP TREE BUBBLES
+// ! add noise elements
+let noise = openSimplexNoise.makeNoise4D(Date.now());
+
+const clock = new THREE.Clock();
+
+let bubbleSpec = {
+  speed: 1.0,
+  radius: 5.0,
+  detail: 2.0
+};
+
+function renderBubble() {
+    let t = clock.getElapsedTime()*outsider/35;
+  // loop over every nPos element in the array. p = vertex position, idx = vertex index position
+  bubbleGeometry.userData.nPos.forEach((p, idx) => {
+    let ns = noise(p.x, p.y, p.z, t);
+    v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
+    pos.setXYZ(idx, v3.x, v3.y, v3.z);
+  });
+  bubbleGeometry.computeVertexNormals();
+  pos.needsUpdate = true;
+}
+
+// Avatar
+const avatar = new THREE.Group();
+scene.add(avatar);
+// Avatar Body
+const bodyGeo = new THREE.CylinderBufferGeometry(0.5, 0.2, 1.5, 20);
+const bodyMtrl = new THREE.MeshStandardMaterial({
+  color: 0x008080
+});
+const body = new THREE.Mesh(bodyGeo, bodyMtrl);
+body.position.y = 0.8;
+body.scale.z = 0.5;
+avatar.add(body);
+// Avatar Head
+const headGeo = new THREE.SphereBufferGeometry(0.3, 20, 15);
+const head = new THREE.Mesh(headGeo, bodyMtrl);
+head.position.y = 2.0;
+avatar.add(head);
+// Avatar Mesh
+const avatarBubbleGeometry = new THREE.IcosahedronGeometry(2.25,5);
+avatarBubbleGeometry.userData.nPos = nPos;
+const avatarBubbleMat = new THREE.MeshPhongMaterial({wireframe: true});
+const avatarBubbleMesh = new THREE.Mesh(avatarBubbleGeometry, avatarBubbleMat);
+avatarBubbleMesh.position.y = 1;
+avatarBubbleMesh.castShadow = false;
+avatar.add(avatarBubbleMesh);
+
+//biodata to avatar mesh
+let avatarBubbleSpec = {
+  speed: 1.0,
+  radius: 5.0,
+  detail: 2.0
+};
+
+function avatarRenderBubble() {
+//  let t = clock.getElapsedTime() * avatarBubbleSpec.speed;
+    let t = clock.getElapsedTime()*biodata1;
+  avatarBubbleGeometry.userData.nPos.forEach((p, idx) => {
+    let ns = noise(p.x, p.y, p.z, t);
+    v3.copy(p).multiplyScalar(avatarBubbleSpec.radius).addScaledVector(p, ns);
+    pos.setXYZ(idx, v3.x, v3.y, v3.z);
+  });
+  avatarBubbleGeometry.computeVertexNormals();
+  pos.needsUpdate = true;
+}
+
+/*
+ * Camera
+ */
+const camera = new THREE.PerspectiveCamera(75, sizes.aspect, 0.1, 1000);
+camera.position.set(0, 4, 7);
+camera.lookAt(0, 1.5, 0);
+
+const cameras = []; // Array of cameras
+
+// Camera that follows avatar from behind
+const followCam = new THREE.Object3D();
+followCam.position.set(0, 4, 7);
+avatar.add(followCam);
+cameras.push(followCam);
+
+// Camera that views avatar from the front
+const frontCam = new THREE.Object3D();
+frontCam.position.set(0, 3, -8);
+avatar.add(frontCam);
+cameras.push(frontCam);
+
+// Camera that follows avatar from above
+const overheadCam = new THREE.Object3D();
+overheadCam.position.set(0, 20, 20);
+avatar.add(overheadCam);
+cameras.push(overheadCam);
+
+// When camera button is clicked, camera view changes
+const btn = document.getElementById("camera-btn");
+btn.addEventListener("click", changeCamera);
+
+let cameraIndex = 0; // active camera
+
+// Iterate over the array of different camera views
+function changeCamera() {
+  cameraIndex++;
+  if (cameraIndex > cameras.length) cameraIndex = 0;
+}
+
+// First person camera view
+const controls = new PointerLockControls(camera, renderer.domElement);
+
+/*
+ * Sound
+ */
+let listener = new THREE.AudioListener();
+camera.add(listener);
+
+function makeSynth() {
+  return new Tone.Synth({
+    oscillator: {
+      type: "fattriangle"
+    },
+    envelope: {
+      attack: 2,
+      decay: 0.1,
+      sustain: 0.5,
+      release: 100
+    }
+  });
+}
+
+let sound = new THREE.PositionalAudio(listener);
+Tone.setContext(sound.context);
+let synth = makeSynth();
+sound.setNodeSource(synth);
+
+/*
+ * Controls
+ */
+
+// Avatar
+// Add keyboard functions for avatar as events to the document
+function addKeyboardControl() {
+  document.addEventListener("keydown", keyDown);
+  document.addEventListener("keyup", keyUp);
+}
+addKeyboardControl();
+
+// Add 1 unit of movement to avatar object's move property when key is pressed
+// 'e' = key pressed
+function keyDown(e) {
+  let forward =
+    avatar.userData !== undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.forward
+      : 0;
+  let turn =
+    avatar.userData != undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.turn
+      : 0;
+  let right =
+    avatar.userData != undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.right
+      : 0;
+  let backward =
+    avatar.userData !== undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.backward
+      : 0;
+  let left =
+    avatar.userData != undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.left
+      : 0;
+
+  switch (e.keyCode) {
+    case 87: // W: forward
+      forward = -1;
+      break;
+    case 83: // S: backward
+      backward = 1;
+      break;
+    case 65: // A: rotate left
+      turn = 1;
+      break;
+    case 68: // D: rotate right
+      turn = -1;
+      break;
+    case 81: // Q: shift left
+      left = -1;
+      break;
+    case 69: // E: shift right
+      right = 1;
+      break;
+  }
+  avatarControl(forward, turn, right, backward, left);
+}
+
+// When key is released, set unit of movement for avatar object's move property to 0
+// 'e' = key pressed
+function keyUp(e) {
+  let forward =
+    avatar.userData !== undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.forward
+      : 0;
+  let turn =
+    avatar.userData != undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.turn
+      : 0;
+  let right =
+    avatar.userData != undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.right
+      : 0;
+  let backward =
+    avatar.userData !== undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.backward
+      : 0;
+  let left =
+    avatar.userData !== undefined && avatar.userData.move !== undefined
+      ? avatar.userData.move.left
+      : 0;
+
+  switch (e.keyCode) {
+    case 87: // W: forward
+      forward = 0;
+      break;
+    case 83: // S: backward
+      backward = 0;
+      break;
+    case 65: // A: rotate left
+      turn = 0;
+      break;
+    case 68: // D: rotate right
+      turn = 0;
+      break;
+    case 81: // Q: shift left
+      left = 0;
+      break;
+    case 69: // E: shift right
+      right = 0;
+      break;
+  }
+  avatarControl(forward, turn, right, backward, left);
+}
+
+// Apply the units needed to move the avatar object based on its move property
+// 'forward', 'turn', and 'shift' are the numerical units for movement
+function avatarControl(forward, turn, right, backward, left) {
+  const pos1 = avatar.position.clone();
+  pos1.y += 0.8;
+  let dirB = new THREE.Vector3();
+  let dirR = new THREE.Vector3();
+  let dirF = new THREE.Vector3();
+  let dirL = new THREE.Vector3();
+  // Get avatar's z-axis translated to world space
+  avatar.getWorldDirection(dirB);
+  avatar.getWorldDirection(dirR);
+  avatar.getWorldDirection(dirF);
+  avatar.getWorldDirection(dirL);
+  dirR.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); // rotate direction for right movement
+  dirF.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI); // rotate direction for forward movement
+  dirL.applyAxisAngle(new THREE.Vector3(0, 1, 0), -(Math.PI / 2)); // rotate direction for left movement
+
+  // Check if avatar is intersecting with other objects
+  let raycasterBackward = new THREE.Raycaster(pos1, dirB);
+  let raycasterRight = new THREE.Raycaster(pos1, dirR);
+  let raycasterForward = new THREE.Raycaster(pos1, dirF);
+  let raycasterLeft = new THREE.Raycaster(pos1, dirL);
+  avatar.userData.blockedBackward = false;
+  avatar.userData.blockedRight = false;
+  avatar.userData.blockedForward = false;
+  avatar.userData.blockedLeft = false;
+  // If there is at least one obstruction take the nearest which will be first in the array of obstructions
+  // Check if this obstruction's distance property from the avatar is less than 2 units
+  if (obstructions !== undefined) {
+    // Forward obstruction
+    const intersectForward = raycasterForward.intersectObjects(obstructions);
+    intersection(intersectForward, "blockedForward");
+    // Left obstruction
+    const intersectLeft = raycasterLeft.intersectObjects(obstructions);
+    intersection(intersectLeft, "blockedLeft");
+    // Backward obstruction
+    const intersectBackward = raycasterBackward.intersectObjects(obstructions);
+    intersection(intersectBackward, "blockedBackward");
+    // Right obstruction
+    const intersectRight = raycasterRight.intersectObjects(obstructions);
+    intersection(intersectRight, "blockedRight");
+  }
+
+  // Apply units for moving forward or backward, rotating and moving left or right to the avatar object's move property
+  if (forward == 0 && turn == 0 && right == 0 && backward == 0 && left == 0) {
+    delete avatar.userData.move;
+  } else {
+    if (avatar.userData === undefined) avatar.userData = {};
+    avatar.userData.move = {
+      forward,
+      turn,
+      right,
+      backward,
+      left
+    };
+  }
+}
+
+// Avatar intersection with trees
+function intersection(intersect, blocked){
+  if (intersect.length > 0 && intersect[0].distance < 2) {
+      avatar.userData[blocked] = intersect[0].distance < 2;
+    const foliage = intersect[0].object.parent.children[0];
+    const bubble = intersect[0].object.parent.children[2];
+    const avatarBody = avatar.children[0];
+    const avatarHead = avatar.children[1];
+      synth.triggerAttackRelease(
+        foliage.userData.frequency,
+        "2n"
+      );
+      foliage.add(sound);
+      foliage.material = synthAvatarMtrl;
+      bubble.material = synthTreeMtrl;
+      avatarBody.material = synthAvatarMtrl;
+      avatarHead.material = synthAvatarMtrl;
+
+      const position = foliage.geometry.getAttribute(
+        "position"
+      );
+      const amp = 0.05;
+      for (let i = 0; i < position.array.length; i += 3) {
+        let noise = openSimplexNoise.makeNoise2D(Date.now());
+        const offset =
+          noise(
+            position.array[i] + outsider * 0.0003,
+            position.array[i + 1] + outsider * 0.0003
+          ) *
+          outsider *
+          amp;
+        position.array[i + 2] = offset;
+      }
+      position.needsUpdate = true;
+
+      setTimeout(function () {
+        foliage.material = foliageMtrl;
+        bubble.material = bubbleMtrl;
+        avatarBody.material = bodyMtrl;
+        avatarHead.material = bodyMtrl;
+      }, 1500);
+    }
+}
+
+/*
+ * Animate
+ */
+const speed = 7;
+
+const animate = () => {
+  // time = clock.getElapsedTime();
+  const dt = clock.getDelta();
+
+  // Update avatar position
+  if (avatar.userData !== undefined && avatar.userData.move !== undefined) {
+    // move forward if no obstruction in path
+    if (!avatar.userData.blockedForward) {
+      avatar.translateZ(avatar.userData.move.forward * dt * speed);
+    }
+    // move backward if no obstruction in path
+    if (!avatar.userData.blockedBackward) {
+      avatar.translateZ(avatar.userData.move.backward * dt * speed);
+    }
+    // shift right if no obstruction in path
+    if (!avatar.userData.blockedRight) {
+      avatar.translateX(avatar.userData.move.right * dt * speed);
+    }
+    // shift left if no obstruction in path
+    if (!avatar.userData.blockedLeft) {
+      avatar.translateX(avatar.userData.move.left * dt * speed);
+    }
+    // rotate left or right
+    avatar.rotateY(avatar.userData.move.turn * dt * 1.5);
+  }
+
+  // Update light to follow avatar
+  light.position.copy(avatar.position).add(lightOffset);
+
+  // Update cameras, lerping towards the camera's target depending on the current camera index in the cameras array
+  if (cameraIndex !== cameras.length) {
+    if (controls.isLocked) controls.disconnect();
+    const target = cameras[cameraIndex].getWorldPosition(new THREE.Vector3());
+    camera.position.lerp(target, 0.05);
+    const pos = avatar.position.clone();
+    pos.y += 3;
+    // front, behind or overhead view
+    if (camera.position.distanceTo(target) > 0.1 || cameraIndex < 2)
+      camera.lookAt(pos);
+    // first person view
+  } else {
+    if (!controls.isLocked) controls.lock();
+    camera.position.copy(avatar.position);
+    camera.position.y = 1.7;
+  }
+
+  // Update renderer
+  renderer.render(scene, camera);
+  renderBubble();
+  avatarRenderBubble();
+
+  // Call animate again on the next frame
+  window.requestAnimationFrame(animate);
+};
+animate();
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min);
+}
