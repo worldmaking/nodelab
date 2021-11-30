@@ -83,6 +83,12 @@ let world;
  * @type {Replica} */
 let clientReplica;
 
+/**
+ * Body variable that can be referenced for parenting UI print text.
+ * Initially set for Replica.#body
+ */
+let pubBody;
+
 // Load a font that we can use to display user names of other users, 
 // and prepare a material to use for text rendering.
 const loader = new THREE.FontLoader();
@@ -165,6 +171,7 @@ class Replica {
 
          // Create a box to serve as the torso.
         this.#body = new THREE.Group();
+        pubBody = this.#body;
         const torso = new THREE.Mesh(world.primitiveGeo.box, material);
         torso.scale.set(0.35, TORSO_HEIGHT, 0.12);
         torso.castShadow = true;
@@ -449,8 +456,8 @@ function disposeUserReplica(id) {
     }
 }
 
-function getOwnReplica() {
-    return clientReplica;
+function getOwnReplicaBody() {
+    return pubBody;
 }
 
 export {
@@ -458,5 +465,5 @@ export {
     updateUserReplica,
     replicatePoses,
     disposeUserReplica,
-    getOwnReplica
+    getOwnReplicaBody
 }
