@@ -70,6 +70,8 @@ server.listen(PORT, function() {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
 
+console.log("GRAHAMS GREAT TEST")
+
 const demoproject = {
   threejs: {
 	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
