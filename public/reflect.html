@@ -185,13 +185,6 @@
         //const sphere = new THREE.SphereGeometry( 0.5, 16, 8 );
 
 				//lights
-
-			// const	light1 = new THREE.PointLight( 0xff0040, 2, 50 );
-			// 	light1.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xff0040 } ) ) );
-			// 	world.scene.add( light1 );
-/*       const light = new THREE.PointLight( 0xff0000, 1, 100 );
-light.position.set( 50, 50, 50 );
-world.scene.add( light );*/
         const colourTriplet = getFormColour();
         
 
@@ -243,17 +236,18 @@ world.scene.add( light );*/
         let gazeObject = null;
         
         // Fill scene with some basic demo content.
+        //Reaction Constants
         const k1 = 1;
-      const k2 = 2;
-      const k3 = 1;
-      const k4 = 1;
-      const k5 = 1;
-      const k6 = 0.5;
-      const k7 = 0.5;
-      const k8 = 1;
+        const k2 = 2;
+        const k3 = 1;
+        const k4 = 1;
+        const k5 = 1;
+        const k6 = 0.5;
+        const k7 = 0.5;
+        const k8 = 1;
 
-      // initial concentrations for the set of chemicals:
-      let chems = [0.5, 0.5, 0.5, 0.5];
+        // initial concentrations for the set of chemicals:
+        let chems = [0.5, 0.5, 0.5, 0.5];
 
       function react() {
         //unpack chemical array into local variables;
@@ -336,7 +330,7 @@ world.scene.add( light );*/
 
         const material = new THREE.ShaderMaterial({
           uniforms: {
-            color: { value: new THREE.Color(0xffffff) },reflectivity:true, transparent:true
+            color: { value: new THREE.Color(world.clientColour) },reflectivity:true, transparent:true
           },
           vertexShader: document.getElementById('vertexshader').textContent,
           fragmentShader: document.getElementById('fragmentshader').textContent,
@@ -344,7 +338,7 @@ world.scene.add( light );*/
 
         //
 
-        particles = new THREE.Points(geometry, material);
+        particles = new THREE.Points(geometry,material);
         world.scene.add(particles);
         function customAvatar(head,body,material){
           const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);
@@ -357,19 +351,19 @@ world.scene.add( light );*/
         //Clouds-texture:image
         const MAX_NUM_AGENTS = 50;
 
-      const NUM_INSTANCES = MAX_NUM_AGENTS;
+        const NUM_INSTANCES = MAX_NUM_AGENTS;
 
-      const colors = [];
-      const palette = [
-        new THREE.Color('#1161EE'),
-        new THREE.Color('#00A3FF'),
-        new THREE.Color('#00D4F0'),
-        new THREE.Color('#6BFBCE'),
+        const colors = [];
+        const palette = [
+          new THREE.Color('#b36200'),
+          new THREE.Color('#00008b'),
+        // new THREE.Color('#00D4F0'),
+        // new THREE.Color('#6BFBCE'),
 
-        new THREE.Color('#FFC0B7'),
-        new THREE.Color('#FFAF86'),
-        new THREE.Color('#FFA453'),
-        new THREE.Color('#EE9E11'),
+        // new THREE.Color('#FFC0B7'),
+        // new THREE.Color('#FFAF86'),
+        // new THREE.Color('#FFA453'),
+        // new THREE.Color('#EE9E11'),
       ];
 
       const sphere = new THREE.SphereGeometry(0.2, 16, 8);
@@ -385,19 +379,20 @@ world.scene.add( light );*/
       //geometrysphere.rotation.x=-Math.PI/2
       const materialsphere = new THREE.MeshBasicMaterial({
         color: 0xd3d3,
-        wireframe: false,
-        transparent: false,
+        wireframe: true,
+        transparent: true,
+        
       });
       const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
       spheredome.rotation.x = -Math.PI;
-      //world.scene.add(spheredome);
+      world.scene.add(spheredome);
       const sampler = new MeshSurfaceSampler(spheredome).build();
 
       // //sampler geometry
       const sphereGeometry = new THREE.SphereGeometry(0.15, 6, 6);
 
       const sphereMaterial = new THREE.MeshBasicMaterial({
-        color: 0xd3d3d3,
+        color: 0x0000d3,
         transparent: true,
         // size: 3,
         alphaTest: 0.2,
@@ -412,19 +407,21 @@ world.scene.add( light );*/
         sphereMaterial,
         500
       );
-      world.scene.add(spheres);
+      //world.scene.add(spheres);
     
       
-      const geometrymirror = new THREE.CircleGeometry(48, 64);
-      const groundMirror = new Reflector(geometrymirror, {
-        clipBias: 0.003,
-        textureWidth: window.innerWidth * window.devicePixelRatio,
-        textureHeight: window.innerHeight * window.devicePixelRatio,
-        color: 0xd3d3d3,
-      });
-     groundMirror.position.y = 0.5;
-      groundMirror.rotateX(-Math.PI / 2);
-      world.scene.add(groundMirror);
+    //   const geometrymirror = new THREE.CircleGeometry(48, 64);
+    //   const groundMirror = new Reflector(geometrymirror, {
+    //     clipBias: 0.003,
+    //     textureWidth: window.innerWidth * window.devicePixelRatio,
+    //     textureHeight: window.innerHeight * window.devicePixelRatio,
+    //     color: 0xd3d3d3,
+    //   });
+    //  groundMirror.position.y = 0.5;
+    //   groundMirror.rotateX(-Math.PI / 2);
+    //   world.scene.add(groundMirror);
+   
+
       const tempPosition = new THREE.Vector3();
       const tempObject = new THREE.Object3D();
       for (let i = 0; i < 150000; i++) {
@@ -444,7 +441,7 @@ world.scene.add( light );*/
       }
       for (let i = 0; i < MAX_NUM_AGENTS; i++) {
         var randomColor = palette[Math.floor(Math.random() * palette.length)];
-        const light = new THREE.PointLight(randomColor, 0.5, 25);
+        const light = new THREE.PointLight(randomColor, 0.5, 10);
         light.add(
           new THREE.Mesh(
             sphere,
@@ -568,157 +565,29 @@ world.scene.add( light );*/
         ico.position.z = -1;
         world.scene.add(ico);        
         let mesh;
-// Texture
+    // MeshFloor
+    let USE_WIREFRAME = false;
+      const meshFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(
+              window.innerWidth,
+              window.innerHeight,
+              window.innerWidth,
+              window.innerHeight
+            ),
+            new THREE.MeshPhongMaterial({
+              color: 'lightblue',
+              wireframe: USE_WIREFRAME,
+            })
+          );
 
-				const size = 128;
-				const data = new Uint8Array( size * size * size );
+        // Floor Rotation
+        meshFloor.rotation.x -= Math.PI / 2;
+            meshFloor.position.y= 0.1;
+        // Cast shadows on Floor
+        meshFloor.receiveShadow = true;
+        world.scene.add(meshFloor);
 
-				let k = 0;
-				const scale = 0.5;
-				const perlin = new ImprovedNoise();
-				const vector = new THREE.Vector3();
-
-				for ( let z = 0; z < size; z ++ ) {
-
-					for ( let y = 0; y < size; y ++ ) {
-
-						for ( let x = 0; x < size; x ++ ) {
-
-							const d = 10.0 - vector.set( x, y, z ).subScalar( size / 2 ).divideScalar( size ).length();
-							data[ k ] = ( 228 + 228 * perlin.noise( x * scale / 1.5, y * scale, z * scale / 1.5 ) ) * d * d;
-							k ++;
-
-						}
-
-					}
-
-				}
-
-				const texture = new THREE.DataTexture3D( data, size, size, size );
-				texture.format = THREE.RedFormat;
-				texture.minFilter = THREE.LinearFilter;
-				texture.magFilter = THREE.LinearFilter;
-				texture.unpackAlignment = 0.1;
-
-				// Material
-
-				const vertexShader = /* glsl */`
-					in vec3 position;
-					uniform mat4 modelMatrix;
-					uniform mat4 modelViewMatrix;
-					uniform mat4 projectionMatrix;
-					uniform vec3 cameraPos;
-					out vec3 vOrigin;
-					out vec3 vDirection;
-					void main() {
-						vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-						vOrigin = vec3( inverse( modelMatrix ) * vec4( cameraPos, 1.0 ) ).xyz;
-						vDirection = position - vOrigin;
-						gl_Position = projectionMatrix * mvPosition;
-					}
-				`;
-
-				const fragmentShader = /* glsl */`
-					precision highp float;
-					precision highp sampler3D;
-					uniform mat4 modelViewMatrix;
-					uniform mat4 projectionMatrix;
-					in vec3 vOrigin;
-					in vec3 vDirection;
-					out vec4 color;
-					uniform vec3 base;
-					uniform sampler3D map;
-					uniform float threshold;
-					uniform float range;
-					uniform float opacity;
-					uniform float steps;
-					uniform float frame;
-					uint wang_hash(uint seed)
-					{
-							seed = (seed ^ 61u) ^ (seed >> 16u);
-							seed *= 9u;
-							seed = seed ^ (seed >> 4u);
-							seed *= 0x27d4eb2du;
-							seed = seed ^ (seed >> 15u);
-							return seed;
-					}
-					float randomFloat(inout uint seed)
-					{
-							return float(wang_hash(seed)) / 4294967296.;
-					}
-					vec2 hitBox( vec3 orig, vec3 dir ) {
-						const vec3 box_min = vec3( - 0.5 );
-						const vec3 box_max = vec3( 0.5 );
-						vec3 inv_dir = 1.0 / dir;
-						vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
-						vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
-						vec3 tmin = min( tmin_tmp, tmax_tmp );
-						vec3 tmax = max( tmin_tmp, tmax_tmp );
-						float t0 = max( tmin.x, max( tmin.y, tmin.z ) );
-						float t1 = min( tmax.x, min( tmax.y, tmax.z ) );
-						return vec2( t0, t1 );
-					}
-					float sample1( vec3 p ) {
-						return texture( map, p ).r;
-					}
-					float shading( vec3 coord ) {
-						float step = 0.01;
-						return sample1( coord + vec3( - step ) ) - sample1( coord + vec3( step ) );
-					}
-					void main(){
-						vec3 rayDir = normalize( vDirection );
-						vec2 bounds = hitBox( vOrigin, rayDir );
-						if ( bounds.x > bounds.y ) discard;
-						bounds.x = max( bounds.x, 0.0 );
-						vec3 p = vOrigin + bounds.x * rayDir;
-						vec3 inc = 1.0 / abs( rayDir );
-						float delta = min( inc.x, min( inc.y, inc.z ) );
-						delta /= steps;
-						// Jitter
-						// Nice little seed from
-						// https://blog.demofox.org/2020/05/25/casual-shadertoy-path-tracing-1-basic-camera-diffuse-emissive/
-						uint seed = uint( gl_FragCoord.x ) * uint( 1973 ) + uint( gl_FragCoord.y ) * uint( 9277 ) + uint( frame ) * uint( 26699 );
-						vec3 size = vec3( textureSize( map, 0 ) );
-						float randNum = randomFloat( seed ) * 2.0 - 1.0;
-						p += rayDir * randNum * ( 1.0 / size );
-						//
-						vec4 ac = vec4( base, 0.0 );
-						for ( float t = bounds.x; t < bounds.y; t += delta ) {
-							float d = sample1( p + 0.5 );
-							d = smoothstep( threshold - range, threshold + range, d ) * opacity;
-							float col = shading( p + 0.5 ) * 3.0 + ( ( p.x + p.y ) * 0.25 ) + 0.2;
-							ac.rgb += ( 1.0 - ac.a ) * d * col;
-							ac.a += ( 1.0 - ac.a ) * d;
-							if ( ac.a >= 0.95 ) break;
-							p += rayDir * delta;
-						}
-						color = ac;
-						if ( color.a == 0.0 ) discard;
-					}
-				`;
-
-				
-				const cloudmaterial = new THREE.RawShaderMaterial( {
-					glslVersion: THREE.GLSL3,
-					uniforms: {
-						base: { value: new THREE.Color( 0x798aa0 ) },
-						map: { value: texture },
-						cameraPos: { value: new THREE.Vector3() },
-						threshold: { value: 0.84 },
-						opacity: { value: 0.2 },
-						range: { value: 0.38 },
-						steps: { value: 200 },
-						frame: { value: 0 }
-					},
-					vertexShader,
-					fragmentShader,
-					side: THREE.BackSide,
-					transparent: true
-				} );
-        mesh = new THREE.Mesh( geometrysphere, cloudmaterial );
-        mesh.rotation.x=-Math.PI
-//mesh.position.y=2;
-world.scene.add( mesh ); 
+			
         // Main rendering loop.
         function animate() {
           const dt = world.clock.getDelta();
@@ -753,7 +622,7 @@ world.scene.add( mesh );
           move(dt);
           syncColors();
           // mesh.material.uniforms.cameraPos.value.copy( this.camera.position );
-       mesh.rotation.y = t*0.01;
+       //mesh.rotation.y = t*0.01;
 
           ico.rotation.x -= 0.01;
           ico.rotation.y -= 0.01;
