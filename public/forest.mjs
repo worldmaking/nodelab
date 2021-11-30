@@ -195,7 +195,7 @@ function buildForest(world) {
                 tree.position.set(10 * (x + Math.random()), 2, 10 * (z + Math.random()));
                 
                 obstructions.push(tree);
-                tree.scale.set(0.4.5, 0.4.5, 0.4.5);
+                tree.scale.set(0.45, 0.45, 0.45);
                 woods.add(tree);
             }
         }
