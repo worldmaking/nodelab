@@ -128,8 +128,8 @@ function buildForest(world) {
 
     // ! ----------------------------------------- APPLES
     // setup shapes for sampled meshes
-    const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ color: "purple" });
+    //const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
+    //const sphereMaterial = new THREE.MeshBasicMaterial({ color: "purple" });
     //const apples = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);  // ! <------------------------  apples
 
     // set array for each point
@@ -199,6 +199,8 @@ function buildForest(world) {
 
                 // generate the instances
                 // ! Do I need this? It's created above
+                const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
+                const sphereMaterial = new THREE.MeshBasicMaterial({ color: randomColor() });
                 const apples = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);
                 apples.name = "apples"
                 //scene.add(apples);
@@ -396,6 +398,14 @@ function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min) + min);
+}
+
+function randomColor(){
+    let r = Math.random(),
+    g = Math.random(),
+    b = Math.random();
+
+    return new THREE.Color(r,g,b);
 }
 
 export {buildForest}
