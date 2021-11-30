@@ -3,7 +3,10 @@ import { World }    from './world.mjs';
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
 import * as Tone from "https://cdn.skypack.dev/tone";
 import {print} from './utility.mjs';
-import * as mqtt from 'https://unpkg.com/mqtt/dist/mqtt.min.js';
+//import * mqtt from 'https://unpkg.com/mqtt/dist/mqtt.min.js';
+//import * as mqtt from './mqttshitr.js';
+//import { outsider } from './shiftr.js';
+
 
 const vshader = `
 #include <common>
@@ -49,9 +52,10 @@ void main()
 }
 `;
 
-/*
-// biometereological data from Shiftr.io server from Jane Tingley's Foresta Inclusive project
+// shiftr
+
 let outsider = 0;
+
 const client = mqtt.connect(
   "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io",
   {
@@ -68,7 +72,7 @@ client.on("message", function (topic0, message0) {
   outsider = parseFloat(message0);
   console.log ("float: Wind", outsider);
 });
-*/
+
 
 let noise = openSimplexNoise.makeNoise4D(Date.now());
 
@@ -154,7 +158,7 @@ function buildForest(world) {
             for (let z = -5; z < 5; z++) {
                 // Tree Geometry
                 let foliageGeo = new THREE.BufferGeometry();
-                const count = 50; // number of triangles
+                const count = outsider; // number of triangles
                 const positionsArray = new Float32Array(count * 3 * 3); // each traingle will have 3 points each with 3 elements (x,y,z)
                 for (let j = 0; j < count * 3 * 3; j++) {
                     positionsArray[j] = Math.random() * 4.4 - 2.2; // position each point between -3 and 3 units
