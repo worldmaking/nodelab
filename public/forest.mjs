@@ -174,6 +174,7 @@ function buildForest(world) {
                 // generate the instances
 
                 const spheres = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);
+                spheres.name = "apples"
                 //scene.add(spheres);
 
                 // dummy vector to store sampled random coordinates
@@ -206,7 +207,7 @@ function buildForest(world) {
                     //console.log("coords: ",i,points[i]);
 
                     
-                    }	
+                }	
 
                 // ! -------------------------> SAMPLED MESHES END
 
@@ -215,7 +216,7 @@ function buildForest(world) {
                 innerAura.position.y += 2;
                 trunkMesh.position.y -= 3;
                 bubbleMesh.position.y = 3;
-
+                bubbleMesh.name = "bubbles"
                 bubbleMesh.add(spheres);
 
                 bubbleFruit.push(spheres);
@@ -311,6 +312,28 @@ function buildForest(world) {
             if (v.lengthSq() < 5) {
                 newTreeCollision = tree;
             }
+
+            // get the InstancedMesh:
+            let bubbles = tree.getObjectByName("apples")
+            // bubbles.rotation.x += dt;
+            // bubbles.rotation.y += dt*0.12345;
+            // bubbles.rotation.z += dt*0.76543;
+
+            for (let i=0; i<bubbles.count; i++) {
+                let mat = bubbles.getMatrixAt(i)
+                // modify mat
+                // first apply a rotation
+                // extract translation
+                // normalize
+                // pass into noise()
+                // scale it by bubbleSpec.radius
+                // set as translation of mat
+                bubbles.setMatrixAt(i, mat)
+            }
+            bubbles.instanceMatrix.needsUpdate = true;
+            // let ns = noise(p.x, p.y, p.z, bubbleTime);
+            // v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
+            // bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
         }
 
         if (newTreeCollision != collidedTree) {
@@ -333,14 +356,14 @@ function buildForest(world) {
 
             collidedTree = newTreeCollision;
         }    
-            if (collidedTree) {
-                let outsider = 70;
-                const {foliage, bubble} = getTreeElements(collidedTree);
-                const position = foliage.geometry.getAttribute("position");
-                const amp = 0.05;
+        if (collidedTree) {
+            let outsider = 70;
+            const {foliage, bubble} = getTreeElements(collidedTree);
+            const position = foliage.geometry.getAttribute("position");
+            const amp = 0.05;
 
-                for (let i = 0; i < position.array.length; i += 3) {
-                    let noise = openSimplexNoise.makeNoise2D(Date.now());
+            for (let i = 0; i < position.array.length; i += 3) {
+                let noise = openSimplexNoise.makeNoise2D(Date.now());
                 const offset =
                     noise(
                         position.array[i] + outsider * 0.0003,
@@ -351,11 +374,13 @@ function buildForest(world) {
                 position.array[i + 2] = offset;
             }
             position.needsUpdate = true;
-            }
+        }
     }
     
 // ! -------------------------------------------------------------------------- UPDATES AND RENDER CALLS
     generateTrees();
+
+    console.log(woods)
 
     return updateForest;
 }
