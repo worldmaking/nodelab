@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";       
+import * as MKControl from './mouseKeyboardControl.mjs';
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 const UI = {
@@ -17,6 +18,8 @@ const UI = {
 
     addMode: false,
     removeMode: false,
+
+    rollOverMesh: null,
 
     // currently active object:
     activeObj: null,
@@ -80,6 +83,14 @@ const UI = {
           buttonAdd,
           buttonRemove
         }
+
+        // roll-over helpers
+
+        const rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
+        const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
+        this.rollOverMesh = new THREE.Mesh( rollOverGeo, rollOverMaterial );
+        this.rollOverMesh.visible = false;
+        world.scene.add( this.rollOverMesh );
       }
     },
 
@@ -95,6 +106,9 @@ const UI = {
       this.world.scene.add(newBox);
       this.clickable.push(newBox);
       this.malleable.push(newBox);
+
+      this.print("box added");
+    //   this.print(newBox.color.toString());
       
       // console.log(objects.toString());
     },
@@ -126,6 +140,14 @@ const UI = {
         }
         this.intersected = null;
       }
+
+    //   if (this.addMode) {
+    //     this.rollOverMesh.visible = true;
+    //     this.rollOverMesh.position.copy( intersects[ 0 ].point ).add( intersects[ 0 ].face.normal );
+    //   } else {
+    //     this.rollOverMesh.visible = false;
+    //   }
+
       if(MKControl.mouseButtons[0] && this.intersected) {
         const obj = this.intersected;
         // console.log(obj);
@@ -169,6 +191,7 @@ const UI = {
         if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
           if (this.removeMode) {
             this.world.scene.remove(obj);
+            this.print("box removed");
             if ( obj == this.activeObj ) {
               this.control.detach();
               this.activeObj = null;
@@ -183,33 +206,35 @@ const UI = {
     
     // function to add 3d text to the world, functionality right now is mainly to debug in vr
     print(s){
-      this.logs.push(s);
-      if(this.logs.length > 9){
-        this.logs.shift();
-      }
-      const loader = new THREE.FontLoader();
-      loader.load( './fonts/Roboto_Regular.json', function ( font ) {
-        // for(let i = 0; i < this.textGroup.children.length; i++){
-        //   this.textGroup.remove(this.textGroup.children[i])
-        // }
-        let y = 0.8; 
-        for(let i = this.logs.length - 1; i >= 0; i--){
-          const textGeo = new THREE.TextGeometry( this.logs[i].toString(), {
-          font: font,
-          size: 0.15,
-          height: .04,
-          } );
-          
-          let textMesh = new THREE.Mesh(textGeo, new THREE.MeshLambertMaterial());  
-          textMesh.position.x = 0;
-          textMesh.position.y = y;
-          textMesh.position.z = -1;
-          this.textGroup.add(textMesh);
-          y -= 0.2;
-        }      
+        this.logs.push(s);
+        if(this.logs.length > 9){
+          this.logs.shift();
         }
-      );
-    }
+        const loader = new THREE.FontLoader();
+        let tempLogs = this.logs;
+        let tempTextGroup = this.textGroup; 
+        loader.load( './fonts/Roboto_Regular.json', function ( font ) {
+           for(let i = 0; i < tempTextGroup.children.length; i++){
+             tempTextGroup.remove(tempTextGroup.children[i])
+           }
+          let y = 0.8; 
+          for(let i = tempLogs.length - 1; i >= 0; i--){
+            const textGeo = new THREE.TextGeometry( tempLogs[i].toString(), {
+            font: font,
+            size: 0.15,
+            height: .04,
+            } );
+            
+            let textMesh = new THREE.Mesh(textGeo, new THREE.MeshLambertMaterial());  
+            textMesh.position.x = 0;
+            textMesh.position.y = y;
+            textMesh.position.z = -1;
+            tempTextGroup.add(textMesh);
+            y -= 0.2;
+          }      
+          }
+        );
+      }
   };
 
   export { UI }
