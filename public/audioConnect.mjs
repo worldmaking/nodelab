@@ -15,7 +15,7 @@ const audioChatContainer = document.getElementById('audio-chat-container')
 
 console.log("audiorun")
 
-let socket;
+// let socket;
 
 
 
