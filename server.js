@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 // this will be true if there's no .env file
 const IS_HTTP = (!process.env.PORT_HTTP);
 
-const PORT_HTTP = IS_HTTP ? 3000 : (process.env.PORT_HTTP || 80);
+const PORT_HTTP = IS_HTTP ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 80);
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
 const PORT = IS_HTTP ? PORT_HTTP : PORT_HTTPS;
 //const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
@@ -54,7 +54,6 @@ const server = IS_HTTP ? http.createServer(app) : https.createServer({
 	cert: fs.readFileSync(process.env.CERT_PATH)
 }, app);
 
-
 // serve static files from PUBLIC_PATH:
 app.use(express.static(PUBLIC_PATH)); 
 // default to index.html if no file given:
@@ -74,8 +73,15 @@ console.log("GRAHAMS GREAT TEST")
 
 // Audio Server 
 
-require('child_process').fork('audioSignalingServer.js');
+//require('child_process').fork('audioSignalingServer.js');
 
+//if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
+	require('child_process').fork('audioSignalingServer.js');
+// }
+
+// else{
+// 	//socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+// }
 
 
 

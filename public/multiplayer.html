@@ -32,7 +32,7 @@
 
 
     <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="audioConnect.js"></script>
+    <script type="module" src="audioConnect.mjs"></script>
 
     <script type="text/javascript" src="networkMessages.js"></script>
 
@@ -177,11 +177,14 @@
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
+      import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
+
+      import joinRoom from "./audioConnect.mjs"
 
       console.log("MY LITTLE TEST")
 
@@ -240,6 +243,8 @@
       // Enter our 3D scene and initiate server communication once user has picked their name and signed in.
       function logIn() {       
 
+        
+
         // Prep a DOM element to display debug messages.
         const readout = document.createElement('div');
         readout.style.position = 'absolute';
@@ -264,6 +269,8 @@
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });
+
+        
 
         // If we get this far, save this user name and colour for next log-in too.
         if (localStorageAvailable) {
@@ -315,6 +322,32 @@
         ico.position.z = -1;
         world.scene.add(ico);        
 
+        ////////////////////////////////////////////////////////////////////////
+        
+        UI.init(world);
+        UI.addTextGroupTo( getOwnReplicaBody() );
+        UI.addButtonsTo( getOwnReplicaBody() );
+
+        // UI.print("it's printing!");
+
+         // hides or shows the 3D text in the scene when 'l' is pressed
+         document.addEventListener('keypress', (event) => {
+          if(event.key == "l"){
+            if(UI.isVisible){
+              UI.textGroup.visible = false;
+              UI.isVisible = false;
+            }
+            else {
+              UI.textGroup.visible = true;
+              UI.isVisible = true;
+              
+            }
+            
+          }
+        });
+
+        ////////////////////////////////////////////////////////////////////////
+
         // Main rendering loop.
         function animate() {
           const dt = world.clock.getDelta();
@@ -330,7 +363,10 @@
           } else {
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
-            MKControl.updateControls(dt);            
+            MKControl.updateControls(dt);  
+            
+            UI.updateMK(dt, MKControl, activeCamera);
+            
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
@@ -366,7 +402,12 @@
         // Start animating!
         
         world.renderer.setAnimationLoop(animate);
+
+        joinRoom()
       }
+
+      
+
     </script>
   
  
