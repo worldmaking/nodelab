@@ -25,8 +25,23 @@ io.on('connection', (socket) => {
   
     } 
 
+  //   else if (numberOfClients == 1) {
+  //     // if there are some one in the room 
+  //     // emit your id to the person in the room 
+  //       console.log(`Joining room ${roomId} and emitting room_joined socket event`)
+  //       socket.join(roomId)
+  //       const clientd = io.sockets.adapter.rooms.get(roomId)
+  //       let clientlist = []
+  //       for (const clientId of clientd ) {clientlist.push(clientId)}
+  //       console.log(clientlist)
   
-      else if (numberOfClients >= 1) {
+  //       // socket.emit('room_joined', roomId)
+  //       socket.emit('room_joined2',socket.id, numberOfClients, clientlist, roomId)
+  
+  // // console.log(socket.id, numberOfClients, clientd, roomId)
+  //     } 
+  
+  else if (numberOfClients >= 1) {
       // if there are some one in the room 
       // emit your id to the person in the room 
         console.log(`Joining room ${roomId} and emitting room_joined socket event`)
@@ -107,8 +122,7 @@ io.on('connection', (socket) => {
 })
 
 // START THE SERVER =================================================================
-//const port = process.env.PORT || 3123
-const port = 8080
+const port = process.env.PORT || 3123
 server.listen(port, () => {
   console.log(`Express server listening on port ${port}`)
 })
