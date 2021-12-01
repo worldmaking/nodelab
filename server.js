@@ -41,7 +41,7 @@ app.use(function(req, res, next) {
 });
 
 // promote http to https:
-if (IS_HTTPS) {
+if (!IS_HTTP) {
 	http.createServer(function(req, res) {
         res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
         res.end();
@@ -49,10 +49,10 @@ if (IS_HTTPS) {
 }
 
 // create the primary server:
-const server = IS_HTTPS ? https.createServer({
+const server = IS_HTTP ? http.createServer(app) : https.createServer({
 	key: fs.readFileSync(process.env.KEY_PATH),
 	cert: fs.readFileSync(process.env.CERT_PATH)
-}, app) : http.createServer(app);
+}, app);
 
 
 // serve static files from PUBLIC_PATH:
