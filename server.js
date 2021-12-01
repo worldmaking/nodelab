@@ -21,18 +21,15 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 */
 
-// this will be true if this server is running on Heroku
-const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
-// this will be true if there's no .env file or the DEBUG environment variable was set to true:
-const IS_DEBUG = (!process.env.PORT_HTTP) || (process.env.DEBUG === true);
-// use HTTPS if we are NOT on Heroku, and NOT using DEBUG:
-const IS_HTTPS = !IS_DEBUG && !IS_HEROKU;
+// this will be true if there's no .env file
+const IS_HTTP = (!process.env.PORT_HTTP);
 
-const PUBLIC_PATH = path.join(__dirname, "public")
-const PORT_HTTP = IS_HEROKU ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 8080);
+const PORT_HTTP = IS_HTTP ? 3000 : (process.env.PORT_HTTP || 80);
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
-const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
+const PORT = IS_HTTP ? PORT_HTTP : PORT_HTTPS;
 //const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
+
+const PUBLIC_PATH = path.join(__dirname, "public");
 
 // allow cross-domain access (CORS)
 const app = express();
@@ -44,7 +41,7 @@ app.use(function(req, res, next) {
 });
 
 // promote http to https:
-if (IS_HTTPS) {
+if (!IS_HTTP) {
 	http.createServer(function(req, res) {
         res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
         res.end();
@@ -52,11 +49,10 @@ if (IS_HTTPS) {
 }
 
 // create the primary server:
-const server = IS_HTTPS ? https.createServer({
+const server = IS_HTTP ? http.createServer(app) : https.createServer({
 	key: fs.readFileSync(process.env.KEY_PATH),
 	cert: fs.readFileSync(process.env.CERT_PATH)
-}, app) : http.createServer(app);
-
+}, app);
 
 // serve static files from PUBLIC_PATH:
 app.use(express.static(PUBLIC_PATH)); 
