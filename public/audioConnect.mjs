@@ -22,7 +22,7 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
 }
 
 else{
-	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+	socket = io('https://nodelab-rtc-signaller.herokuapp.com/', { transports : ['websocket'] })
 }
 
 //const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })

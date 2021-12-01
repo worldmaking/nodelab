@@ -75,11 +75,11 @@ server.listen(PORT, function() {
 
 
 // Audio Server 
-
+//! factored this out into its own repo to resolve github issue #11. 
 //require('child_process').fork('audioSignalingServer.js');
 
 //if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
-	require('child_process').fork('audioSignalingServer.js');
+	// require('child_process').fork('audioSignalingServer.js');
 // }
 
 // else{
