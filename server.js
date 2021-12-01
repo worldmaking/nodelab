@@ -21,15 +21,14 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 */
 
-// this will be true if this server is running on Heroku
-const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
-// this will be true if there's no .env file or the DEBUG environment variable was set to true:
-const IS_DEBUG = (!process.env.PORT_HTTP) || (process.env.DEBUG === true);
-// use HTTPS if we are NOT on Heroku, and NOT using DEBUG:
-const IS_HTTPS = !IS_DEBUG && !IS_HEROKU;
+// this will be true if there's no .env file
+const IS_DEBUG = (!process.env.PORT_HTTP);
 
-const PUBLIC_PATH = path.join(__dirname, "public")
-const PORT_HTTP = IS_HEROKU ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 8080);
+// use HTTPS if we are NOT using DEBUG:
+const IS_HTTPS = !IS_DEBUG;
+
+const PUBLIC_PATH = path.join(__dirname, "public");
+const PORT_HTTP = IS_DEBUG ? 3000 : (process.env.PORT_HTTP || 80);
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;
 const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
 //const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
