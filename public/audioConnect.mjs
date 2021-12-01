@@ -14,10 +14,12 @@ const audioChatContainer = document.getElementById('audio-chat-container')
 // Variables.
 
 console.log("audiorun")
+
+const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 // https://agile-basin-71343.herokuapp.com/
 // https://nodelab-rtc-signaller.herokuapp.com/
 //const socket = io(':3123', { transports : ['websocket'] })
-const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+
 
 const mediaConstraints = {
 	audio: true,
