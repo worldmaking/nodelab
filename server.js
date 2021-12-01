@@ -22,16 +22,14 @@ const __dirname = path.dirname(__filename);
 */
 
 // this will be true if there's no .env file
-const IS_DEBUG = (!process.env.PORT_HTTP);
+const IS_HTTP = (!process.env.PORT_HTTP);
 
-// use HTTPS if we are NOT using DEBUG:
-const IS_HTTPS = !IS_DEBUG;
+const PORT_HTTP = IS_HTTP ? 3000 : (process.env.PORT_HTTP || 80);
+const PORT_HTTPS = process.env.PORT_HTTPS || 443;
+const PORT = IS_HTTP ? PORT_HTTP : PORT_HTTPS;
+//const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
 
 const PUBLIC_PATH = path.join(__dirname, "public");
-const PORT_HTTP = IS_DEBUG ? 3000 : (process.env.PORT_HTTP || 80);
-const PORT_HTTPS = process.env.PORT_HTTPS || 443;
-const PORT = IS_HTTPS ? PORT_HTTPS : PORT_HTTP;
-//const PORT_WS = process.env.PORT_WS || 8090; // not used unless you want a second ws port
 
 // allow cross-domain access (CORS)
 const app = express();
