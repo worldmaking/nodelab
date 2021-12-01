@@ -15,11 +15,25 @@ const audioChatContainer = document.getElementById('audio-chat-container')
 
 console.log("audiorun")
 
+<<<<<<< HEAD
 const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 // https://agile-basin-71343.herokuapp.com/
 // https://nodelab-rtc-signaller.herokuapp.com/
 //const socket = io(':3123', { transports : ['websocket'] })
 
+=======
+let socket;
+
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
+	socket = io(':3123', { transports : ['websocket'] })
+}
+
+else{
+	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+}
+
+//const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+>>>>>>> parent of 21463b5... Revert "logic for local or alt heroku server"
 
 const mediaConstraints = {
 	audio: true,
