@@ -15,17 +15,8 @@ const audioChatContainer = document.getElementById('audio-chat-container')
 
 console.log("audiorun")
 
-let socket;
-
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
-	socket = io(':3123', { transports : ['websocket'] })
-}
-
-else{
-	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
-}
-
-//const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+//const socket = io(':3123', { transports : ['websocket'] })
+const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 
 const mediaConstraints = {
 	audio: true,
