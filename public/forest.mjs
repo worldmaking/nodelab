@@ -1,12 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
-import { MeshSurfaceSampler } from 'https://cdn.skypack.dev/three/examples/jsm/math/MeshSurfaceSampler.js';
 import openSimplexNoise from "https://cdn.skypack.dev/open-simplex-noise";
 import * as Tone from "https://cdn.skypack.dev/tone";
 import {print} from './utility.mjs';
-//import * mqtt from 'https://unpkg.com/mqtt/dist/mqtt.min.js';
-//import * as mqtt from './mqttshitr.js';
-//import { outsider } from './shiftr.js';
 
 
 const vshader = `
@@ -57,7 +53,6 @@ void main()
 
 let outsider = 0;
 
-/* 
 const client = mqtt.connect(
   "wss://poetryai:605k8jiP5ZQXyMEJ@poetryai.cloud.shiftr.io",
   {
@@ -75,7 +70,7 @@ client.on("message", function (topic0, message0) {
   console.log ("float: Wind", outsider);
 });
 
-*/ 
+
 let noise = openSimplexNoise.makeNoise4D(Date.now());
 
 function buildForest(world) {
@@ -83,6 +78,11 @@ function buildForest(world) {
     const woods = new THREE.Group();
     const fogColor = new THREE.Color(0xffcccc);
     //const fog = new THREE.FogExp2(0xffcccc, 0.02);
+    
+    let lowWindColor = new THREE.Color(0xffcccc);
+    let highWindColor = new THREE.Color()
+    highWindColor.setHSL(0.8, 0.2, 0.8)
+
     world.scene.add(woods);
     world.scene.background = fogColor;
     //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
@@ -126,14 +126,6 @@ function buildForest(world) {
         wireframe: true
     });
 
-    // ! ----------------------------------------- APPLES
-    // setup shapes for sampled meshes
-    const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ color: "purple" });
-    //const apples = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);  // ! <------------------------  apples
-
-    // set array for each point
-    let points = [];
 
     // Synth Change
     const uniforms = THREE.UniformsUtils.merge([
@@ -188,64 +180,16 @@ function buildForest(world) {
                 const trunkMesh = new THREE.Mesh(trunkGeo, trunkMtrl);
                 const bubbleMesh = new THREE.Mesh(bubbleGeometry, bubbleMtrl);
 
-                // !-------------------------> SAMPLED MESHES
-                // Generate apples on bubbleMesh using SurfaceSampler.js
-                // Initialize sampler
-                const sampler = new MeshSurfaceSampler(bubbleMesh).build();
-                
-                // // setup shapes for sampled meshes
-                // const sphereGeometry = new THREE.SphereBufferGeometry(0.1, 6, 6);
-                // const sphereMaterial = new THREE.MeshBasicMaterial({ color: "blue" });
-
-                // generate the instances
-                // ! Do I need this? It's created above
-                const apples = new THREE.InstancedMesh(sphereGeometry,sphereMaterial,20);
-                apples.name = "apples"
-                //scene.add(apples);
-
-                // dummy vector to store sampled random coordinates
-                const tempPosition = new THREE.Vector3();
-
-                // dummy object to generate the matrix of each sphere
-                const tempObject = new THREE.Object3D();
-
-                // loop sampled elements
-                for (let i = 0; i <10; i++) {
-                    // sample random point on the surface of bubbleMesh
-                    sampler.sample(tempPosition);
-                    // store point coordinates in tempObject
-                    tempObject.position.set(tempPosition.x, tempPosition.y, tempPosition.z);
-
-                    //console.log(tempObject.position.x, tempObject.position.y,tempObject.position.z);
-
-                    points.push(new THREE.Vector3(tempObject.position.x, tempObject.position.y,tempObject.position.z));
-                    // define a random scale for the instanced apples
-                    tempObject.scale.setScalar(Math.random() * 3 + 0.5);
-                    // update the matrix and insert it into instancedMesh matrix
-                    tempObject.updateMatrix();
-                    apples.setMatrixAt(i, tempObject.matrix);
-                    
-                }	
-
-                // ! -------------------------> SAMPLED MESHES END
-
-
-
                 foliageMesh.position.y += 2;
                 aura.position.y += 2;
-                //innerAura.position.y += 2;
+                innerAura.position.y += 2;
                 trunkMesh.position.y -= 3;
                 bubbleMesh.position.y = 3;
-
-                bubbleMesh.name = "bubbles";
-                bubbleMesh.add(apples);
-
                 // add a frequency property to the foliage of the tree (used for synth made during collision detection)
                 foliageMesh.userData.frequency = getRandomInt(300, 1700);
             
                 const tree = new THREE.Group();
-                tree.add(foliageMesh, aura, trunkMesh, bubbleMesh);
-                //tree.add(foliageMesh, aura, innerAura, trunkMesh, bubbleMesh);
+                tree.add(foliageMesh, aura, innerAura, trunkMesh, bubbleMesh);
                 // Create position and normal vectors for the tree based on the plane position
                 
                 
@@ -270,12 +214,15 @@ function buildForest(world) {
             detail: 2.0
         };      
 
+        // TODO: integrate weather data (and interpolate)
 
-        bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
+        bubbleTime += dt * Math.sqrt(outsider)/5 //(outsider - 60)/20; //(Math.sin(t) * 0.5 + 1.0) * 2.0;
+
 
         // loop over every nPos element in the array. p = vertex position, idx = vertex index position
         bubbleGeometry.userData.nPos.forEach((p, idx) => {
-            let ns = noise(p.x, p.y, p.z, bubbleTime);
+            let leafFluttr = 0.1*Math.sin(outsider + idx)
+            let ns = noise(p.x, p.y, p.z, bubbleTime + leafFluttr);
             v3.copy(p).multiplyScalar(bubbleSpec.radius).addScaledVector(p, ns);
             bubblePositions.setXYZ(idx, v3.x, v3.y, v3.z);
         });
@@ -307,6 +254,22 @@ function buildForest(world) {
 
     let collidedTree = null;
     function updateForest(t, dt) {
+
+        // outsider, roughly 75-82? 
+        const minWind = 75
+        const maxWind = 83
+        let normalizedWind = (outsider - minWind) / (maxWind - minWind);  // between 0 and 1
+
+        let newWindColor = new THREE.Color()
+        newWindColor.lerpColors(lowWindColor, highWindColor, normalizedWind);
+
+        fogColor.lerp(newWindColor, dt)
+        
+        world.scene.background = fogColor;
+        world.scene.fog.color = fogColor;
+        //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
+        //world.scene.fog = new THREE.FogExp2(fogColor, 0.05);
+
         renderBubble(t, dt);
 
         let newTreeCollision = null;
@@ -319,15 +282,6 @@ function buildForest(world) {
             if (v.lengthSq() < 5) {
                 newTreeCollision = tree;
             }
-
-            // get the InstancedMesh:
-            let bubbles = tree.getObjectByName("apples")
-            bubbles.rotation.x += dt* 0.1;
-            bubbles.rotation.y += dt* 0.05*0.012345;
-            bubbles.rotation.z += dt* 0.05*0.076543;
-
-            bubbles.instanceMatrix.needsUpdate = true;
-
         }
 
         if (newTreeCollision != collidedTree) {
