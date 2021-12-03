@@ -214,6 +214,8 @@ class Replica {
         world.vrCamera.add(replica.#head);
         world.clientSpace.add(replica.#body);
         replica.#head.visible = true;
+
+        pubBody = replica.#body;
         return replica;
     }
 
