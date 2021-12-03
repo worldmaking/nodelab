@@ -1,3 +1,10 @@
+/*
+Updated code with Wind info, random colors for apples and auras
+Random number of apples inside trees
+
+
+*/
+
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
 import { MeshSurfaceSampler } from 'https://cdn.skypack.dev/three/examples/jsm/math/MeshSurfaceSampler.js';
@@ -83,6 +90,10 @@ function buildForest(world) {
     const woods = new THREE.Group();
     const fogColor = new THREE.Color(0xffcccc);
     //const fog = new THREE.FogExp2(0xffcccc, 0.02);
+
+    let lowWindColor = new THREE.Color(0xffcccc);
+    let highWindColor = new THREE.Color()
+    highWindColor.setHSL(0.8, 0.2, 0.8)
     world.scene.add(woods);
     world.scene.background = fogColor;
     //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
@@ -105,7 +116,7 @@ function buildForest(world) {
     });
 
     // Bubbles
-    const bubbleGeometry = new THREE.IcosahedronGeometry(1, 5); // radius, detail (radius changes dynamically in Render function)
+    const bubbleGeometry = new THREE.IcosahedronGeometry(3, 5); // radius, detail (radius changes dynamically in Render function)
     let bubblePositions = bubbleGeometry.attributes.position;
     {
         let nPos = [];
@@ -212,7 +223,7 @@ function buildForest(world) {
                 const tempObject = new THREE.Object3D();
 
                 // loop sampled elements
-                for (let i = 0; i <10; i++) {
+                for (let i = 0; i <randomApple([3,7,5,12,8,13,10,21]); i++) {
                     // sample random point on the surface of bubbleMesh
                     sampler.sample(tempPosition);
                     // store point coordinates in tempObject
@@ -222,7 +233,7 @@ function buildForest(world) {
 
                     points.push(new THREE.Vector3(tempObject.position.x, tempObject.position.y,tempObject.position.z));
                     // define a random scale for the instanced apples
-                    tempObject.scale.setScalar(Math.random() * 3 + 0.5);
+                    tempObject.scale.setScalar(Math.random() * 3);
                     // update the matrix and insert it into instancedMesh matrix
                     tempObject.updateMatrix();
                     apples.setMatrixAt(i, tempObject.matrix);
@@ -277,6 +288,7 @@ function buildForest(world) {
 
 
         bubbleTime += dt * (Math.sin(t) * 0.5 + 1.0) * 2.0;
+        bubbleTime += dt * Math.sqrt(outsider)/5; //(outsider - 60)/20; //(Math.sin(t) * 0.5 + 1.0) * 2.0;
 
         bubbleGeometry.userData.nPos.forEach((p, idx) => {
             let leafFluttr = 0.1*Math.sin(outsider + idx)
@@ -308,7 +320,7 @@ function buildForest(world) {
             envelope: {
                 attack: 2,
                 decay: 0.1,
-                sustain: 0.5, 
+                sustain: 0.5,
                 release: 100
             }
         });
@@ -321,6 +333,21 @@ function buildForest(world) {
 
     let collidedTree = null;
     function updateForest(t, dt) {
+        // outsider, roughly 75-82?
+        const minWind = 75
+        const maxWind = 83
+        let normalizedWind = (outsider - minWind) / (maxWind - minWind);  // between 0 and 1
+
+        let newWindColor = new THREE.Color()
+        newWindColor.lerpColors(lowWindColor, highWindColor, normalizedWind);
+
+        fogColor.lerp(newWindColor, dt)
+
+        world.scene.background = fogColor;
+        world.scene.fog.color = fogColor;
+        //world.scene.fog = new THREE.Fog(fogColor, 0.0025, 20);
+        //world.scene.fog = new THREE.FogExp2(fogColor, 0.05);
+
         renderBubble(t, dt);
 
         let newTreeCollision = null;
@@ -363,7 +390,7 @@ function buildForest(world) {
             }
 
             collidedTree = newTreeCollision;
-        }    
+        }
             if (collidedTree) {
                 let outsider = 70;
                 const {foliage, bubble} = getTreeElements(collidedTree);
@@ -409,6 +436,10 @@ function randomColor(){
     b = Math.random();
 
     return new THREE.Color(r,g,b);
+}
+
+function randomApple(amount){
+    return amount[Math.floor(Math.random()*amount.length)];
 }
 
 export {buildForest}
