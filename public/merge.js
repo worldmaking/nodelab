@@ -6,18 +6,6 @@ try {
 }
 
 /**
- * sourceDocument might look like...
- * 
- * sourceDoc = {
- *  nodes: {
- *    _props
- *  },
- *  arcs: {
- *  }
- * }
- */
-
-/**
  * Call this function to intialize automerge, and get an object
  * back that you can use as an interface for transactions.
  * @param {object} sourceDocument initial state of the scene document

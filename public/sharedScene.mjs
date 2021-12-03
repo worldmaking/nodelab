@@ -67,12 +67,12 @@ class SharedScene {
         const reply = this.merger.makeSyncMessage(senderID);       
 
         if (!this.initialSyncCompleted) {
-            let doc = this.merger.getDocument();            
+            const doc = this.merger.getDocument();            
 
             if (!reply) {
                 // We're up to date!
                  console.log('Completed first sync.')
-                this.initialSyncCompleted = true;           
+                this.initialSyncCompleted = true;               
 
                 if (!doc.objects) {
                     console.log('document is empty - populating data structures');
@@ -80,31 +80,37 @@ class SharedScene {
                         doc.objects = new Automerge.Table();
                         doc.geometries = new Automerge.Table();
                         doc.materials = new Automerge.Table();                        
-                    })
+                    });
 
-                    this.merger.applyChange("create scene root", doc => {
-                        this.sceneRootHandle = doc.objects.add({
+                    this.merger.applyChange("scene root", doc => {
+                        this.sceneRoot.userData.mergeId= doc.objects.add({
+                            name: "root",
                             parent: null,
                             position: null,
                             quaternion: null,
                             scale: null,
                             geometry: null,
                             material: null
-                        })
+                        });
                     });
 
-                    doc = this.merger.getDocument();
-                } 
-            }
+                    
 
-            if (!this.sceneRoot.userData.mergeId) {            
-                if (doc.objects) {
-                    const roots = doc.objects.filter(obj => !obj.position);
-                    if (roots && roots.length > 0) {
-                        this.sceneRoot.userData.mergeId = roots[0].id;
-                        console.log("found scene root", roots[0]);
+                    console.log("created scene: " + this.sceneRoot.userData.mergeId);
+                } else {
+                    if (doc.objects) {
+                        const roots = doc.objects.filter(obj => { return obj.name === "root"});
+                        if (roots && roots.length > 0) {
+                            this.sceneRoot.userData.mergeId = roots[0].id;
+                            console.log("found scene root", roots[0]);
+                        } else {
+                            console.log("no scene root found!");
+                        }
                     }
                 }
+
+                console.log("INITIAL DOC: ",this.merger.getDocument());
+                setTimeout(()=> this.fakeUpdate(), 1000);
             }
         }
 
@@ -113,6 +119,24 @@ class SharedScene {
         }
 
         return reply;
+    }
+
+    fakeUpdate() {
+        console.log("adding fake data " + this.sceneRoot.userData.mergeId);
+        this.merger.applyChange("adding fake object", doc => {
+            this.fakeDataID = doc.objects.add({
+                name: "fake" + Math.floor(Math.random() * 1000), 
+                parent: this.sceneRoot.userData.mergeId,
+                position: [1, 2, 3],
+                quaternion: [0, 0, 0, 1],
+                scale: [1, 1, 1],
+                geometry: null,
+                material: null
+            })
+        })
+
+        console.log("MODIFIED DOC: ",this.merger.getDocument());
+        console.log("added fake object " + this.fakeDataID);
     }
 
     tryGenerateSyncMessage() {
