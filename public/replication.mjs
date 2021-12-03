@@ -83,12 +83,6 @@ let world;
  * @type {Replica} */
 let clientReplica;
 
-/**
- * Body variable that can be referenced for parenting UI print text.
- * Initially set for Replica.#body
- */
-let pubBody;
-
 // Load a font that we can use to display user names of other users, 
 // and prepare a material to use for text rendering.
 const loader = new THREE.FontLoader();
@@ -215,7 +209,6 @@ class Replica {
         world.clientSpace.add(replica.#body);
         replica.#head.visible = true;
 
-        pubBody = replica.#body;
         return replica;
     }
 
@@ -304,7 +297,7 @@ class Replica {
             // and we're currently showing a hand we made earlier, hide it.
             world.scene.remove(hand);
             hand.visible = false;
-        }
+        }        
     }
 
     /**
@@ -354,6 +347,9 @@ class Replica {
         this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
     }
+
+    getHeadGroup() {return this.#head;  }
+    getBodyGroup() {return this.#body;  }
 }
 
 /** @type {Replica[]} */
@@ -471,7 +467,7 @@ function disposeUserReplica(id) {
 }
 
 function getOwnReplicaBody() {
-    return pubBody;
+    return clientReplica.getBodyGroup();
 }
 
 export {
