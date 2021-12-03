@@ -1,7 +1,7 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
-import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";       
+import * as THREE from 'https://cdn.skypack.dev/three@0.126.0/build/three.module.js';
+import { TransformControls } from "https://cdn.skypack.dev/three@0.126.0/examples/jsm/controls/TransformControls.js";       
 import * as MKControl from './mouseKeyboardControl.mjs';
-import * as ThreeMeshUI from "https://cdn.jsdelivr.net/npm/three-mesh-ui"; //ui interface library
+import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 const UI = {
@@ -118,7 +118,7 @@ const UI = {
 
     //UI panel
     UI.mainPanel();
-    UI.updateButtons();
+    //UI.updateButtons();
   },
 
   addTextGroupTo(destination) {
@@ -347,9 +347,9 @@ const UI = {
     this.leftCubeButton = new ThreeMeshUI.Block(TextBoxContainer);
     
     // Add texts and buttons to the panel
-    this.voiceChatText.add(new ThreeMeshUI.Text({ content: "voiceChat" }),voiceChatBox); //text and object is added in here!
-    this.rightCubeButton.add(new ThreeMeshUI.Text({ content: "rightCube" }),rightCube);
-    this.leftCubeButton.add(new ThreeMeshUI.Text({ content: "leftCube" }),leftCube);
+    this.voiceChatText.add(new ThreeMeshUI.Text({ content: "voiceChat" }),this.voiceChatBox); //text and object is added in here!
+    this.rightCubeButton.add(new ThreeMeshUI.Text({ content: "rightCube" }),this.rightCube);
+    this.leftCubeButton.add(new ThreeMeshUI.Text({ content: "leftCube" }),this.leftCube);
     
     // Create states for the buttons.
     // In the loop, we will call component.setState( 'state-name' ) when mouse hover or click
@@ -397,17 +397,16 @@ const UI = {
     this.leftCubeButton.setupState(hoveredStateAttributes);
     this.leftCubeButton.setupState(idleStateAttributes);
     
-    panelContainer.add(leftCubeButton,voiceChatText, rightCubeButton);
-    objsToTest.push(leftCubeButton,voiceChatText, rightCubeButton);
-    
+    this.panelContainer.add(this.leftCubeButton,this.voiceChatText, this.rightCubeButton);
+    this.objsToTest.push(this.leftCubeButton,this.voiceChatText, this.rightCubeButton);    
   },
 
   // Called in the loop, get intersection with either the mouse or the VR controllers,
   // then update the buttons states according to result 
-  updateButtons() {
+  updateButtons(vrControl) {
     // Find closest intersecting object
     let intersect;
-    if (renderer.xr.isPresenting) {
+    if (this.world.renderer.xr.isPresenting) {
       vrControl.setFromController(0, raycaster.ray);
       intersect = raycast();
       // Position the little white dot at the end of the controller pointing ray

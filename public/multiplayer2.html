@@ -80,7 +80,7 @@
     <script type="module">
       'use strict';
       
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
+      import * as THREE from 'https://cdn.skypack.dev/three@0.126.0/build/three.module.js';     
       import { World } from "./world.mjs"; 
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
@@ -88,7 +88,7 @@
       import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
-      import * as ThreeMeshUI from "https://cdn.jsdelivr.net/npm/three-mesh-ui"; //ui interface library
+      import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
 
 
       // Setup login form. Randomize the colour value for variety.

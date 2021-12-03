@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
+import * as THREE from 'https://cdn.skypack.dev/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
 import { XRControllerModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/XRControllerModelFactory.min.js"; 
 
