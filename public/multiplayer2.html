@@ -221,11 +221,11 @@
         
         ////////////////////////////////////////////////////////////////////////
         
-        
-
         UI.init(world);
-        getOwnReplicaBody().add(UI.textGroup);  
-        UI.print("it's printing!");
+        UI.addTextGroupTo( getOwnReplicaBody() );
+        UI.addButtonsTo( getOwnReplicaBody() );
+
+        // UI.print("it's printing!");
 
          // hides or shows the 3D text in the scene when 'l' is pressed
          document.addEventListener('keypress', (event) => {
@@ -241,7 +241,7 @@
             }
             
           }
-        })
+        });
 
 
         ////////////////////////////////////////////////////////////////////////
@@ -263,7 +263,7 @@
             // In non-VR, step the mouse and keyboard controls.
             MKControl.updateControls(dt);
             
-            UI.updateMK(dt, MKControl, activeCamera)
+            UI.updateMK(dt, MKControl, activeCamera);
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
