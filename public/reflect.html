@@ -311,7 +311,7 @@
           // positions[i] = 0.5 // x
           // positions[i] = 40 // y
           positions[i] = 0.04; // z
-
+// console.log(positions[i]);
           let c = chems[j];
           let radius = Math.sqrt(Math.min(2, Math.max(1, c)) / Math.PI);
           scales[j] = radius;
@@ -351,6 +351,7 @@
           particles = new THREE.Points(ParticleGeo,particleMaterial);
           head.add(particles);
           body.add(cube);
+         // console.log(head);
         }
 
         // Set up our replication system so it's ready to receive information about users.
@@ -449,34 +450,45 @@
         }
       }
 
-      function colorSteal() {
+      function colorSteal(player) {
+        //let { self, others } = app.users;
         for (let o of objects) {
-          let x = o.position.x - cylinder.position.x;
-          let y = o.position.y - cylinder.position.y;
-          let z = o.position.z - cylinder.position.z;
+          let x = o.position.x - player.volatile.poses[0].pos[0];
+          let y = o.position.y - player.volatile.poses[0].pos[1];
+          let z = o.position.z - player.volatile.poses[0].pos[2];
           let dist = Math.sqrt(x * x + y * y + z * z);
-          if (dist < 15) {
-            o.color.setHex(cylinder.material.color.getHex());
-            o.add(
-              new THREE.Mesh(
-                sphere,
-                new THREE.MeshBasicMaterial({
-                  color: cylinder.material.color.getHex(),
-                })
-              )
-            );
+          if (dist < 3) {
+            // console.log(dist);
+            // console.log(self.user.rgb);
+          o.color = new THREE.Color( player.user.rgb[0], player.user.rgb[1], player.user.rgb[2] );
+
           } else if (dist > 18) {
-            if (o.color.getHex() == cylinder.material.color.getHex()) {
-              var randomColor =
-                palette[Math.floor(Math.random() * palette.length)];
-              o.color.setHex(randomColor);
-              o.add(
-                new THREE.Mesh(
-                  sphere,
-                  new THREE.MeshBasicMaterial({ color: randomColor })
-                )
-              );
-            }
+            // if (o.color.getHex() == customAvatar.material.color) {
+            //   var randomColor =
+            //     palette[Math.floor(Math.random() * palette.length)];
+            //   o.color.setHex(randomColor);
+            // }
+          }
+        }
+      }
+      function colorStealOther(player, material) {
+        //let { self, others } = app.users;
+        for (let o of objects) {
+          let x = o.position.x - player.poses[0].pos[0];
+          let y = o.position.y - player.poses[0].pos[1];
+          let z = o.position.z - player.poses[0].pos[2];
+          let dist = Math.sqrt(x * x + y * y + z * z);
+          if (dist < 3) {
+            // console.log(dist);
+            // console.log(self.user.rgb);
+          o.color = new THREE.Color({color: player.userRGB});
+
+          } else if (dist > 18) {
+            // if (o.color.getHex() == customAvatar.material.color) {
+            //   var randomColor =
+            //     palette[Math.floor(Math.random() * palette.length)];
+            //   o.color.setHex(randomColor);
+            // }
           }
         }
       }
@@ -624,10 +636,17 @@ const chunks = splitArrayIntoChunks(objects, 4);
             item.distance= c*2.5;
           }
         }
+        
         //console.log(scales);
         ParticleGeo.attributes.scale.needsUpdate = true;
           // Get the data objects that sync to/from the server.
           let { self, others } = app.users;
+          colorSteal(self);
+          for(let o of others){
+            if(others != null){
+              colorStealOther(o);
+            }
+          }
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
           
