@@ -128,6 +128,8 @@ class Replica {
 
     #displayName;
 
+    #colour;
+
     /**
      * Create a replica with these user properties.
      * @param {string} displayName Name to display for this replica user.
@@ -144,6 +146,7 @@ class Replica {
         if (colour) {
             material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(colour))});
             this.#material = material;
+            this.#colour = colour;
         }
         this.#head = new THREE.Group();
         world.scene.add(this.#head);
@@ -343,6 +346,10 @@ class Replica {
         this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
     }
+
+    getColour() {
+        return this.#colour;
+    }
 }
 
 /** @type {Replica[]} */
@@ -459,6 +466,10 @@ function disposeUserReplica(id) {
     }
 }
 
+function getUserReplica(id) {
+    return replicas[id];
+}
+
 function getOwnReplica() {
     return clientReplica;
 }
@@ -468,5 +479,6 @@ export {
     updateUserReplica,
     replicatePoses,
     disposeUserReplica,
-    getOwnReplica
+    getOwnReplica,
+    getUserReplica
 }

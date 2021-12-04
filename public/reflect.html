@@ -108,7 +108,7 @@
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
@@ -472,6 +472,9 @@
         }
       }
       function colorStealOther(player, material) {
+        const replica = getUserReplica(player.id);
+        const colour = replica.getColour();
+
         //let { self, others } = app.users;
         for (let o of objects) {
           let x = o.position.x - player.poses[0].pos[0];
@@ -481,7 +484,7 @@
           if (dist < 3) {
             // console.log(dist);
             // console.log(self.user.rgb);
-          o.color = new THREE.Color({color: player.userRGB});
+            o.color = colour;
 
           } else if (dist > 18) {
             // if (o.color.getHex() == customAvatar.material.color) {
