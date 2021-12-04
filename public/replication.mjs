@@ -144,9 +144,9 @@ class Replica {
         // Otherwise, make a custom material for this replica, 
         // and cache it for re-use and cleanup when we're done.
         if (colour) {
-            material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(colour))});
-            this.#material = material;
-            this.#colour = colour;
+            this.#colour = new THREE.Color(colourTripletToHex(colour));
+            material = new THREE.MeshLambertMaterial({color: this.#colour});
+            this.#material = material;            
         }
         this.#head = new THREE.Group();
         world.scene.add(this.#head);
