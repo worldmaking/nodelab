@@ -81,11 +81,11 @@
       'use strict';
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
-      import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";       
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplica } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
+      import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
@@ -221,153 +221,27 @@
         
         ////////////////////////////////////////////////////////////////////////
         
-        // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
-        const UI = {
-          raycaster: new THREE.Raycaster(),
-          //pointer: new THREE.Vector2(), MKControl.mouse
+        UI.init(world);
+        UI.addTextGroupTo( getOwnReplicaBody() );
+        UI.addButtonsTo( getOwnReplicaBody() );
 
-          // TODO: do we need separate VRControl ?
-          control: new TransformControls(world.mouseCamera, world.renderer.domElement),
+        // UI.print("it's printing!");
 
-          clickable: [],
-          intersected: null,
-
-          // currently active object:
-          activeObj: null,
-
-          tools: {},
-
-          init(world) {
-            this.control.addEventListener("dragging-changed", function (event) {
-              MKControl.enableOrbit(!event.value)
-            });
-            world.scene.add(this.control);
-
-            // addButtons
-            {
-              const buttonGeo = new THREE.DodecahedronGeometry(1, 0);
-              const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
-              const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
-              const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
-              const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
-              const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
-
-              const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
-              buttonTranslate.position.z = 10;
-              buttonTranslate.position.x = -6;
-
-              const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
-              buttonRotate.position.z = 10;
-              buttonRotate.position.x = -3;
-
-              const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
-              buttonScale.position.z = 10;
-              buttonScale.position.x = 0;
-
-              const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
-              buttonAdd.position.z = 10;
-              buttonAdd.position.x = 3;
-
-              const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
-              buttonRemove.position.z = 10;
-              buttonRemove.position.x = 6;
-
-              // scene.add(buttonTranslate);
-              // scene.add(buttonRotate);
-              // scene.add(buttonScale);
-              // scene.add(buttonAdd);
-
-              const buttonGroup = new THREE.Group();
-
-              this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-              buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-
-              world.scene.add(buttonGroup);
-
-              this.tools = {
-                buttonTranslate,
-                buttonRotate,
-                buttonScale,
-                buttonAdd,
-                buttonRemove
-              }
+         // hides or shows the 3D text in the scene when 'l' is pressed
+         document.addEventListener('keypress', (event) => {
+          if(event.key == "l"){
+            if(UI.isVisible){
+              UI.textGroup.visible = false;
+              UI.isVisible = false;
             }
-          },
-
-          activateObj( obj ) {
-  
-            this.control.detach();
-            this.control.attach( obj );
-            this.activeObj = obj;
-            
-          },
-
-          updateMK(dt, MKControl, camera) {
-            this.raycaster.setFromCamera(MKControl.mouse, camera);
-
-            const intersects = this.raycaster.intersectObjects(this.clickable, false);
-            if (intersects.length > 0) {
-              if (this.intersected != intersects[0].object) {
-                if (this.intersected)
-                this.intersected.material.emissive.setHex(this.intersected.currentHex);
-
-                this.intersected = intersects[0].object;
-                this.intersected.currentHex = this.intersected.material.emissive.getHex();
-                this.intersected.material.emissive.setHex(0x333333);
-              }
-            } else {
-              if (this.intersected) {
-                this.intersected.material.emissive.setHex(this.intersected.currentHex);
-              }
-              this.intersected = null;
-            }
-            if(MKControl.mouseButtons[0] && this.intersected) {
-              const obj = this.intersected;
-              switch (obj) {
-                case this.tools.buttonTranslate:
-                  this.control.setMode("translate");
-                  break;
-
-                case this.tools.buttonRotate:
-                this.control.setMode("rotate");
-                  break;
-
-                case this.tools.buttonScale:
-                this.control.setMode("scale");
-                  break;
-
-                // case this.tools.buttonAdd:
-                //   this.addMode = true;
-                //   addNewObj(helperWidth);
-                //   break;
-
-                // case this.tools.buttonRemove:
-                // this.removeMode = true;
-                //   // updateActiveButton( obj );
-                //   break;
-              }
-
-              // if ( buttonGroup.children.includes(obj) && obj != buttonRemove ) {  // if the obj is a button, but not the remove button, turn remove mode off.
-              //   removeMode = false;
-                
-              // }
+            else {
+              UI.textGroup.visible = true;
+              UI.isVisible = true;
               
-              // if (objects.includes(obj)) { // if the obj is part of the malleable objects array,
-              //   if (removeMode) {
-              //     scene.remove(obj);
-              //     if ( obj == activeObj ) {
-              //       control.detach();
-              //       activeObj = null;
-              //     }
-              //   } else if (obj !== activeObj) {
-              //     activateObj ( obj );
-              //   }
-              // }
             }
-          },
-        };
-
-        UI.init(world)
+            
+          }
+        });
 
 
         ////////////////////////////////////////////////////////////////////////
@@ -389,7 +263,7 @@
             // In non-VR, step the mouse and keyboard controls.
             MKControl.updateControls(dt);
             
-            UI.updateMK(dt, MKControl, activeCamera)
+            UI.updateMK(dt, MKControl, activeCamera);
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
@@ -416,13 +290,16 @@
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
 
-          //console.log(getOwnReplica())
+          // console.log(getOwnReplica());
           
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
 
           showReadout(readout);
         }
+
+        
+
 
         // Start animating!
         
