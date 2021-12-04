@@ -48,6 +48,8 @@ const UI = {
     leftCubeButton: null,
     voiceChatText: null,
     voiceChatBox: null,
+    callButtonText: null,
+    callButton: null,
 
   //mouse action tools UI stuff
   // mouse: new THREE.Vector2(),
@@ -72,12 +74,13 @@ const UI = {
       const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
       const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
       const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
+      const buttonMat6 = new THREE.MeshLambertMaterial({ color: 0xd6d6d6 });
 
       const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
       buttonTranslate.position.y = 0.8;
       buttonTranslate.position.x = -0.5;
 
-      const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
+      const buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
       buttonRotate.position.y = 0.6;
       buttonRotate.position.x = -0.5;
 
@@ -93,10 +96,14 @@ const UI = {
       buttonRemove.position.y = 0;
       buttonRemove.position.x = -0.5;
 
+      const callButton = new THREE.Mesh(buttonGeo, buttonMat6);
+      callButton.position.y = 1.;
+      callButton.position.x = -0.5;
+
       // const buttonGroup = new THREE.Group();
 
       // this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-      this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
+      this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove, callButton);
       for (let b of this.buttonGroup.children) { this.clickable.push(b); }
       world.scene.add(this.buttonGroup);
       this.tools = {
@@ -104,7 +111,8 @@ const UI = {
         buttonRotate,
         buttonScale,
         buttonAdd,
-        buttonRemove
+        buttonRemove,
+        callButton
       }
 
       // roll-over helpers (for hovering an object before adding)
@@ -115,10 +123,53 @@ const UI = {
       this.rollOverMesh.visible = false;
       world.scene.add( this.rollOverMesh );
     }
-
+  
     //UI panel
     UI.mainPanel();
-    //UI.updateButtons();
+    UI.panelButtons();
+  },
+
+  panelButtons(){
+
+    //panelContainer
+    this.colorPanel = new ThreeMeshUI.Block({
+      justifyContent: 'center',
+      alignContent: 'center',
+      contentDirection: "column",
+      fontFamily:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+      fontTexture:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+      fontSize: 0.17,
+      padding: 0.02,
+      borderRadius: 0.11,
+      width: 0.7,
+      height: 2
+    });
+
+ this.colorPanel.position.set(0, 3, 0);
+    this.colorPanel.rotation.x = -0.3; 
+    this.world.scene.add(this.colorPanel);
+
+    let colorPanelText = {
+      width: 0.8,
+      height: 0.2,
+      justifyContent: 'center',
+      alignContent: 'center',
+      offset: 0.05, //Distance on the Z direction between this component and its parent. 
+      margin: 0.2, //Space between the component border and outer or neighbours components outer border.
+      borderRadius: 0.075
+    };
+
+    // Buttons creation, with the options objects passed in parameters.
+    this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
+   
+    // Add texts and buttons to the panel
+   // this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.callButton); 
+    
+   // this.colorPanel.add(this.callButton);
+
+
   },
 
   addTextGroupTo(destination) {
@@ -126,7 +177,7 @@ const UI = {
   },
 
   addButtonsTo( destination ) {
-      destination.add( this.buttonGroup );
+      destination.add(this.buttonGroup);
   },
 
   addNewObj(pos) {
@@ -208,6 +259,11 @@ const UI = {
             this.removeMode = true;
             // updateActiveButton( obj );
             break;
+
+            //
+            case this.tools.callButton:
+         //   this.callMode = true;
+            break;
         }
 
         if ( Object.values(this.tools).includes(obj) ) {
@@ -286,25 +342,25 @@ const UI = {
       fontSize: 0.17,
       padding: 0.02,
       borderRadius: 0.11,
-      width: 6,
-      height: 2
+      width: 4,
+      height: 1
     });
     
-    this.panelContainer.position.set(-5, 6, 10);
+    this.panelContainer.position.set(0, 1.4, 3);
     this.panelContainer.rotation.x = -0.3; 
     this.world.scene.add(this.panelContainer);
 
-    let panelButtonGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    let panelButtonGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
     let panelButtonMaterial = new THREE.MeshBasicMaterial({ color: 0x00fff0});
     
     this.voiceChatBox = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
-    this.voiceChatBox.position.set(0, 0.4, 0); //-5, 6, 10
+    this.voiceChatBox.position.set(0, 0.3, 0); 
 
     this.rightCube = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
-    this.rightCube.position.set(0, 0.4, 0);
+    this.rightCube.position.set(0, 0.3, 0);
 
     this.leftCube = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
-    this.leftCube.position.set(0, 0.4, 0);
+    this.leftCube.position.set(0, 0.3, 0);
 
 
     let TextBoxContainer = {
@@ -341,9 +397,7 @@ const UI = {
 
     // Buttons creation, with the options objects passed in parameters.
     this.voiceChatText = new ThreeMeshUI.Block(TextBoxContainer); 
-    
     this.rightCubeButton = new ThreeMeshUI.Block(TextBoxContainer); 
-    
     this.leftCubeButton = new ThreeMeshUI.Block(TextBoxContainer);
     
     // Add texts and buttons to the panel
