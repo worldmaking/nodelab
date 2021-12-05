@@ -41,36 +41,36 @@ and creating/updating avatars for remote users based on the latest data synched 
 <input type="range" min="0" max="255" value="255" id="red-slider" />
 <h2 style="color: green">Green</h2>
 <input
-id="green-slider"
-type="range"
-min="0"
-max="255"
-value="255"
+  id="green-slider"
+  type="range"
+  min="0"
+  max="255"
+  value="255"
 />
 <h2 style="color: blue">Blue</h2>
 <input
-id="blue-slider"
-type="range"
-min="0"
-max="255"
-value="255"
+  id="blue-slider"
+  type="range"
+  min="0"
+  max="255"
+  value="255"
 />
 </div>
 <div class="grid-item">
 <div id="login-section">
-<label for="username">Username:</label><br />
-<input type="text" id="username" name="username" /><br /><br/><br/><br/>
-<button id="login-button" type="button">Login</button>
+  <label for="username">Username:</label><br />
+  <input type="text" id="username" name="username" /><br /><br/><br/><br/>
+  <button id="login-button" type="button">Login</button>
 </div>
 </div>
 <div class="grid-item">
 <h2>Size</h2>
 <input
-type="range"
-min="50"
-max="100"
-value="75"
-id="size-slider"
+  type="range"
+  min="50"
+  max="100"
+  value="75"
+  id="size-slider"
 /><br/><br/>
 <div id="colour-swatch" style="width:100%; height:50px; background-color: black"></div>
 </div>
@@ -231,7 +231,8 @@ VRControl.initializeControls(world);
 // Set up raycasting for mouse/gaze picking.
 const raycaster = new THREE.Raycaster();
 
-
+world.scene.background=null;
+world.scene.fog= null;
 // Keep track of the last looked-at object - for future use.
 let gazeObject = null;
 
@@ -309,7 +310,7 @@ j = 0;
 for (i = 0; i < chems.length * 3; i++) {
 let t = j / numchems;
 // positions[i] = 0.5 // x
-// positions[i] = 40 // y
+// positions[i] = 40 // 
 positions[i] = 0.04; // z
 // console.log(positions[i]);
 let c = chems[j];
@@ -334,7 +335,7 @@ function customAvatar(head,body,material){
 // const cube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), world.defaultMaterial);
 const particleMaterial = new THREE.ShaderMaterial({
 uniforms: {
-color: { value:material.color }, 
+  color: { value:material.color }, 
 },
 vertexShader: document.getElementById('vertexshader').textContent,
 fragmentShader: document.getElementById('fragmentshader').textContent,
@@ -343,9 +344,9 @@ transparent:true,
 
 //
 const materialcube = new THREE.MeshPhongMaterial({
-color: 'lightblue',
-wireframe: false,
-side:THREE.FrontSide, opacity:0.2
+  color: 'lightblue',
+  wireframe: false,
+  side:THREE.FrontSide, opacity:0.2
 })
 const cube = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.1), materialcube);
 particles = new THREE.Points(ParticleGeo,particleMaterial);
@@ -357,7 +358,7 @@ body.add(cube);
 // Set up our replication system so it's ready to receive information about users.
 initializeReplication(world, colourTriplet, customAvatar);
 //Agents Palette
-const MAX_NUM_AGENTS = 50;
+const MAX_NUM_AGENTS = 52;
 
 const NUM_INSTANCES = MAX_NUM_AGENTS;
 
@@ -369,26 +370,26 @@ new THREE.Color('#b30000'),
 ];
 
 //Dome
-const spheredomegeo = new THREE.SphereGeometry(0.02, 0.16, 0.8);
-const geometrysphere = new THREE.SphereGeometry(
-15,
-36,
-16,
-0,
-Math.PI*2,
-1.5707963267949,
-1.5707963267949
-);
+// const spheredomegeo = new THREE.SphereGeometry(0.02, 0.16, 0.8);
+// const geometrysphere = new THREE.SphereGeometry(
+//   20,
+//   36,
+//   16,
+//   0,
+//   Math.PI*2,
+//   1.5707963267949,
+//   1.5707963267949
+// );
 
-const materialsphere = new THREE.MeshPhongMaterial({
-color: 'lightblue',
-wireframe: false,
-side:THREE.DoubleSide
-})
+// const materialsphere = new THREE.MeshPhongMaterial({
+//       color: 'lightblue',
+//       wireframe: false,
+//       side:THREE.DoubleSide
+//     })
 
-const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
-spheredome.rotation.x = -Math.PI;
-world.scene.add(spheredome);
+// const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
+// spheredome.rotation.x = -Math.PI;
+// world.scene.add(spheredome);
 
 //Agents of Light
 let agents = [];
@@ -414,9 +415,9 @@ blending: THREE.AdditiveBlending,
 depthWrite: false,
 })
 ));
-light.position.x = Math.random() * 30-15;
-light.position.y = Math.random() * 30-15;
-light.position.z = Math.random() * 30-15;
+light.position.x = Math.random() * 100-50;
+light.position.y = Math.random() * 50;
+light.position.z = Math.random() * 100-50;
 objects.push(light);
 world.scene.add(light);
 }
@@ -430,44 +431,31 @@ let x = (a.position.x - b.position.x)/0.2;
 let y = (a.position.y - b.position.y)/0.2;
 let z = (a.position.z - b.position.z)/0.2;
 let dist = Math.sqrt(x * x + y * y + z * z);
-if (dist < 8) {
-if (a == b) {
-} else {
-if (a.color.getHex() == b.color.getHex()) {
-} else {
-// show it:
-a.color.setHex(b.color.getHex());
-a.add(
-new THREE.Mesh(
-sphere,
-new THREE.MeshBasicMaterial({ color: b.color.getHex(), transparent:true, opacity:0.5 })
-)
-);
-}
-}
+if (dist < 5) {
+  if (a == b) {
+  } else {
+    if (a.color.getHex() == b.color.getHex()) {
+    } else {
+      // show it:
+      a.color.setHex(b.color.getHex());
+    }
+  }
 }
 }
 }
 }
 
 function colorSteal(player) {
-//let { self, others } = app.users;
 for (let o of objects) {
+// get distance from user
 let x = o.position.x - player.volatile.poses[0].pos[0];
 let y = o.position.y - player.volatile.poses[0].pos[1];
 let z = o.position.z - player.volatile.poses[0].pos[2];
 let dist = Math.sqrt(x * x + y * y + z * z);
-if (dist < 3) {
-// console.log(dist);
-// console.log(self.user.rgb);
+if (dist < 2.5) {
+// change color of light to user's color
 o.color = new THREE.Color( player.user.rgb[0], player.user.rgb[1], player.user.rgb[2] );
 
-} else if (dist > 18) {
-// if (o.color.getHex() == customAvatar.material.color) {
-//   var randomColor =
-//     palette[Math.floor(Math.random() * palette.length)];
-//   o.color.setHex(randomColor);
-// }
 }
 }
 }
@@ -475,23 +463,16 @@ function colorStealOther(player, material) {
 const replica = getUserReplica(player.id);
 const colour = replica.getColour();
 
-//let { self, others } = app.users;
 for (let o of objects) {
+// get distance from other users
 let x = o.position.x - player.poses[0].pos[0];
 let y = o.position.y - player.poses[0].pos[1];
 let z = o.position.z - player.poses[0].pos[2];
 let dist = Math.sqrt(x * x + y * y + z * z);
-if (dist < 3) {
-// console.log(dist);
-// console.log(self.user.rgb);
-o.color = colour;
+if (dist < 2.5) {
+// change color of light to other user's color
+o.color = new THREE.Color(colour);
 
-} else if (dist > 18) {
-// if (o.color.getHex() == customAvatar.material.color) {
-//   var randomColor =
-//     palette[Math.floor(Math.random() * palette.length)];
-//   o.color.setHex(randomColor);
-// }
 }
 }
 }
@@ -507,7 +488,7 @@ fwd.set(0, 0, 1);
 // screw:
 let rot = new THREE.Quaternion();
 rot.setFromEuler(
-new THREE.Euler(0.1 * (Math.random() - 0.5), 0, 10 * dt)
+new THREE.Euler(0.3 * (Math.random() - 0.5), 0, 10 * dt)
 );
 // apply it:
 agents[index].quat.multiply(rot);
@@ -518,13 +499,13 @@ fwd.applyQuaternion(agents[index].quat);
 // add it to the position:
 o.position.addScaledVector(fwd, speed * dt);
 
-var b = 6;
-if (o.position.x > b) o.position.x -= b * 2.5;
-if (o.position.x < -b) o.position.x += b * 2.5;
-if (o.position.y > b) o.position.y -= b * 2;
+var b = 10;
+if (o.position.x > b) o.position.x -= b * 2;
+if (o.position.x < -b) o.position.x += b * 2;
+if (o.position.y > b/2) o.position.y -= b * 2;
 if (o.position.y < -0.5) o.position.y += b * 2;
-if (o.position.z > b) o.position.z -= b * 2.5;
-if (o.position.z < -b) o.position.z += b * 2.5;
+if (o.position.z > b) o.position.z -= b * 2;
+if (o.position.z < -b) o.position.z += b * 2;
 
 index++;
 }
@@ -547,14 +528,14 @@ let mesh;
 let USE_WIREFRAME = false;
 const meshFloor = new THREE.Mesh(
 new THREE.PlaneGeometry(
-window.innerWidth,
-window.innerHeight,
-window.innerWidth,
-window.innerHeight
+  window.innerWidth,
+  window.innerHeight,
+  window.innerWidth,
+  window.innerHeight
 ),
 new THREE.MeshPhongMaterial({
-color: 'lightblue',
-wireframe: USE_WIREFRAME,
+  color: 'lightblue',
+  wireframe: USE_WIREFRAME,
 })
 );
 
@@ -647,7 +628,7 @@ let { self, others } = app.users;
 colorSteal(self);
 for(let o of others){
 if(others != null){
-colorStealOther(o);
+  colorStealOther(o);
 }
 }
 // Update our data into the self object, and update avatars for remote users from the others object.
