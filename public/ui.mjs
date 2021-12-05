@@ -1,6 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
-import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";       
+import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";
+import { FBXLoader } from './jsm/loaders/FBXLoader.js'  
 import * as MKControl from './mouseKeyboardControl.mjs';
+
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 const UI = {
@@ -8,6 +10,8 @@ const UI = {
     //pointer: new THREE.Vector2(), MKControl.mouse
 
     world: null,
+    scale: 0,
+    emote: new THREE.Group(),
 
     // TODO: do we need separate VRControl ?
     control: null,
@@ -31,7 +35,9 @@ const UI = {
     logs: [],
     textGroup: new THREE.Group(),
 
-    isVisible: true,  
+    isVisible: true,
+    isEmoting: false,
+    timer: 0,  
 
     init(world) {
       this.world = world;
@@ -50,6 +56,7 @@ const UI = {
         const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
         const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
         const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
+
 
         const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
         buttonTranslate.position.y = 0.8;
@@ -211,6 +218,43 @@ const UI = {
         }
       }
     },
+
+    emotes(parent, s){
+      this.timer = new Date().getTime();
+      this.deleteEmote(parent);   
+      this.emote.position.y = 0.55
+      parent.add( this.emote );
+      let tempemote = this.emote;
+      let directory = './models/fbx/' + s
+      let loader = new FBXLoader();
+      loader.load(directory, function(fbx, emote){
+        fbx.scale.set(0.003,0.003,0.003)
+        fbx.position.y = 0
+        fbx.rotation.y = 180;
+        tempemote.add(fbx);
+        // tempTextGroup.add(tempemote);
+      })
+    },
+
+    getTime(){
+      let distance = new Date().getTime() - this.timer;
+      let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      return seconds;
+    },
+
+    deleteEmote(parent){
+      this.emote.remove(this.emote.children[0]);
+      parent.remove(this.emote);
+    },
+
+    animate(){
+      if(this.emote.position.y < 1){
+        this.emote.position.y += 0.01;
+      }
+      this.emote.rotation.y += 0.01;     
+    },
+
+
     // Printing to screen by Jorge
     
     // function to add 3d text to the world, functionality right now is mainly to debug in vr

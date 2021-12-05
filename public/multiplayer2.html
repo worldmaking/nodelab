@@ -32,6 +32,16 @@
     <script type="text/javascript" src="networkMessages.js"></script>
   </head>
   <body>
+    <div id='emojis'>
+      <button id=";p" class= "button">;p</button>
+      <button id="laugh" class= "button">Laugh</button>
+      <button id="love" class= "button">love</button>
+      <button id="smile" class= "button">Smile</button>
+      <button id="surprised" class= "button">Surprised</button>
+      <button id="thinking" class= "button">Thinking</button>
+      <button id="brain" class= "button">Brain Explode</button>
+    </div>
+    
     <div id="avatar-customization">
       <div class="avatar-background">
         <h1>Avatar Customization</h1>
@@ -80,6 +90,7 @@
     <script type="module">
       'use strict';
       
+      
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
       import { World } from "./world.mjs"; 
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
@@ -88,6 +99,7 @@
       import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
+      
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -104,7 +116,9 @@
       }
       document.getElementById('login-button').onclick = logIn;
 
-
+      function myFunction(){
+        console.log("here");
+      }
       
 
       function getFormColour() {        
@@ -224,6 +238,7 @@
         UI.init(world);
         UI.addTextGroupTo( getOwnReplicaBody() );
         UI.addButtonsTo( getOwnReplicaBody() );
+        //UI.animate(UI.emotes());
 
         // UI.print("it's printing!");
 
@@ -241,13 +256,49 @@
             }
             
           }
+          
         });
 
+        document.getElementById(';p').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), ";p.fbx");
+              UI.isEmoting = true;
+        });
+        document.getElementById('brain').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), "brain.fbx");
+              UI.isEmoting = true;
+        });
+        document.getElementById('laugh').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), "laugh.fbx");
+              UI.isEmoting = true;
+        });
+        document.getElementById('love').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), "love.fbx");
+              UI.isEmoting = true;
+        });
+        document.getElementById('smile').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), "smile.fbx");
+              UI.isEmoting = true;
+        });
+        document.getElementById('surprised').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), "surprised.fbx");
+              UI.isEmoting = true;
+        });
+        document.getElementById('thinking').addEventListener("click", function() {
+          UI.emotes(getOwnReplicaBody(), "thinking.fbx");
+              UI.isEmoting = true;
+        });
 
         ////////////////////////////////////////////////////////////////////////
 
         // Main rendering loop.
         function animate() {
+          if(UI.isEmoting && UI.getTime() < 10){
+            UI.animate();
+          }
+          else {
+            UI.deleteEmote(getOwnReplicaBody())
+          }
+          
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
