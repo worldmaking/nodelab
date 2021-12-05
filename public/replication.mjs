@@ -83,11 +83,6 @@ let world;
  * @type {Replica} */
 let clientReplica;
 
-/**
- * Body variable that can be referenced for parenting UI print text.
- * Initially set for Replica.#body
- */
-let pubBody;
 
 // Load a font that we can use to display user names of other users, 
 // and prepare a material to use for text rendering.
@@ -134,12 +129,14 @@ class Replica {
 
     #displayName;
 
+    #colour;
+
     /**
      * Create a replica with these user properties.
      * @param {string} displayName Name to display for this replica user.
      * @param {?number} colour Hex code colour to tint this user's avatar. Uses default material if absent.
      */
-    constructor(displayName, colour) {
+    constructor(displayName, colour, customAvatar) {
         
 
         // Use the world default material if we lack a colour for this user.
@@ -148,36 +145,45 @@ class Replica {
         // Otherwise, make a custom material for this replica, 
         // and cache it for re-use and cleanup when we're done.
         if (colour) {
-            material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(colour))});
-            this.#material = material;
+            this.#colour = new THREE.Color(colourTripletToHex(colour));
+            material = new THREE.MeshLambertMaterial({color: this.#colour});
+            this.#material = material;            
         }
-
-         // Build a "head" object, starting with a box representing the user's VR goggles.
-         this.#head = new THREE.Group();
-         const visor = new THREE.Mesh(world.primitiveGeo.box, material);
-         visor.scale.set(0.2, 0.1, 0.12);
-         this.#head.add(visor);
-     
-         // Add to the box a sphere to create a sense of a head/face behind the goggles,
-         // and help clarify which direction the goggles are pointing.
-         const ball = new THREE.Mesh(world.primitiveGeo.sphere, material);    
-         this.#head.add(ball);
-
-         ball.scale.set(HEAD_WIDTH, HEAD_HEIGHT, HEAD_WIDTH);
-         ball.position.set(0, HEAD_LIFT, HEAD_SETBACK);
-         ball.rotation.set(Math.PI * 0.1, 0, 0);
-         ball.castShadow = true;
-         world.scene.add(this.#head);
-
-         // Create a box to serve as the torso.
+        this.#head = new THREE.Group();
+        world.scene.add(this.#head);
         this.#body = new THREE.Group();
-        pubBody = this.#body;
-        const torso = new THREE.Mesh(world.primitiveGeo.box, material);
-        torso.scale.set(0.35, TORSO_HEIGHT, 0.12);
-        torso.castShadow = true;
-        this.#body.add(torso);
         world.scene.add(this.#body);
+        if(customAvatar){
+            customAvatar(this.#head,this.#body, material)
+        }else{
 
+        
+
+            // Build a "head" object, starting with a box representing the user's VR goggles.
+            
+            const visor = new THREE.Mesh(world.primitiveGeo.box, material);
+            visor.scale.set(0.2, 0.1, 0.12);
+            this.#head.add(visor);
+        
+            // Add to the box a sphere to create a sense of a head/face behind the goggles,
+            // and help clarify which direction the goggles are pointing.
+            const ball = new THREE.Mesh(world.primitiveGeo.sphere, material);    
+            this.#head.add(ball);
+
+            ball.scale.set(HEAD_WIDTH, HEAD_HEIGHT, HEAD_WIDTH);
+            ball.position.set(0, HEAD_LIFT, HEAD_SETBACK);
+            ball.rotation.set(Math.PI * 0.1, 0, 0);
+            ball.castShadow = true;
+            
+
+            // Create a box to serve as the torso.
+            
+            const torso = new THREE.Mesh(world.primitiveGeo.box, material);
+            torso.scale.set(0.35, TORSO_HEIGHT, 0.12);
+            torso.castShadow = true;
+            this.#body.add(torso);
+        
+        }
         if (displayName) {
             this.#displayName = displayName;
             // Create text to show the user's display name.
@@ -198,14 +204,17 @@ class Replica {
         this.#head.visible = false;
     }
 
-    static createClientReplica(colour) {
-        let replica = new Replica(undefined, colour);
+    static createClientReplica(colour,customAvatar) {
+        let replica = new Replica(undefined, colour, customAvatar);
         world.vrCamera.add(replica.#head);
         world.clientSpace.add(replica.#body);
         replica.#head.visible = true;
         return replica;
     }
 
+    getBody(){
+        return this.#body;
+    }
     /**
      * Call this when a user chances their colour/name to update their appearance.
      * @param userData data structure containing rgb colour and name string.
@@ -228,8 +237,8 @@ class Replica {
         for (let hand of this.#hands) {
             if (hand && hand.parent) world.scene.remove(hand);
         }
+        if(this.#nameGeo) this.#nameGeo.dispose();
         
-        this.#nameGeo.dispose();
         if (this.#material) this.#material.dispose();
     }
 
@@ -341,23 +350,28 @@ class Replica {
         this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
     }
+
+    getColour() {
+        return this.#colour;
+    }
 }
 
 /** @type {Replica[]} */
 let replicas = [];
+let customAvatarFunction=undefined;
 
 /**
  * Set up the replication, with a reference to the world it should add replica user avatars into.
  * Call this during initialization, before receiving the list of remote users from the server.
  * @param {World} targetWorld World to use for accessing the scene, camera, shared primitives/materials.
  */
-function initializeReplication(targetWorld, clientColour) {
+function initializeReplication(targetWorld, clientColour, customAvatar) {
     world = targetWorld;
-    
+    customAvatarFunction=customAvatar;
     controllers[HandID.left] = world.renderer.xr.getController(HandID.left); 
     controllers[HandID.right] = world.renderer.xr.getController(HandID.right);
 
-    clientReplica = Replica.createClientReplica(clientColour);
+    clientReplica = Replica.createClientReplica(clientColour, customAvatarFunction);
 }
 
 /**
@@ -365,7 +379,7 @@ function initializeReplication(targetWorld, clientColour) {
  * @param userData A data structure containing the user's id, and user structure with their name and colour.
  */
 function createReplicaForUser(id, userData) {
-    const replica = new Replica(userData.name, userData.rgb)
+    const replica = new Replica(userData.name, userData.rgb, customAvatarFunction)
     replicas[id] = replica;
 }
 
@@ -457,7 +471,14 @@ function disposeUserReplica(id) {
 }
 
 function getOwnReplicaBody() {
-    return pubBody;
+    return clientReplica.getBody();
+}
+function getUserReplica(id) {
+    return replicas[id];
+}
+
+function getOwnReplica() {
+    return clientReplica;
 }
 
 export {
@@ -465,5 +486,7 @@ export {
     updateUserReplica,
     replicatePoses,
     disposeUserReplica,
-    getOwnReplicaBody
+    getOwnReplicaBody,
+    getOwnReplica,
+    getUserReplica
 }
