@@ -17,6 +17,9 @@ const lastSqueezed = [false, false];
 /** @type {number} Which controller is actively used for pointing/teleporting? -1 = none. */
 let activeControllerIndex = -1;
 
+let origin;
+let aim;
+
 /** @type {boolean} State of buttons on controller. */
 let uiTrigger;
 
@@ -67,10 +70,10 @@ function updateControls(dt) {
             }
 
             // Aim teleport based on pointing direction.
-            const origin = new THREE.Vector3();
+            origin = new THREE.Vector3();
             controller.getWorldPosition(origin);            
             
-            const aim = new THREE.Vector3();
+            aim = new THREE.Vector3();
             controller.getWorldDirection(aim);
             aim.multiplyScalar(-1);
 
@@ -92,4 +95,4 @@ function updateControls(dt) {
 }
 
 
-export { uiTrigger, initializeControls, updateControls }
+export { origin, aim, uiTrigger, initializeControls, updateControls }
