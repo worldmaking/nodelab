@@ -2,7 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.m
 import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";
 import { FBXLoader } from './jsm/loaders/FBXLoader.js'  
 import * as MKControl from './mouseKeyboardControl.mjs';
-
+import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 const UI = {
@@ -50,38 +50,72 @@ const UI = {
 
       // addButtons
       {
-        const buttonGeo = new THREE.DodecahedronGeometry(0.1, 0);
+
+     //UI panelContainer
+    this.colorPanel = new ThreeMeshUI.Block({
+      justifyContent: 'center',
+      alignContent: 'center',
+      contentDirection: "column",
+      fontFamily:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+      fontTexture:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+      fontSize: 0.17,
+      padding: 0.002,
+      borderRadius: 0.11, //0.11
+      width: 0.7,
+      height: 2
+    });
+
+    this.colorPanel.position.set(-1, 1, 0);
+    this.colorPanel.rotation.x = -0.3; 
+    this.world.scene.add(this.colorPanel);
+
+
+        const buttonGeo = new THREE.DodecahedronGeometry(0.07, 0); //(0.1,0)
         const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
         const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
         const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
         const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
         const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
+        const buttonMat6 = new THREE.MeshLambertMaterial({ color: 0xd6d6d6 });
 
 
         const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
-        buttonTranslate.position.y = 0.8;
-        buttonTranslate.position.x = -0.5;
+        // buttonTranslate.position.y = 0.8;
+        // buttonTranslate.position.x = -0.5;
+        buttonTranslate.position.set(0,0.1,0); 
 
         const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
-        buttonRotate.position.y = 0.6;
-        buttonRotate.position.x = -0.5;
+        // buttonRotate.position.y = 0.6;
+        // buttonRotate.position.x = -0.5;
+        buttonRotate.position.set(0,0.1,0); 
 
         const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
-        buttonScale.position.y = 0.4;
-        buttonScale.position.x = -0.5;
+        // buttonScale.position.y = 0.4;
+        // buttonScale.position.x = -0.5;
+        buttonScale.position.set(0,0.1,0);
 
         const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
-        buttonAdd.position.y = 0.2;
-        buttonAdd.position.x = -0.5;
+        // buttonAdd.position.y = 0.2;
+        // buttonAdd.position.x = -0.5;
+        buttonAdd.position.set(0,0.09,0);
 
         const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
-        buttonRemove.position.y = 0;
-        buttonRemove.position.x = -0.5;
+        // buttonRemove.position.y = 0;
+        // buttonRemove.position.x = -0.5;
+        buttonRemove.position.set(0,0.09,0);
+
+        const callButton = new THREE.Mesh(buttonGeo, buttonMat6);
+        // callButton.position.y = 1.;
+        // callButton.position.x = -0.5;
+        callButton.position.set(0,0.09,0);
+
 
         // const buttonGroup = new THREE.Group();
 
         // this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-        this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
+        this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove,callButton);
         for (let b of this.buttonGroup.children) { this.clickable.push(b); }
         world.scene.add(this.buttonGroup);
         this.tools = {
@@ -89,8 +123,40 @@ const UI = {
           buttonRotate,
           buttonScale,
           buttonAdd,
-          buttonRemove
+          buttonRemove,
+          callButton
         }
+
+        let colorPanelText = {
+          width: 0.4,
+          height: 0.17,
+          justifyContent: 'center',
+          alignContent: 'center',
+          offset: 0.005, // - Distance on the Z direction between this component and its parent. 
+          margin: 0.07, //0.02 - Space between the component border and outer or neighbours components outer border.
+          fontSize: 0.07,
+          borderRadius: 0.075
+        };
+    
+        // Buttons creation, with the options objects passed in parameters.
+        this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonScaleText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonAddText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonRemoveText = new ThreeMeshUI.Block(colorPanelText); 
+        this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
+        
+       
+        // Add texts and buttons to the panel
+      //  this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.buttonGroup); 
+        this.buttonTranslateText.add(new ThreeMeshUI.Text({ content: "Translate" }), buttonTranslate);
+        this.buttonRotateText.add(new ThreeMeshUI.Text({ content: "Rotate" }), buttonRotate); 
+        this.buttonScaleText.add(new ThreeMeshUI.Text({ content: "Scale" }), buttonScale);
+        this.buttonAddText.add(new ThreeMeshUI.Text({ content: "Add" }), buttonAdd); 
+        this.buttonRemoveText.add(new ThreeMeshUI.Text({ content: "Remove" }), buttonRemove);
+        this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), callButton); 
+  
+        this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText,this.buttonAddText, this.buttonRemoveText, this.callButtonText);
 
         // roll-over helpers (for hovering an object before adding)
 
@@ -107,7 +173,8 @@ const UI = {
     },
 
     addButtonsTo( destination ) {
-        destination.add( this.buttonGroup );
+       // destination.add( this.buttonGroup );
+       destination.add(this.colorPanel);
     },
 
     addNewObj(pos) {
@@ -189,6 +256,11 @@ const UI = {
             this.removeMode = true;
             // updateActiveButton( obj );
             break;
+
+          case this.tools.callButton:
+              //this.callMode = true;
+              break;
+     
         }
 
         if ( Object.values(this.tools).includes(obj) ) {
@@ -201,6 +273,7 @@ const UI = {
             this.removeMode = false;
             // console.log('you clicked a button thats not buttonRemove');
           }
+
 
         }
         
