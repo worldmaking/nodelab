@@ -33,13 +33,13 @@
   </head>
   <body>
     <div id='emojis'>
-      <button id=";p" class= "button">;p</button>
-      <button id="laugh" class= "button">Laugh</button>
-      <button id="love" class= "button">love</button>
-      <button id="smile" class= "button">Smile</button>
-      <button id="surprised" class= "button">Surprised</button>
-      <button id="thinking" class= "button">Thinking</button>
-      <button id="brain" class= "button">Brain Explode</button>
+      <button name=";p" class= "button">;p</button>
+      <button name="laugh" class= "button">Laugh</button>
+      <button name="love" class= "button">love</button>
+      <button name="smile" class= "button">Smile</button>
+      <button name="surprised" class= "button">Surprised</button>
+      <button name="thinking" class= "button">Thinking</button>
+      <button name="brain" class= "button">Brain Explode</button>
     </div>
     
     <div id="avatar-customization">
@@ -100,6 +100,7 @@
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
       
+      document.getElementById('emojis').style.display = 'none';
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -259,34 +260,23 @@
           
         });
 
-        document.getElementById(';p').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), ";p.fbx");
-              UI.isEmoting = true;
-        });
-        document.getElementById('brain').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), "brain.fbx");
-              UI.isEmoting = true;
-        });
-        document.getElementById('laugh').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), "laugh.fbx");
-              UI.isEmoting = true;
-        });
-        document.getElementById('love').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), "love.fbx");
-              UI.isEmoting = true;
-        });
-        document.getElementById('smile').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), "smile.fbx");
-              UI.isEmoting = true;
-        });
-        document.getElementById('surprised').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), "surprised.fbx");
-              UI.isEmoting = true;
-        });
-        document.getElementById('thinking').addEventListener("click", function() {
-          UI.emotes(getOwnReplicaBody(), "thinking.fbx");
-              UI.isEmoting = true;
-        });
+        document.addEventListener('contextmenu', function(event){
+          if(document.getElementById('emojis').style.display == 'none')
+            document.getElementById('emojis').style.display = 'block';
+          else 
+            document.getElementById('emojis').style.display = 'none';
+        })
+
+        let emojis = document.getElementsByClassName("button");
+        console.log(emojis.length);
+
+        for(let i = 0; i < emojis.length; i++){
+          emojis[i].addEventListener('click', function(){
+            UI.emotes(getOwnReplicaBody(), emojis[i].name + ".fbx");
+            document.getElementById('emojis').style.display = 'none';
+            UI.isEmoting = true;
+          })
+        }
 
         ////////////////////////////////////////////////////////////////////////
 
