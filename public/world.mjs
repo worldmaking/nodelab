@@ -48,7 +48,7 @@ class World {
     /** @type {THREE.Raycaster}*/
     raycaster = new THREE.Raycaster();
 
-    constructor() {
+    constructor(makeLights=true) {
         // Set up basic rendering features.
         this.clock = new THREE.Clock();
 
@@ -111,19 +111,22 @@ class World {
 
         const grid = new THREE.GridHelper(35, 35, 0x333366, 0x666666);
         scene.add(grid);
+        
+        if (makeLights){
 
-        // Add some lights to the scene to distinguish surfaces help see where objects are positioned,
-        // using the parallax of their shadow.
-        const light = new THREE.HemisphereLight(0xfffcee, 0x202555);
-        scene.add(light);
+        
+            // Add some lights to the scene to distinguish surfaces help see where objects are positioned,
+            // using the parallax of their shadow.
+            const light = new THREE.HemisphereLight(0xfffcee, 0x202555);
+            scene.add(light);
 
-        const directional = new THREE.DirectionalLight(0xfff2dd, 1.0);
-        directional.position.set(-1, 7, 0.5);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        directional.castShadow = true;
-        scene.add(directional);
-
+            const directional = new THREE.DirectionalLight(0xfff2dd, 1.0);
+            directional.position.set(-1, 7, 0.5);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            directional.castShadow = true;
+            scene.add(directional);
+        }
         // Add a targeting reticle for teleportation moves.
         // (Used by both mouse & keyboard and VR controls, so might as well centralize it here).
         this.teleportTarget = new THREE.Group();
