@@ -24,10 +24,12 @@ const UI = {
 
     addMode: false,
     removeMode: false,
-  callMode:false,
+    callMode:false,
 
     rollOverMesh: null,
 
+    leftClicked: false,
+    rightClicked: false,    
 
     // currently active object:
     activeObj: null,
@@ -236,71 +238,83 @@ const UI = {
     //   }
 
       if(MKControl.mouseButtons[0] && this.intersected) {
-        const obj = this.intersected;
-        // console.log(obj);
-        switch (obj) {
-          case this.tools.buttonTranslate:
-            this.control.setMode("translate");
-            break;
-
-          case this.tools.buttonRotate:
-          this.control.setMode("rotate");
-            break;
-
-          case this.tools.buttonScale:
-          this.control.setMode("scale");
-            break;
-
-          case this.tools.buttonAdd:
-            this.addMode = true;
-            this.addNewObj(new THREE.Vector3().random());
-            break;
-
-          case this.tools.buttonRemove:
-            this.removeMode = true;
-            // updateActiveButton( obj );
-            break;
-
-          case this.tools.callButton:
-            
-            if (this.callMode == false) {
-              this.callMode = true;
-              console.log('calling') 
-              joinRoom() 
-
-            }
-
-              
-              break;
-     
-        }
-
-        if ( Object.values(this.tools).includes(obj) ) {
-          
-          if ( obj != this.tools.buttonAdd ) {  // if the obj is a button, but not the remove button, turn remove mode off.
-            this.addMode = false;
-          }
-
-          if (obj != this.tools.buttonRemove ) {  // if the obj is a button, but not the remove button, turn remove mode off.
-            this.removeMode = false;
-            // console.log('you clicked a button thats not buttonRemove');
-          }
-
-
-        }
         
-        if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
-          if (this.removeMode) {
-            this.world.scene.remove(obj);
-            this.print("box removed");
-            if ( obj == this.activeObj ) {
-              this.control.detach();
-              this.activeObj = null;
-            }
-          } else if (obj !== this.activeObj) {
-            this.activateObj ( obj );
+        if ( !this.leftClicked ) {
+
+          this.leftClicked = true;
+          const obj = this.intersected;
+
+          switch (obj) {
+            case this.tools.buttonTranslate:
+              this.control.setMode("translate");
+              break;
+
+            case this.tools.buttonRotate:
+            this.control.setMode("rotate");
+              break;
+
+            case this.tools.buttonScale:
+            this.control.setMode("scale");
+              break;
+
+            case this.tools.buttonAdd:
+              this.addMode = true;
+              this.addNewObj(new THREE.Vector3().random());
+              break;
+
+            case this.tools.buttonRemove:
+              this.removeMode = true;
+              // updateActiveButton( obj );
+              break;
+
+            case this.tools.callButton:
+              
+              if (this.callMode == false) {
+                this.callMode = true;
+                console.log('calling');
+                joinRoom();
+
+              }
+
+                
+                break;
+      
           }
+
+          if ( Object.values(this.tools).includes(obj) ) {
+            
+            if ( obj != this.tools.buttonAdd ) {  // if the obj is a button, but not the remove button, turn remove mode off.
+              this.addMode = false;
+            }
+
+            if (obj != this.tools.buttonRemove ) {  // if the obj is a button, but not the remove button, turn remove mode off.
+              this.removeMode = false;
+              // console.log('you clicked a button thats not buttonRemove');
+            }
+
+
+          }
+          
+          if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
+            if (this.removeMode) {
+              this.world.scene.remove(obj);
+              this.print("box removed");
+              if ( obj == this.activeObj ) {
+                this.control.detach();
+                this.activeObj = null;
+              }
+            } else if (obj !== this.activeObj) {
+              this.activateObj ( obj );
+            }
+          }
+          
         }
+        console.log(MKControl.mouseButtons[0]);
+        
+      }
+
+      if ( !MKControl.mouseButtons[0] ) {
+        this.leftClicked = false;
       }
     },
     // adds the emoji to the scene
