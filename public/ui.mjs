@@ -90,7 +90,7 @@ const UI = {
         // buttonTranslate.position.x = -0.5;
         buttonTranslate.position.set(0,0.1,0); 
 
-        const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
+        const buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
         // buttonRotate.position.y = 0.6;
         // buttonRotate.position.x = -0.5;
         buttonRotate.position.set(0,0.1,0); 
