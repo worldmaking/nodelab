@@ -103,6 +103,9 @@ gl_FragColor = vec4( color, 0.2 );
 
 }
 </script>
+<script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
+<script type="module" src="audioConnect.mjs"></script>
+
 <script type="module">
 'use strict';
 
@@ -113,11 +116,8 @@ import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletTo
 import { connectToWorld } from "./connect.mjs"; 
 import * as MKControl from './mouseKeyboardControl.mjs';
 import * as VRControl from './vrControl.mjs';
-
-import { Reflector } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/objects/Reflector.js';
-import { MeshSurfaceSampler } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/math/MeshSurfaceSampler.js';
-import { ImprovedNoise } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/math/ImprovedNoise.js';
-let groundMirror;
+import {joinRoom,    leaveRoom,    initialize} from "./audioConnect.mjs"
+joinRoom();
 // Setup login form. Randomize the colour value for variety.
 const form = document.getElementById('avatar-customization');
 const displayNameField = document.getElementById('username');
@@ -369,27 +369,6 @@ new THREE.Color('#00008b'),
 new THREE.Color('#b30000'),
 ];
 
-//Dome
-// const spheredomegeo = new THREE.SphereGeometry(0.02, 0.16, 0.8);
-// const geometrysphere = new THREE.SphereGeometry(
-//   20,
-//   36,
-//   16,
-//   0,
-//   Math.PI*2,
-//   1.5707963267949,
-//   1.5707963267949
-// );
-
-// const materialsphere = new THREE.MeshPhongMaterial({
-//       color: 'lightblue',
-//       wireframe: false,
-//       side:THREE.DoubleSide
-//     })
-
-// const spheredome = new THREE.Mesh(geometrysphere, materialsphere);
-// spheredome.rotation.x = -Math.PI;
-// world.scene.add(spheredome);
 
 //Agents of Light
 let agents = [];
@@ -514,7 +493,7 @@ index++;
 const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
 cube.position.set(0, 1.5, 0);
 cube.castShadow = true;
-//world.scene.add(cube);
+
 
 // Create pointer object that follows mouse/gaze.
 const ico = new THREE.Mesh(world.primitiveGeo.ico,
@@ -593,8 +572,7 @@ if (newGaze) gazeObject = newGaze;
 // update the scene:
 move(dt);
 syncColors();
-// mesh.material.uniforms.cameraPos.value.copy( this.camera.position );
-//mesh.rotation.y = t*0.01;
+
 
 ico.rotation.x -= 0.01;
 ico.rotation.y -= 0.01;
