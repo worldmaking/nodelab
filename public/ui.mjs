@@ -4,6 +4,8 @@ import { FBXLoader } from './jsm/loaders/FBXLoader.js'
 import * as MKControl from './mouseKeyboardControl.mjs';
 import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
 
+import {joinRoom,	leaveRoom,	initialize} from "./audioConnect.mjs"
+
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 const UI = {
     raycaster: new THREE.Raycaster(),
@@ -22,8 +24,10 @@ const UI = {
 
     addMode: false,
     removeMode: false,
+  callMode:false,
 
     rollOverMesh: null,
+
 
     // currently active object:
     activeObj: null,
@@ -258,7 +262,15 @@ const UI = {
             break;
 
           case this.tools.callButton:
-              //this.callMode = true;
+            
+            if (this.callMode == false) {
+              this.callMode = true;
+              console.log('calling') 
+              joinRoom() 
+
+            }
+
+              
               break;
      
         }
