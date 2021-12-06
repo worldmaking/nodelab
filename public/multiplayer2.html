@@ -264,17 +264,16 @@
           }
           
         });
-
+        // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
         document.addEventListener('contextmenu', function(event){
           if(document.getElementById('emojis').style.display == 'none')
             document.getElementById('emojis').style.display = 'block';
           else 
             document.getElementById('emojis').style.display = 'none';
         })
-
+        //getting all the emoji buttons
         let emojis = document.getElementsByClassName("button");
-        console.log(emojis.length);
-
+        //adds the functionality to the emoji buttons calling the emote function on the ui to display the right emoji
         for(let i = 0; i < emojis.length; i++){
           emojis[i].addEventListener('click', function(){
             UI.emotes(getOwnReplicaBody(), emojis[i].name + ".fbx");
@@ -287,6 +286,7 @@
 
         // Main rendering loop.
         function animate() {
+          // animates the emoji if its within 10 seconds of being spawned, otherwise it deletes ii from the scene
           if(UI.isEmoting && UI.getTime() < 10){
             UI.animate();
           }

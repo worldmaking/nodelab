@@ -26,24 +26,32 @@ const UI = {
   removeMode: false,
   callMode: false,
 
+
   rollOverMesh: null,
 
   leftClicked: false,
   rightClicked: false,
+  parent: null,
 
   // currently active object:
   activeObj: null,
 
   tools: {},
   buttonGroup: new THREE.Group(),
+  emojis: {},
 
   // array of text to print
   logs: [],
   textGroup: new THREE.Group(),
 
+
   isVisible: true,
   isEmoting: false,
   timer: 0,
+    
+  emotePanel: null,
+  emotesGroup: new THREE.Group(),
+
 
   init(world) {
     this.world = world;
@@ -51,152 +59,245 @@ const UI = {
 
     this.control.addEventListener("dragging-changed", function (event) {
       MKControl.enableOrbit(!event.value)
+      });
+      world.scene.add(this.control);
+
+      // addButtons
+      {
+    this.emotePanel = new ThreeMeshUI.Block({
+      justifyContent: 'center',
+      alignContent: 'center',
+      contentDirection: "row",
+      fontFamily:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+      fontTexture:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+      fontSize: 0.13,
+      padding: 0,
+      borderRadius: 0.11,
+      width: 2.1,
+      height: 0.2
+    });
+    this.emotePanel.position.set(0, 0, -1);
+    this.world.scene.add(this.emotePanel);
+
+    this.emotePanel2 = new ThreeMeshUI.Block({
+      justifyContent: 'center',
+      alignContent: 'center',
+      contentDirection: "row",
+      fontFamily:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+      fontTexture:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+      fontSize: 0.13,
+      padding: 0,
+      borderRadius: 0.11,
+      width: 1.6,
+      height: 0.2
+    });
+    this.emotePanel2.position.set(0, -0.3, -1);
+    this.world.scene.add(this.emotePanel2);
+
+     //UI panelContainer
+    this.colorPanel = new ThreeMeshUI.Block({
+      justifyContent: 'center',
+      alignContent: 'center',
+      contentDirection: "column",
+      fontFamily:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+      fontTexture:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+      fontSize: 0.17,
+      padding: 0.002,
+      borderRadius: 0.11, //0.11
+      width: 0.7,
+      height: 2
     });
     world.scene.add(this.control);
 
-    // addButtons
-    {
-
-      //UI panelContainer
-      this.colorPanel = new ThreeMeshUI.Block({
-        justifyContent: 'center',
-        alignContent: 'center',
-        contentDirection: "column",
-        fontFamily:
-          "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
-        fontTexture:
-          "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
-        fontSize: 0.17,
-        padding: 0.002,
-        borderRadius: 0.11, //0.11
-        width: 0.7,
-        height: 2
-      });
-
-      this.colorPanel.position.set(-1.5, 1, -1.5);
-      this.colorPanel.rotation.x = -0.3;
-      this.world.scene.add(this.colorPanel);
+    this.colorPanel.position.set(-1, 1, 0);
+    this.colorPanel.rotation.x = -0.3; 
+    this.world.scene.add(this.colorPanel);
 
 
-      const buttonGeo = new THREE.DodecahedronGeometry(0.07, 0); //(0.1,0)
-      const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
-      const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
-      const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
-      const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
-      const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
-      const buttonMat6 = new THREE.MeshLambertMaterial({ color: 0xd6d6d6 });
+        const buttonGeo = new THREE.DodecahedronGeometry(0.07, 0); //(0.1,0)
+        const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
+        const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
+        const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
+        const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
+        const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
+        const buttonMat6 = new THREE.MeshLambertMaterial({ color: 0xd6d6d6 });
+        const emotesColour = new THREE.MeshLambertMaterial({ color: 'yellow' });
+
+        const p = new THREE.Mesh(buttonGeo, emotesColour);
+        p.position.set(0,0.1,0); 
+
+        const brain = new THREE.Mesh(buttonGeo, emotesColour);
+        brain.position.set(0,0.1,0); 
+
+        const laugh = new THREE.Mesh(buttonGeo, emotesColour);
+        laugh.position.set(0,0.1,0);
+        
+        const love = new THREE.Mesh(buttonGeo, emotesColour);
+        love.position.set(0,0.1,0);
+
+        const smile = new THREE.Mesh(buttonGeo, emotesColour);
+        smile.position.set(0,0.1,0);
+
+        const surprised = new THREE.Mesh(buttonGeo, emotesColour);
+        surprised.position.set(0,0.1,0);
+
+        const thinking = new THREE.Mesh(buttonGeo, emotesColour);
+        thinking.position.set(0,0.1,0);
+
+        this.emotesGroup.add(p, brain, laugh, love, smile, surprised, thinking);
+        this.world.scene.add(this.emotesGroup);
 
 
-      const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
-      // buttonTranslate.position.y = 0.8;
-      // buttonTranslate.position.x = -0.5;
-      buttonTranslate.position.set(0, 0.1, 0);
+        const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
+        // buttonTranslate.position.y = 0.8;
+        // buttonTranslate.position.x = -0.5;
+        buttonTranslate.position.set(0,0.1,0); 
 
-      const buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
-      // buttonRotate.position.y = 0.6;
-      // buttonRotate.position.x = -0.5;
-      buttonRotate.position.set(0, 0.1, 0);
+        const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
+        // buttonRotate.position.y = 0.6;
+        // buttonRotate.position.x = -0.5;
+        buttonRotate.position.set(0,0.1,0); 
 
-      const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
-      // buttonScale.position.y = 0.4;
-      // buttonScale.position.x = -0.5;
-      buttonScale.position.set(0, 0.1, 0);
+        const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
+        // buttonScale.position.y = 0.4;
+        // buttonScale.position.x = -0.5;
+        buttonScale.position.set(0,0.1,0);
 
-      const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
-      // buttonAdd.position.y = 0.2;
-      // buttonAdd.position.x = -0.5;
-      buttonAdd.position.set(0, 0.09, 0);
+        const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
+        // buttonAdd.position.y = 0.2;
+        // buttonAdd.position.x = -0.5;
+        buttonAdd.position.set(0,0.09,0);
 
-      const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
-      // buttonRemove.position.y = 0;
-      // buttonRemove.position.x = -0.5;
-      buttonRemove.position.set(0, 0.09, 0);
+        const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
+        // buttonRemove.position.y = 0;
+        // buttonRemove.position.x = -0.5;
+        buttonRemove.position.set(0,0.09,0);
 
-      const callButton = new THREE.Mesh(buttonGeo, buttonMat6);
-      // callButton.position.y = 1.;
-      // callButton.position.x = -0.5;
-      callButton.position.set(0, 0.09, 0);
-
-
-      // const buttonGroup = new THREE.Group();
-
-      // this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-      this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove, callButton);
-      for (let b of this.buttonGroup.children) { this.clickable.push(b); }
-      world.scene.add(this.buttonGroup);
-      this.tools = {
-        buttonTranslate,
-        buttonRotate,
-        buttonScale,
-        buttonAdd,
-        buttonRemove,
-        callButton
-      }
-
-      let colorPanelText = {
-        width: 0.4,
-        height: 0.17,
-        justifyContent: 'center',
-        alignContent: 'center',
-        offset: 0.005, // - Distance on the Z direction between this component and its parent. 
-        margin: 0.07, //0.02 - Space between the component border and outer or neighbours components outer border.
-        fontSize: 0.07,
-        borderRadius: 0.075
-      };
-
-      // Buttons creation, with the options objects passed in parameters.
-      this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText);
-      this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText);
-      this.buttonScaleText = new ThreeMeshUI.Block(colorPanelText);
-      this.buttonAddText = new ThreeMeshUI.Block(colorPanelText);
-      this.buttonRemoveText = new ThreeMeshUI.Block(colorPanelText);
-      this.callButtonText = new ThreeMeshUI.Block(colorPanelText);
+        const callButton = new THREE.Mesh(buttonGeo, buttonMat6);
+        // callButton.position.y = 1.;
+        // callButton.position.x = -0.5;
+        callButton.position.set(0,0.09,0);
 
 
-      // Add texts and buttons to the panel
+        // const buttonGroup = new THREE.Group();
+
+        // this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
+        this.buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove,callButton);
+        for (let b of this.buttonGroup.children) { this.clickable.push(b); }
+        world.scene.add(this.buttonGroup);
+        this.tools = {
+          buttonTranslate,
+          buttonRotate,
+          buttonScale,
+          buttonAdd,
+          buttonRemove,
+          callButton
+        }
+
+        for(let e of this.emotesGroup.children){
+          this.clickable.push(e);
+        }
+        this.emojis = {
+          brain,
+          p,
+          laugh,
+          love,
+          smile,
+          surprised,
+          thinking,
+        }
+
+        let colorPanelText = {
+          width: 0.4,
+          height: 0.17,
+          justifyContent: 'center',
+          alignContent: 'center',
+          offset: 0.005, // - Distance on the Z direction between this component and its parent. 
+          margin: 0.07, //0.02 - Space between the component border and outer or neighbours components outer border.
+          fontSize: 0.07,
+          borderRadius: 0.075
+        };
+    
+        // Buttons creation, with the options objects passed in parameters.
+        this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonScaleText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonAddText = new ThreeMeshUI.Block(colorPanelText); 
+        this.buttonRemoveText = new ThreeMeshUI.Block(colorPanelText); 
+        this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
+
+        this.brainText = new ThreeMeshUI.Block(colorPanelText); 
+        this.smile = new ThreeMeshUI.Block(colorPanelText);
+        this.laugh = new ThreeMeshUI.Block(colorPanelText);
+        this.love = new ThreeMeshUI.Block(colorPanelText);
+        this.surprised = new ThreeMeshUI.Block(colorPanelText);
+        this.thinking = new ThreeMeshUI.Block(colorPanelText);
+        this.p = new ThreeMeshUI.Block(colorPanelText); 
+       
+        // Add texts and buttons to the panel
       //  this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.buttonGroup); 
-      this.buttonTranslateText.add(new ThreeMeshUI.Text({ content: "Translate" }), buttonTranslate);
-      this.buttonRotateText.add(new ThreeMeshUI.Text({ content: "Rotate" }), buttonRotate);
-      this.buttonScaleText.add(new ThreeMeshUI.Text({ content: "Scale" }), buttonScale);
-      this.buttonAddText.add(new ThreeMeshUI.Text({ content: "Add" }), buttonAdd);
-      this.buttonRemoveText.add(new ThreeMeshUI.Text({ content: "Remove" }), buttonRemove);
-      this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), callButton);
+        this.buttonTranslateText.add(new ThreeMeshUI.Text({ content: "Translate" }), buttonTranslate);
+        this.buttonRotateText.add(new ThreeMeshUI.Text({ content: "Rotate" }), buttonRotate); 
+        this.buttonScaleText.add(new ThreeMeshUI.Text({ content: "Scale" }), buttonScale);
+        this.buttonAddText.add(new ThreeMeshUI.Text({ content: "Add" }), buttonAdd); 
+        this.buttonRemoveText.add(new ThreeMeshUI.Text({ content: "Remove" }), buttonRemove);
+        this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), callButton);
 
-      this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText, this.buttonAddText, this.buttonRemoveText, this.callButtonText);
+        this.brainText.add(new ThreeMeshUI.Text({ content: "Brain Explode" }), brain);
+        this.smile.add(new ThreeMeshUI.Text({ content: ":D" }), smile);
+        this.laugh.add(new ThreeMeshUI.Text({ content: "Laugh" }), laugh);
+        this.love.add(new ThreeMeshUI.Text({ content: "Love" }), love);
+        this.surprised.add(new ThreeMeshUI.Text({ content: "Surprised" }), surprised);
+        this.thinking.add(new ThreeMeshUI.Text({ content: "thinking" }), thinking);
+        this.p.add(new ThreeMeshUI.Text({ content: ";p" }), p);
+  
+        this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText,this.buttonAddText, this.buttonRemoveText, this.callButtonText);
+        this.emotePanel.add(this.p, this.brainText, this.laugh, this.love);
+        this.emotePanel2.add(this.smile, this.surprised, this.thinking);
 
-      // roll-over helpers (for hovering an object before adding)
+        // roll-over helpers (for hovering an object before adding)
 
-      const rollOverGeo = new THREE.BoxGeometry(50, 50, 50);
-      const rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
-      this.rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMaterial);
-      this.rollOverMesh.visible = false;
-      world.scene.add(this.rollOverMesh);
-    }
-  },
+        const rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
+        const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
+        this.rollOverMesh = new THREE.Mesh( rollOverGeo, rollOverMaterial );
+        this.rollOverMesh.visible = false;
+        world.scene.add( this.rollOverMesh );
+      }
+    },
 
-  addTextGroupTo(destination) {
-    destination.add(this.textGroup);
-  },
+    addTextGroupTo(destination) {
+      this.parent = destination;
+        destination.add(this.textGroup);
+    },
 
-  addButtonsTo(destination) {
-    // destination.add( this.buttonGroup );
-    destination.add(this.colorPanel);
-  },
+    addButtonsTo( destination ) {
+       // destination.add( this.buttonGroup );
+       this.parent = destination;
+       destination.add(this.colorPanel);
+       destination.add(this.emotePanel);
+       destination.add(this.emotePanel2);
+    },
 
-  addNewObj(pos) {
-    let newBox = new THREE.Mesh(
-      new THREE.BoxGeometry(0.5, 0.5, 0.5),
-      new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
-    );
-    newBox.position.x = pos.x;
-    newBox.position.y = pos.y;
-    newBox.position.z = pos.z;
-    // newBox.rotation = new THREE.Euler().setFromVector3(pos);
-    this.world.scene.add(newBox);
-    this.clickable.push(newBox);
-    this.malleable.push(newBox);
+    addNewObj(pos) {
+      let newBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.5, 0.5),
+        new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
+      );
+      newBox.position.x = pos.x;
+      newBox.position.y = pos.y;
+      newBox.position.z = pos.z;
+      // newBox.rotation = new THREE.Euler().setFromVector3(pos);
+      this.world.scene.add(newBox);
+      this.clickable.push(newBox);
+      this.malleable.push(newBox);
 
-    this.print("box added");
+      this.print("box added");
     //   this.print(newBox.color.toString());
 
     // console.log(objects.toString());
@@ -274,6 +375,34 @@ const UI = {
               joinRoom();
             }
             break;
+          case this.emojis.brain:
+            this.emotes(this.parent, 'brain.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.p:
+            this.emotes(this.parent, ';p.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.smile:
+            this.emotes(this.parent, 'smile.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.laugh:
+            this.emotes(this.parent, 'laugh.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.thinking:
+            this.emotes(this.parent, 'thinking.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.love:
+            this.emotes(this.parent, 'love.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.surprised:
+            this.emotes(this.parent, 'surprised.fbx')
+            this.isEmoting = true;
+            break;
 
         }
 
@@ -311,6 +440,7 @@ const UI = {
   },
   // adds the emoji to the scene
   emotes(parent, s) {
+    
     this.timer = new Date().getTime();
     this.deleteEmote(parent);
     this.emote.position.y = 0.55
@@ -319,6 +449,7 @@ const UI = {
     let directory = './models/fbx/' + s
     let loader = new FBXLoader();
     loader.load(directory, function (fbx, emote) {
+      console.log("parent");
       fbx.scale.set(0.003, 0.003, 0.003)
       fbx.position.y = 0
       fbx.rotation.y = 180;
