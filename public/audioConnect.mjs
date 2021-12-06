@@ -1,3 +1,4 @@
+
 // DOM elements.
 // This Code is from https://github.com/borjanebbal/webrtc-node-app
 
@@ -14,21 +15,24 @@ const audioChatContainer = document.getElementById('audio-chat-container')
 // Variables.
 
 console.log("audiorun")
-
-// let socket;
-
-let socket = io(':3123', { transports : ['websocket'] })
+let socket;
 
 
-// if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
-// 	socket = io(':3123', { transports : ['websocket'] })
-// }
 
-// else{
-// 	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
-// }
 
-//const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
+	socket = io(':3123', { transports : ['websocket'] })
+
+	console.log("Connected to local socket")
+}
+
+else{
+	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+
+	console.log("Connected to agile-basin-71343")
+}
+
+// const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 
 const mediaConstraints = {
 	audio: true,
@@ -43,7 +47,6 @@ let roomId
 
 var connections=[]
 
-let myID;
 
 
 // Free public STUN servers provided by Google.
@@ -80,7 +83,7 @@ socket.on('room_joined2', async () => {
 	console.log('Socket event callback: room_joined')
 
 	await setLocalStream(mediaConstraints)
-	socket.emit('start_call2',roomId )
+	socket.emit('start_call2', roomId)
 })
 
 socket.on('full_room', () => {
@@ -95,16 +98,14 @@ socket.on('full_room', () => {
 
 
 
-// export default function initialize(id){
-//  console.log(id)
-// }
-function initialize(id){
+function initialize(){
 	
-	myID = id
-	console.log("initialized with UUID " + id)
+	//myID = id
+	//console.log("initialized with UUID " + id)
 
 	joinRoom();
 }
+
 
 function joinRoom() {
 
@@ -120,7 +121,7 @@ function joinRoom() {
 
 	//else {
 		roomId = room
-		console.log("doom" + room) 
+		console.log(typeof room) 
 		socket.emit('join', room)
 		//showVideoConference()
         //console.log(app)
@@ -135,14 +136,11 @@ function leaveRoom(){
 	socket.emit('dis_con',roomId)
 }
 
-
 export{
 	joinRoom,
 	leaveRoom,
 	initialize
 }
-
-
 
 
 
@@ -166,10 +164,8 @@ async function setLocalStream(mediaConstraints) {
 
 // SOCKET EVENT CALLBACKS =====================================================
 
-socket.on('start_call2', async (id) => {
+socket.on('start_call2', async (id,count,clients,roomId) => {
 console.log("startCall")
-
-//var id = myID; 
 	if(!connections[id]){
 		connections[id] = new RTCPeerConnection(iceServers);
 		addLocalTracks(connections[id])
@@ -183,9 +179,8 @@ console.log("startCall")
 	}
 })
 
-socket.on('webrtc_offer2', async (id,eventd) => {
+socket.on('webrtc_offer2', async (id,count,clients,eventd) => {
 	console.log("webrtc_offer")
-	//var id = myID; 
 	if(!connections[id]){
 		connections[id] = new RTCPeerConnection(iceServers)
 		addLocalTracks(connections[id])
@@ -206,13 +201,13 @@ socket.on('webrtc_answer2', (event, fromId) => {
 	connections[fromId].setRemoteDescription(new RTCSessionDescription(event))
 })
 
-socket.on('webrtc_ice_candidate', (event,fromid) => {
+socket.on('webrtc_ice_candidate', (event,id) => {
 	// ICE candidate configuration.
 	var candidate = new RTCIceCandidate({
 		sdpMLineIndex: event.label,
 		candidate: event.candidate,
 	})
-	connections[fromid].addIceCandidate(candidate)
+	connections[id].addIceCandidate(candidate)
 })
 
 
@@ -296,7 +291,7 @@ function sendIceCandidate(event,id) {
 			roomId,
 			label: event.candidate.sdpMLineIndex,
 			candidate: event.candidate.candidate,
-		},id
+		},id 
 		)
 	}
 }

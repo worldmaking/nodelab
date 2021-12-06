@@ -73,10 +73,10 @@ console.log("GRAHAMS GREAT TEST")
 
 // Audio Server 
 
-//require('child_process').fork('audioSignalingServer.js');
+require('child_process').fork('audioSignalingServer.js');
 
 //if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
-	require('child_process').fork('audioSignalingServer.js');
+	//require('child_process').fork('audioSignalingServer.js');
 // }
 
 // else{
