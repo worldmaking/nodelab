@@ -35,11 +35,6 @@ const UI = {
   isVisible: true,  
 
   //ui panel variables - START
-  meshContainer: null, 
-  meshes: null, 
-  currentMesh: null,
-  objsToTest: [],
-
   //mainPanel buttons
     voiceChat: null,
     rightCube: null,
@@ -52,7 +47,7 @@ const UI = {
     callButton: null,
 
   //mouse action tools UI stuff
-  // mouse: new THREE.Vector2(),
+  //mouse: new THREE.Vector2(),
 
   selectState: false,
   //ui panel variables - END
@@ -68,7 +63,28 @@ const UI = {
 
     // addButtons
     {
-      const buttonGeo = new THREE.DodecahedronGeometry(0.1, 0);
+
+    //panelContainer
+    this.colorPanel = new ThreeMeshUI.Block({
+      justifyContent: 'center',
+      alignContent: 'center',
+      contentDirection: "column",
+      fontFamily:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+      fontTexture:
+        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+      fontSize: 0.17,
+      padding: 0.002,
+      borderRadius: 0.11, //0.11
+      width: 0.7,
+      height: 2
+    });
+
+    this.colorPanel.position.set(-1, 1, 0);
+    this.colorPanel.rotation.x = -0.3; 
+    this.world.scene.add(this.colorPanel);
+  
+      const buttonGeo = new THREE.DodecahedronGeometry(0.07, 0);
       const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
       const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
       const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
@@ -77,28 +93,39 @@ const UI = {
       const buttonMat6 = new THREE.MeshLambertMaterial({ color: 0xd6d6d6 });
 
       const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
-      buttonTranslate.position.y = 0.8;
-      buttonTranslate.position.x = -0.5;
+      // buttonTranslate.position.y = 0.8;
+      // buttonTranslate.position.x = -0.5;
+      buttonTranslate.position.set(0,0.1,0); 
 
       const buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
-      buttonRotate.position.y = 0.6;
-      buttonRotate.position.x = -0.5;
+      // buttonRotate.position.y = 0.6;
+      // buttonRotate.position.x = -0.5;
+      buttonRotate.position.set(0,0.1,0); 
+
 
       const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
-      buttonScale.position.y = 0.4;
-      buttonScale.position.x = -0.5;
+      // buttonScale.position.y = 0.4;
+      // buttonScale.position.x = -0.5;
+      buttonScale.position.set(0,0.1,0);
+
 
       const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
-      buttonAdd.position.y = 0.2;
-      buttonAdd.position.x = -0.5;
+      // buttonAdd.position.y = 0.2;
+      // buttonAdd.position.x = -0.5;
+      buttonAdd.position.set(0,0.09,0);
+
 
       const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
-      buttonRemove.position.y = 0;
-      buttonRemove.position.x = -0.5;
+      // buttonRemove.position.y = 0;
+      // buttonRemove.position.x = -0.5;
+      buttonRemove.position.set(0,0.09,0);
 
-      const callButton = new THREE.Mesh(buttonGeo, buttonMat6);
-      callButton.position.y = 1.;
-      callButton.position.x = -0.5;
+
+      let callButton = new THREE.Mesh(buttonGeo, buttonMat6);
+      // callButton.position.y = 1.;
+      // callButton.position.x = -0.5;
+      callButton.position.set(0,0.09,0);
+
 
       // const buttonGroup = new THREE.Group();
 
@@ -115,6 +142,38 @@ const UI = {
         callButton
       }
 
+      let colorPanelText = {
+        width: 0.4,
+        height: 0.17,
+        justifyContent: 'center',
+        alignContent: 'center',
+        offset: 0.005, // - Distance on the Z direction between this component and its parent. 
+        margin: 0.07, //0.02 - Space between the component border and outer or neighbours components outer border.
+        fontSize: 0.07,
+        borderRadius: 0.075
+      };
+  
+      // Buttons creation, with the options objects passed in parameters.
+      this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText); 
+      this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText); 
+      this.buttonScaleText = new ThreeMeshUI.Block(colorPanelText); 
+      this.buttonAddText = new ThreeMeshUI.Block(colorPanelText); 
+      this.buttonRemoveText = new ThreeMeshUI.Block(colorPanelText); 
+      this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
+      
+     
+      // Add texts and buttons to the panel
+    //  this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.buttonGroup); 
+      this.buttonTranslateText.add(new ThreeMeshUI.Text({ content: "Translate" }), buttonTranslate);
+      this.buttonRotateText.add(new ThreeMeshUI.Text({ content: "Rotate" }), buttonRotate); 
+      this.buttonScaleText.add(new ThreeMeshUI.Text({ content: "Scale" }), buttonScale);
+      this.buttonAddText.add(new ThreeMeshUI.Text({ content: "Add" }), buttonAdd); 
+      this.buttonRemoveText.add(new ThreeMeshUI.Text({ content: "Remove" }), buttonRemove);
+      this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), callButton); 
+
+
+      this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText,this.buttonAddText, this.buttonRemoveText, this.callButtonText);
+
       // roll-over helpers (for hovering an object before adding)
 
       const rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
@@ -125,59 +184,17 @@ const UI = {
     }
   
     //UI panel
-    UI.mainPanel();
-    UI.panelButtons();
+   // UI.mainPanel();
   },
 
-  panelButtons(){
-
-    //panelContainer
-    this.colorPanel = new ThreeMeshUI.Block({
-      justifyContent: 'center',
-      alignContent: 'center',
-      contentDirection: "column",
-      fontFamily:
-        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
-      fontTexture:
-        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
-      fontSize: 0.17,
-      padding: 0.02,
-      borderRadius: 0.11,
-      width: 0.7,
-      height: 2
-    });
-
- this.colorPanel.position.set(0, 3, 0);
-    this.colorPanel.rotation.x = -0.3; 
-    this.world.scene.add(this.colorPanel);
-
-    let colorPanelText = {
-      width: 0.8,
-      height: 0.2,
-      justifyContent: 'center',
-      alignContent: 'center',
-      offset: 0.05, //Distance on the Z direction between this component and its parent. 
-      margin: 0.2, //Space between the component border and outer or neighbours components outer border.
-      borderRadius: 0.075
-    };
-
-    // Buttons creation, with the options objects passed in parameters.
-    this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
-   
-    // Add texts and buttons to the panel
-   // this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.callButton); 
-    
-   // this.colorPanel.add(this.callButton);
-
-
-  },
 
   addTextGroupTo(destination) {
       destination.add(this.textGroup);
   },
 
   addButtonsTo( destination ) {
-      destination.add(this.buttonGroup);
+      //destination.add(this.buttonGroup);
+      destination.add(this.colorPanel);
   },
 
   addNewObj(pos) {
@@ -328,178 +345,178 @@ const UI = {
   },
 
   //UI Panel
-  mainPanel() {
-    console.log("TMU:", ThreeMeshUI);
-    console.log("Block:", ThreeMeshUI.Block);
-    this.panelContainer = new ThreeMeshUI.Block({
-      justifyContent: 'center',
-      alignContent: 'center',
-      contentDirection: "row",
-      fontFamily:
-        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
-      fontTexture:
-        "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
-      fontSize: 0.17,
-      padding: 0.02,
-      borderRadius: 0.11,
-      width: 4,
-      height: 1
-    });
+  // mainPanel() {
+  //   console.log("TMU:", ThreeMeshUI);
+  //   console.log("Block:", ThreeMeshUI.Block);
+  //   this.panelContainer = new ThreeMeshUI.Block({
+  //     justifyContent: 'center',
+  //     alignContent: 'center',
+  //     contentDirection: "row",
+  //     fontFamily:
+  //       "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
+  //     fontTexture:
+  //       "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
+  //     fontSize: 0.17,
+  //     padding: 0.02,
+  //     borderRadius: 0.11,
+  //     width: 4,
+  //     height: 1
+  //   });
     
-    this.panelContainer.position.set(0, 1.4, 3);
-    this.panelContainer.rotation.x = -0.3; 
-    this.world.scene.add(this.panelContainer);
+  //   this.panelContainer.position.set(0, 1.4, 3);
+  //   this.panelContainer.rotation.x = -0.3; 
+  //   this.world.scene.add(this.panelContainer);
 
-    let panelButtonGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-    let panelButtonMaterial = new THREE.MeshBasicMaterial({ color: 0x00fff0});
+  //   let panelButtonGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+  //   let panelButtonMaterial = new THREE.MeshBasicMaterial({ color: 0x00fff0});
     
-    this.voiceChatBox = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
-    this.voiceChatBox.position.set(0, 0.3, 0); 
+  //   this.voiceChatBox = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
+  //   this.voiceChatBox.position.set(0, 0.3, 0); 
 
-    this.rightCube = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
-    this.rightCube.position.set(0, 0.3, 0);
+  //   this.rightCube = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
+  //   this.rightCube.position.set(0, 0.3, 0);
 
-    this.leftCube = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
-    this.leftCube.position.set(0, 0.3, 0);
-
-
-    let TextBoxContainer = {
-      width: 0.8,
-      height: 0.2,
-      justifyContent: 'center',
-      alignContent: 'center',
-      offset: 0.05, //Distance on the Z direction between this component and its parent. 
-      margin: 0.2, //Space between the component border and outer or neighbours components outer border.
-      borderRadius: 0.075
-    };
+  //   this.leftCube = new THREE.Mesh(panelButtonGeometry, panelButtonMaterial);
+  //   this.leftCube.position.set(0, 0.3, 0);
 
 
-    //when a button is hovered - text panel
-    // It must contain a 'state' parameter, which you will refer to with component.setState( 'name-of-the-state' ).
-    const hoveredStateAttributes = {
-      state: "hovered",
-      attributes: {
-        offset: 0.035,
-        backgroundColor: new THREE.Color(0x9ff999), 
-        backgroundOpacity: 0.2,
-        fontColor: new THREE.Color(0xffffff)
-      }
-    };
-    const idleStateAttributes = {
-      state: "idle",
-      attributes: {
-        offset: 0.035, 
-        backgroundColor: new THREE.Color(0xffbd33),
-        backgroundOpacity: 0.3,
-        fontColor: new THREE.Color(0xffffff)
-      }
-    };
+  //   let TextBoxContainer = {
+  //     width: 0.8,
+  //     height: 0.2,
+  //     justifyContent: 'center',
+  //     alignContent: 'center',
+  //     offset: 0.05, //Distance on the Z direction between this component and its parent. 
+  //     margin: 0.2, //Space between the component border and outer or neighbours components outer border.
+  //     borderRadius: 0.075
+  //   };
 
-    // Buttons creation, with the options objects passed in parameters.
-    this.voiceChatText = new ThreeMeshUI.Block(TextBoxContainer); 
-    this.rightCubeButton = new ThreeMeshUI.Block(TextBoxContainer); 
-    this.leftCubeButton = new ThreeMeshUI.Block(TextBoxContainer);
+
+  //   //when a button is hovered - text panel
+  //   // It must contain a 'state' parameter, which you will refer to with component.setState( 'name-of-the-state' ).
+  //   const hoveredStateAttributes = {
+  //     state: "hovered",
+  //     attributes: {
+  //       offset: 0.035,
+  //       backgroundColor: new THREE.Color(0x9ff999), 
+  //       backgroundOpacity: 0.2,
+  //       fontColor: new THREE.Color(0xffffff)
+  //     }
+  //   };
+  //   const idleStateAttributes = {
+  //     state: "idle",
+  //     attributes: {
+  //       offset: 0.035, 
+  //       backgroundColor: new THREE.Color(0xffbd33),
+  //       backgroundOpacity: 0.3,
+  //       fontColor: new THREE.Color(0xffffff)
+  //     }
+  //   };
+
+  //   // Buttons creation, with the options objects passed in parameters.
+  //   this.voiceChatText = new ThreeMeshUI.Block(TextBoxContainer); 
+  //   this.rightCubeButton = new ThreeMeshUI.Block(TextBoxContainer); 
+  //   this.leftCubeButton = new ThreeMeshUI.Block(TextBoxContainer);
     
-    // Add texts and buttons to the panel
-    this.voiceChatText.add(new ThreeMeshUI.Text({ content: "voiceChat" }),this.voiceChatBox); //text and object is added in here!
-    this.rightCubeButton.add(new ThreeMeshUI.Text({ content: "rightCube" }),this.rightCube);
-    this.leftCubeButton.add(new ThreeMeshUI.Text({ content: "leftCube" }),this.leftCube);
+  //   // Add texts and buttons to the panel
+  //   this.voiceChatText.add(new ThreeMeshUI.Text({ content: "voiceChat" }),this.voiceChatBox); //text and object is added in here!
+  //   this.rightCubeButton.add(new ThreeMeshUI.Text({ content: "rightCube" }),this.rightCube);
+  //   this.leftCubeButton.add(new ThreeMeshUI.Text({ content: "leftCube" }),this.leftCube);
     
-    // Create states for the buttons.
-    // In the loop, we will call component.setState( 'state-name' ) when mouse hover or click
-    const selectedAttributes = {
-      offset: 0.02,
-      backgroundColor: new THREE.Color(0x777777),
-      fontColor: new THREE.Color(0x222222)
-    };
+  //   // Create states for the buttons.
+  //   // In the loop, we will call component.setState( 'state-name' ) when mouse hover or click
+  //   const selectedAttributes = {
+  //     offset: 0.02,
+  //     backgroundColor: new THREE.Color(0x777777),
+  //     fontColor: new THREE.Color(0x222222)
+  //   };
     
-    this.voiceChatText.setupState({
-      state: "selected",
-      attributes: selectedAttributes,
-      onSet: () => {
-        currentMesh = (currentMesh + 1) % 3;
-        showMesh(currentMesh);
-      }
-    });
-    this.voiceChatText.setupState(hoveredStateAttributes);
-    this.voiceChatText.setupState(idleStateAttributes);
+  //   this.voiceChatText.setupState({
+  //     state: "selected",
+  //     attributes: selectedAttributes,
+  //     onSet: () => {
+  //       currentMesh = (currentMesh + 1) % 3;
+  //       showMesh(currentMesh);
+  //     }
+  //   });
+  //   this.voiceChatText.setupState(hoveredStateAttributes);
+  //   this.voiceChatText.setupState(idleStateAttributes);
     
-    //second button cube
-    this.rightCubeButton.setupState({
-      state: "selected",
-      attributes: selectedAttributes,
-      onSet: () => {
-        currentMesh -= 1;
-        if (currentMesh < 0) currentMesh = 2;
-        showMesh(currentMesh);
-      }
-    });
+  //   //second button cube
+  //   this.rightCubeButton.setupState({
+  //     state: "selected",
+  //     attributes: selectedAttributes,
+  //     onSet: () => {
+  //       currentMesh -= 1;
+  //       if (currentMesh < 0) currentMesh = 2;
+  //       showMesh(currentMesh);
+  //     }
+  //   });
     
-    this.rightCubeButton.setupState(hoveredStateAttributes);
-    this.rightCubeButton.setupState(idleStateAttributes);
+  //   this.rightCubeButton.setupState(hoveredStateAttributes);
+  //   this.rightCubeButton.setupState(idleStateAttributes);
     
-    //third button cube
-    this.leftCubeButton.setupState({
-      state: "selected",
-      attributes: selectedAttributes,
-      onSet: () => {
-        currentMesh -= 1;
-        if (currentMesh < 0) currentMesh = 2;
-        showMesh(currentMesh);
-      }
-    });
-    this.leftCubeButton.setupState(hoveredStateAttributes);
-    this.leftCubeButton.setupState(idleStateAttributes);
+  //   //third button cube
+  //   this.leftCubeButton.setupState({
+  //     state: "selected",
+  //     attributes: selectedAttributes,
+  //     onSet: () => {
+  //       currentMesh -= 1;
+  //       if (currentMesh < 0) currentMesh = 2;
+  //       showMesh(currentMesh);
+  //     }
+  //   });
+  //   this.leftCubeButton.setupState(hoveredStateAttributes);
+  //   this.leftCubeButton.setupState(idleStateAttributes);
     
-    this.panelContainer.add(this.leftCubeButton,this.voiceChatText, this.rightCubeButton);
-    this.objsToTest.push(this.leftCubeButton,this.voiceChatText, this.rightCubeButton);    
-  },
+  //   this.panelContainer.add(this.leftCubeButton,this.voiceChatText, this.rightCubeButton);
+  //   this.objsToTest.push(this.leftCubeButton,this.voiceChatText, this.rightCubeButton);    
+  // },
 
   // Called in the loop, get intersection with either the mouse or the VR controllers,
   // then update the buttons states according to result 
-  updateButtons(vrControl) {
-    // Find closest intersecting object
-    let intersect;
-    if (this.world.renderer.xr.isPresenting) {
-      vrControl.setFromController(0, raycaster.ray);
-      intersect = raycast();
-      // Position the little white dot at the end of the controller pointing ray
-      if (intersect) vrControl.setPointerAt(0, intersect.point);
-    } else if (mouse.x !== null && mouse.y !== null) {
-      raycaster.setFromCamera(mouse, camera);
-      intersect = raycast();
-    };
+  // updateButtons(vrControl) {
+  //   // Find closest intersecting object
+  //   let intersect;
+  //   if (this.world.renderer.xr.isPresenting) {
+  //     vrControl.setFromController(0, raycaster.ray);
+  //     intersect = raycast();
+  //     // Position the little white dot at the end of the controller pointing ray
+  //     if (intersect) vrControl.setPointerAt(0, intersect.point);
+  //   } else if (mouse.x !== null && mouse.y !== null) {
+  //     raycaster.setFromCamera(mouse, camera);
+  //     intersect = raycast();
+  //   };
     
-    // Update targeted button state (if any)
-    if (intersect && intersect.object.isUI) {
-      if (selectState) {
-        // Component.setState internally call component.set with the options you defined in component.setupState
-        intersect.object.setState("selected");
+  //   // Update targeted button state (if any)
+  //   if (intersect && intersect.object.isUI) {
+  //     if (selectState) {
+  //       // Component.setState internally call component.set with the options you defined in component.setupState
+  //       intersect.object.setState("selected");
   
-        //rightCube.material.color.setHex(0xff5733);            //voiceChatButton.material.color.setHex(0xfff999);
+  //       //rightCube.material.color.setHex(0xff5733);            //voiceChatButton.material.color.setHex(0xfff999);
 
     
-      } else {
-        // Component.setState internally call component.set with the options you defined in component.setupState
-        intersect.object.setState("hovered");
-      //    voiceChatBox.rotation.y += 0.15;//Math.sin(Math.PI * 0.2);
-        //  voiceChatBox.rotation.x += 0.15;//Math.sin(Math.PI * 0.2);
-      //  buttonTexts( 'Right Cube', 2.1, -0.5);
-        //leftCubeButton.rotation.y += 0.15;//Math.sin(Math.PI * 0.2);
-      // leftCubeButton.rotation.x += 0.15;//Math.sin(Math.PI * 0.2);
-    //   buttonTexts( 'Voice chat', 0., -0.5);
+  //     } else {
+  //       // Component.setState internally call component.set with the options you defined in component.setupState
+  //       intersect.object.setState("hovered");
+  //     //    voiceChatBox.rotation.y += 0.15;//Math.sin(Math.PI * 0.2);
+  //       //  voiceChatBox.rotation.x += 0.15;//Math.sin(Math.PI * 0.2);
+  //     //  buttonTexts( 'Right Cube', 2.1, -0.5);
+  //       //leftCubeButton.rotation.y += 0.15;//Math.sin(Math.PI * 0.2);
+  //     // leftCubeButton.rotation.x += 0.15;//Math.sin(Math.PI * 0.2);
+  //   //   buttonTexts( 'Voice chat', 0., -0.5);
         
       
-      };
-    };
-    // Update non-targeted buttons state
-    objsToTest.forEach((obj) => {
-      if ((!intersect || obj !== intersect.object) && obj.isUI) {
-        // Component.setState internally call component.set with the options you defined in component.setupState
-        obj.setState("idle");
-      };
-    });
-  }
+  //     };
+  //   };
+  //   // Update non-targeted buttons state
+  //   objsToTest.forEach((obj) => {
+  //     if ((!intersect || obj !== intersect.object) && obj.isUI) {
+  //       // Component.setState internally call component.set with the options you defined in component.setupState
+  //       obj.setState("idle");
+  //     };
+  //   });
+  // }
 
 };
 
