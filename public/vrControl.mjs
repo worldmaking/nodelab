@@ -17,6 +17,9 @@ const lastSqueezed = [false, false];
 /** @type {number} Which controller is actively used for pointing/teleporting? -1 = none. */
 let activeControllerIndex = -1;
 
+/** @type {boolean} State of buttons on controller. */
+let uiTrigger;
+
 /**
  * Call this to intialize VR controls.
  * @param {World} newWorld World to apply control logic to.
@@ -78,6 +81,8 @@ function updateControls(dt) {
                 world.tryTeleportToTarget();
             }
             lastSqueezed[i] = trigger;
+
+            if ( i = 1 ) uiTrigger = gamepad.buttons[0].pressed;
         }
     }
 
@@ -87,4 +92,4 @@ function updateControls(dt) {
 }
 
 
-export { initializeControls, updateControls }
+export { uiTrigger, initializeControls, updateControls }

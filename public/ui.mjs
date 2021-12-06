@@ -2,12 +2,15 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.m
 import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";
 import { FBXLoader } from './jsm/loaders/FBXLoader.js'
 import * as MKControl from './mouseKeyboardControl.mjs';
+import * as VRControl from './vrControl.mjs';
 import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
 
 import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
+
 const UI = {
+
   raycaster: new THREE.Raycaster(),
   //pointer: new THREE.Vector2(), MKControl.mouse
 
@@ -237,7 +240,7 @@ const UI = {
     //     this.rollOverMesh.visible = false;
     //   }
 
-    if (MKControl.mouseButtons[0] && this.intersected) {
+    if ( ( MKControl.mouseButtons[0] || VRControl.uiTrigger ) && this.intersected) {
 
       if (!this.leftClicked) {
 
@@ -305,7 +308,7 @@ const UI = {
       }
     }
 
-    if (!MKControl.mouseButtons[0]) { // if left mouse button is up
+    if ( !MKControl.mouseButtons[0] || !VRControl.uiTrigger ) { // if left mouse button is up
       this.leftClicked = false;
     }
   },
