@@ -29,6 +29,10 @@
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
+    <script type="module" src="audioConnect.mjs"></script>
+
     <script type="text/javascript" src="networkMessages.js"></script>
   </head>
   <body>
@@ -99,6 +103,7 @@
       import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
+      import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
       
       document.getElementById('emojis').style.display = 'none';
 
@@ -292,6 +297,9 @@
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
+
+          // ui update - needs to be manually updated in here
+          ThreeMeshUI.update();
 
           if (world.renderer.xr.isPresenting) {
             activeCamera = world.vrCamera;

@@ -1,3 +1,4 @@
+
 // DOM elements.
 // This Code is from https://github.com/borjanebbal/webrtc-node-app
 
@@ -14,21 +15,24 @@ const audioChatContainer = document.getElementById('audio-chat-container')
 // Variables.
 
 console.log("audiorun")
-
-// let socket;
-
+let socket;
 
 
 
-// if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
-// 	socket = io(':3123', { transports : ['websocket'] })
-// }
 
-// else{
-// 	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
-// }
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
+	socket = io(':3123', { transports : ['websocket'] })
 
-const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+	console.log("Connected to local socket")
+}
+
+else{
+	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
+
+	console.log("Connected to agile-basin-71343")
+}
+
+// const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 
 const mediaConstraints = {
 	audio: true,
@@ -94,10 +98,16 @@ socket.on('full_room', () => {
 
 
 
+function initialize(){
+	
+	//myID = id
+	//console.log("initialized with UUID " + id)
+
+	joinRoom();
+}
 
 
-
-export default function joinRoom() {
+function joinRoom() {
 
 	console.log("joinRoom")
 	
@@ -126,7 +136,11 @@ function leaveRoom(){
 	socket.emit('dis_con',roomId)
 }
 
-
+export{
+	joinRoom,
+	leaveRoom,
+	initialize
+}
 
 
 
