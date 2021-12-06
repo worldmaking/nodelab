@@ -73,7 +73,7 @@ const UI = {
         height: 2
       });
 
-      this.colorPanel.position.set(-1, 1, 0);
+      this.colorPanel.position.set(-1.5, 1, -1.5);
       this.colorPanel.rotation.x = -0.3;
       this.world.scene.add(this.colorPanel);
 
