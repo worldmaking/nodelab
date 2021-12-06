@@ -218,7 +218,7 @@ const UI = {
         }
       }
     },
-
+    // adds the emoji to the scene
     emotes(parent, s){
       this.timer = new Date().getTime();
       this.deleteEmote(parent);   
@@ -235,18 +235,18 @@ const UI = {
         // tempTextGroup.add(tempemote);
       })
     },
-
+    //gets the time the emoji has been in the world
     getTime(){
       let distance = new Date().getTime() - this.timer;
       let seconds = Math.floor((distance % (1000 * 60)) / 1000);
       return seconds;
     },
-
+    // deletes the emoji
     deleteEmote(parent){
       this.emote.remove(this.emote.children[0]);
       parent.remove(this.emote);
     },
-
+    //animates the emoji
     animate(){
       if(this.emote.position.y < 1){
         this.emote.position.y += 0.01;
