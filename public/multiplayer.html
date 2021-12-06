@@ -184,7 +184,7 @@
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
-      import joinRoom from "./audioConnect.mjs"
+      import {joinRoom, leaveRoom, initialize} from "./audioConnect.mjs"
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -265,7 +265,8 @@
           userName: document.getElementById('username').value,
           userRGB: colourTriplet,
           onuser: updateUserReplica,
-          onuserexit: disposeUserReplica
+          onuserexit: disposeUserReplica,
+          onproject: function() { initialize(app.users.self.id)}
         });
 
         
@@ -391,6 +392,8 @@
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
           
+       
+      
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
 
@@ -400,8 +403,8 @@
         // Start animating!
         
         world.renderer.setAnimationLoop(animate);
-
-        joinRoom()
+    
+        
       }
 
       

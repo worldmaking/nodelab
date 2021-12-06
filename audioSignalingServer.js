@@ -8,10 +8,17 @@ const app = express()
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
 
+let clientList_UUID_conv = {}
+
 //app.use('/', express.static('public'))
 
 io.on('connection', (socket) => {
   socket.on('join', (roomId) => {
+
+    // var roomId = parms.roomName;
+
+    // clientList_UUID_conv[socket.id] = parms.name;
+    // console.log(clientList_UUID_conv)
 
     let numberOfClients = 0;
     if (io.sockets.adapter.rooms.has(roomId)) numberOfClients = io.sockets.adapter.rooms.get(roomId).size
@@ -25,22 +32,6 @@ io.on('connection', (socket) => {
   
     } 
 
-  //   else if (numberOfClients == 1) {
-  //     // if there are some one in the room 
-  //     // emit your id to the person in the room 
-  //       console.log(`Joining room ${roomId} and emitting room_joined socket event`)
-  //       socket.join(roomId)
-  //       const clientd = io.sockets.adapter.rooms.get(roomId)
-  //       let clientlist = []
-  //       for (const clientId of clientd ) {clientlist.push(clientId)}
-  //       console.log(clientlist)
-  
-  //       // socket.emit('room_joined', roomId)
-  //       socket.emit('room_joined2',socket.id, numberOfClients, clientlist, roomId)
-  
-  // // console.log(socket.id, numberOfClients, clientd, roomId)
-  //     } 
-  
   else if (numberOfClients >= 1) {
       // if there are some one in the room 
       // emit your id to the person in the room 
@@ -48,11 +39,11 @@ io.on('connection', (socket) => {
         socket.join(roomId)
         //socket.emit('room_joined', roomId)
         
-        const clientd = io.sockets.adapter.rooms.get(roomId)
-        let clientlist = []
-        for (const clientId of clientd ) {clientlist.push(clientId)}
-        console.log(clientlist)
-        socket.emit('room_joined2', socket.id, numberOfClients, clientlist, roomId)
+        // const clientd = io.sockets.adapter.rooms.get(roomId)
+        // let clientlist = []
+        // for (const clientId of clientd ) {clientlist.push(clientId)}
+        // console.log(clientlist)
+        socket.emit('room_joined2', roomId)
   
       } 
 
@@ -75,22 +66,29 @@ io.on('connection', (socket) => {
   // These events are emitted to all the sockets connected to the same room except the sender.
   // when a user enters a room it emits a call
   socket.on('start_call2', (roomId) => {
-    console.log(`Broadcasting start_call event to peers in room ${roomId}`)   
-    const clientd = io.sockets.adapter.rooms.get(roomId)
 
-    let clientlist = []
-    for (const clientId of clientd ) {clientlist.push(clientId)}
-    socket.to(roomId).emit('start_call2',socket.id, clientlist.length, clientlist, roomId)
+
+    
+
+    console.log(`Broadcasting start_call event to peers in room ${roomId}`)   
+    // const clientd = io.sockets.adapter.rooms.get(roomId)
+
+
+    // let clientlist = []
+    // for (const clientId of clientd ) {clientlist.push(clientId)}
+    socket.to(roomId).emit('start_call2',socket.id)
+    // socket.to(roomId).emit('start_call2',socket.id, clientlist.length, clientlist, roomId)
+    //socket.to(roomId).emit('start_call2',socket.id, clientlist.length, clientlist, roomId)
   })
 
   // 
   socket.on('webrtc_offer2', (event, toID) => {
     console.log(`Broadcasting webrtc_offer event to peers in room ${event.roomId}`)
-    const clientd = io.sockets.adapter.rooms.get(event.roomId)
-    let clientlist = []
-    for (const clientId of clientd ) {clientlist.push(clientId)}
+    // const clientd = io.sockets.adapter.rooms.get(event.roomId)
+    // let clientlist = []
+    // for (const clientId of clientd ) {clientlist.push(clientId)}
 
-    io.to(toID).emit('webrtc_offer2',socket.id, clientlist.length, clientlist, event.sdp)
+    io.to(toID).emit('webrtc_offer2',socket.id,event.sdp)
     //socket.to(event.roomId).emit('webrtc_offer2', event.sdp)
   })
 
@@ -98,7 +96,7 @@ io.on('connection', (socket) => {
   socket.on('webrtc_answer2', (event, toID) => {
     console.log(`Broadcasting webrtc_answer event to peers in room ${event.roomId}`)
     //socket.to(event.roomId).emit('webrtc_answer2', event.sdp,socket.id )
-    io.to(toID).emit('webrtc_answer2', event.sdp,socket.id )
+    io.to(toID).emit('webrtc_answer2', event.sdp, socket.id )
   })
 
   socket.on('webrtc_ice_candidate', (event, toID) => {
