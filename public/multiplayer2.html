@@ -99,6 +99,7 @@
       import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
+      import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
       
       document.getElementById('emojis').style.display = 'none';
 
@@ -292,6 +293,9 @@
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
+
+          // ui update - needs to be manually updated in here
+          ThreeMeshUI.update();
 
           if (world.renderer.xr.isPresenting) {
             activeCamera = world.vrCamera;
