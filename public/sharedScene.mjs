@@ -11,6 +11,7 @@ class SharedScene {
     initialSyncCompleted = false;
 
     constructor(parentScene, myID, serverID) {
+        console.log("setting up SharedScene", myID, serverID);
         this.serverID = serverID;
         this.merger = setupMerge(null, myID);
         this.merger.addClient(serverID);
@@ -71,7 +72,8 @@ class SharedScene {
 
             if (!reply) {
                 // We're up to date!
-                 console.log('Completed first sync.')
+                console.log('Completed first sync.')
+                console.log(doc);
                 this.initialSyncCompleted = true;               
 
                 if (!doc.objects) {

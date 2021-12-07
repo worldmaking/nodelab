@@ -293,13 +293,10 @@ To avoid arbitrary changes, move your focus to multiplayer2.html until we can co
         }
 
         function onSync(syncMessage, senderID) {
-          syncMessage = JSON.parse(syncMessage);
-          console.log('received sync message:', syncMessage, typeof(syncMessage));
+          syncMessage = JSON.parse(syncMessage);          
           const reply = shared.handleSyncMessage(syncMessage, senderID);          
           return reply;
         }
-
-
 
 
         // Connect to server, wiring up handlers for various messages.
@@ -461,6 +458,12 @@ To avoid arbitrary changes, move your focus to multiplayer2.html until we can co
 
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
+
+
+          if (shared) {
+            const message = shared.tryGenerateSyncMessage();
+            if (message) app.sync(message);
+          }
 
           showReadout(readout);
         }
