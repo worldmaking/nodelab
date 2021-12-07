@@ -90,6 +90,8 @@ const UI = {
       height: 0.2
     });
     this.emotePanel.position.set(0, 0, -1);
+    this.emotePanel.rotation.x = -0.4;
+    this.emotePanel.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.emotePanel);
 
     this.emotePanel2 = new ThreeMeshUI.Block({
@@ -106,7 +108,9 @@ const UI = {
       width: 1.4,
       height: 0.2
     });
-    this.emotePanel2.position.set(0, -0.3, -1);
+    this.emotePanel2.position.set(0, -0.15, -1);
+    this.emotePanel2.rotation.x = -0.4;
+    this.emotePanel2.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.emotePanel2);
 
      //UI panelContainer
@@ -126,8 +130,9 @@ const UI = {
     });
     world.scene.add(this.control);
 
-    this.colorPanel.position.set(0, -0.1, -0.5);
-    this.colorPanel.rotation.x = -0.4; 
+    this.colorPanel.position.set(0, 0.2, -1);
+    this.colorPanel.rotation.x = -0.4;
+    this.colorPanel.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.colorPanel);
 
 
@@ -304,22 +309,26 @@ const UI = {
        // destination.add( this.buttonGroup );
        this.parent = destination;
       //destination.add(this.colorPanel);
-       destination.add(this.emotePanel);
-       destination.add(this.emotePanel2);
+       //destination.add(this.emotePanel);
+       //destination.add(this.emotePanel2);
 
-       this.world.scene.remove(this.colorPanel);
+       this.world.scene.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
       //main ui control with the key "m"
        document.addEventListener('keypress', (event) => {
         if(event.key == "m"){
          if(this.colorPanel.isVisible){
             this.colorPanel.isVisible = false;
+            this.emotePanel.isVisible = false;
+            this.emotePanel2.isVisible = false;
            // console.log("inside if");
-            this.world.scene.remove(this.colorPanel);
-            destination.remove(this.colorPanel);
+            this.world.scene.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
+            destination.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
          } else {
             this.colorPanel.isVisible = true;
-            this.world.scene.add(this.colorPanel);
-            destination.add(this.colorPanel);
+            this.emotePanel.isVisible = true;
+            this.emotePanel2.isVisible = true;
+            this.world.scene.add(this.colorPanel, this.emotePanel, this.emotePanel2);
+            destination.add(this.colorPanel, this.emotePanel, this.emotePanel2);
           //  console.log(UI.colorPanel.position.x);
          }
         }
