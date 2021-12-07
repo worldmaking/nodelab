@@ -12,6 +12,29 @@ import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 /** @type {THREE.Group[]} Reference to left (0) and right (1) controller.*/
 let controllers;
 
+const loader = new FBXLoader();
+
+const modelCache = { 
+  tryLoad: function(fileName, container) {
+    let result = this[fileName];
+    if (result) {
+      console.log("recycling cached model " + fileName);
+      container.add(result);
+      return;
+    }
+    
+    const path = './models/fbx/' + fileName    
+    console.log("loading emote from " + path);
+    const cache = this;
+    loader.load(path, function (fbx, emote) {
+      fbx.scale.set(0.003, 0.003, 0.003);
+      fbx.position.y = 0;
+      fbx.rotation.y = 180;
+      container.add(fbx);
+      cache[fileName] = fbx;
+    });
+  }
+};
 
 const UI = {
 
@@ -630,16 +653,8 @@ const UI = {
     this.emote.position.y = 0.55
     parent.add(this.emote);
     let tempemote = this.emote;
-    let directory = './models/fbx/' + s
-    let loader = new FBXLoader();
-    loader.load(directory, function (fbx, emote) {
-      console.log("parent");
-      fbx.scale.set(0.003, 0.003, 0.003)
-      fbx.position.y = 0
-      fbx.rotation.y = 180;
-      tempemote.add(fbx);
-      // tempTextGroup.add(tempemote);
-    })
+
+    modelCache.tryLoad(s, tempemote);
   },
   //gets the time the emoji has been in the world
   getTime() {
