@@ -758,10 +758,11 @@ const UI = {
 
     if (container.lastEmote === fileName) {
       return;
-    }
+    }    
 
     console.log(`remote user sends emote ${fileName}`);
 
+    container.clear();
     container.position.y = 0.55;
     container.userData.lifeSpan = emojiDuration;
     modelCache.tryLoad(fileName, container);
