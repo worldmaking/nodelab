@@ -81,19 +81,6 @@ require('child_process').fork('audioSignalingServer.js');
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 const demoproject = {
   threejs: {
 	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],

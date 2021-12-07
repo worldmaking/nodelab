@@ -131,12 +131,22 @@ class Replica {
     #colour;
 
     /**
+     * Defining the callback type used in the Replica constructor.
+     * @callback customAvatarCallback
+     * @param {THREE.Group} head An empty group that will track the head of the replica.
+     * @param {THREE.Group} body An empty group that will track the torso of the replica.
+     * @param {THREE.Material} material A material bearing the user's assigned colour.
+     * @returns {boolean} True to continue building default avatar, false to skip it.
+     */
+
+
+    /**
      * Create a replica with these user properties.
      * @param {string} displayName Name to display for this replica user.
-     * @param {?number} colour Hex code colour to tint this user's avatar. Uses default material if absent.
+     * @param {?number[]} colour Hex code colour to tint this user's avatar. Uses default material if absent.
+     * @param {?customAvatarCallback} customAvatar Optional callback to
      */
-    constructor(displayName, colour, customAvatar) {
-        
+    constructor(displayName, colour, customAvatar) {        
 
         // Use the world default material if we lack a colour for this user.
         let material = world.defaultMaterial;
@@ -218,6 +228,11 @@ class Replica {
     getBody(){
         return this.#body;
     }
+
+    getColour() {
+        return this.#colour;
+    }
+
     /**
      * Call this when a user chances their colour/name to update their appearance.
      * @param userData data structure containing rgb colour and name string.
@@ -354,9 +369,7 @@ class Replica {
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
     }
 
-    getColour() {
-        return this.#colour;
-    }
+
 }
 
 /** @type {Replica[]} */

@@ -112,9 +112,7 @@ class World {
         const grid = new THREE.GridHelper(35, 35, 0x333366, 0x666666);
         scene.add(grid);
         
-        if (makeLights){
-
-        
+        if (makeLights){        
             // Add some lights to the scene to distinguish surfaces help see where objects are positioned,
             // using the parallax of their shadow.
             const light = new THREE.HemisphereLight(0xfffcee, 0x202555);
