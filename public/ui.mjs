@@ -5,7 +5,7 @@ import * as MKControl from './mouseKeyboardControl.mjs';
 import * as VRControl from './vrControl.mjs';
 import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
 
-import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
+//import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 
@@ -546,7 +546,7 @@ const UI = {
             if (this.callMode == false) {
               this.callMode = true;
               console.log('calling');
-              joinRoom();
+             // joinRoom();
             }
             break;
           case this.emojis.brain:

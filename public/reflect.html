@@ -479,6 +479,8 @@ and creating/updating avatars for remote users based on the latest data synched 
 
 
         let texture = new THREE.TextureLoader().load("/images/beaten-up-metal1-Height.png");
+        let s = 1/1000
+        texture.repeat.set(s, s);
 
         let USE_WIREFRAME = false;
         const meshFloor = new THREE.Mesh(
@@ -488,10 +490,10 @@ and creating/updating avatars for remote users based on the latest data synched 
             window.innerWidth,
             window.innerHeight
           ),
-          new THREE.MeshPhongMaterial({
+          new THREE.MeshStandardMaterial({
             color: 'lightblue',
             wireframe: USE_WIREFRAME,
-            normalMap: texture,
+            map: texture,
           })
         );
 

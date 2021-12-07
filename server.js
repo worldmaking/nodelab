@@ -75,7 +75,7 @@ console.log("GRAHAMS GREAT TEST")
 
 // Audio Server 
 
-require('child_process').fork('audioSignalingServer.js');
+//require('child_process').fork('audioSignalingServer.js');
 
 //if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
 	//require('child_process').fork('audioSignalingServer.js');
@@ -219,6 +219,27 @@ wss.on('connection', (socket, req) => {
 				// Tell everyone about the new/updated user.
 				(new Message("user", {id: id, user: msg.val})).sendToAll(getOthersInRoom());
 				break;
+			case "webrtc_offer2" : {
+				console.log(`Broadcasting webrtc_offer event to peers in room ${msg.val.roomId}`)
+				// const clientd = io.sockets.adapter.rooms.get(msg.val.roomId)
+				// let clientlist = []
+				// for (const clientId of clientd ) {clientlist.push(clientId)}
+
+				// send offer to msg.val.id
+
+				//io.to(toID).emit('webrtc_offer2',socket.id, clientlist.length, clientlist, event.sdp)
+				//socket.to(event.roomId).emit('webrtc_offer2', event.sdp)
+
+				//console.log(msg.val.sdp, msg.val.id, clients[msg.val.id])
+
+				let message = new Message("webrtc_offer2", msg.val.sdp)
+
+				message.sendWith(clients[msg.val.id].socket);
+
+				break;
+			}
+			default:
+				console.log(msg)
 		}
 	
 	});

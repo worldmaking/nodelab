@@ -1,3 +1,145 @@
+
+
+const voice = {
+
+	room: "/",
+	server: null,
+	localStream: null,
+	connections: [],
+
+	// Free public STUN servers provided by Google.
+	iceServers: {
+		iceServers: [
+		{ urls: 'stun:stun.l.google.com:19302' },
+		{ urls: 'stun:stun1.l.google.com:19302' },
+		{ urls: 'stun:stun2.l.google.com:19302' },
+		{ urls: 'stun:stun3.l.google.com:19302' },
+		{ urls: 'stun:stun4.l.google.com:19302' },
+		// {
+		//     urls: "turn:3.145.6.86:3478?transport=udp", 
+		//     credential: 'root', 
+		//     username: 'user'
+		//   }
+		],
+	},
+
+	
+	async setLocalStream() {
+		let stream
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+				video: false,
+			})
+		} catch (error) {
+			console.error('Could not get user media', error)
+		}
+
+		this.localStream = stream
+		//localVideoComponent.srcObject = stream
+	},
+
+	addLocalTracks(rtcPeerConnection) {
+		this.localStream.getAudioTracks().forEach((track) => {
+			console.log(track)
+			rtcPeerConnection.addTrack(track, this.localStream)
+		})
+	},
+
+	setRemoteStream(event,id) {
+		// remoteVideoComponent.srcObject = event.streams[0]
+		// remoteStream = event.stream
+		let audio_chat_container = document.getElementById('audio-chat-container');
+		
+		let audio  = document.createElement('audio');
+	
+		audio.setAttribute('data-socket', id);
+		audio.setAttribute('id', 'remote-audio');
+			
+		audio.srcObject=event.streams[0];
+		audio.autoplay    = true; 
+			
+		audio_chat_container.appendChild(audio);
+	},
+
+	sendIceCandidate(event,id) {
+		if (event.candidate) {
+			// socket.emit('webrtc_ice_candidate', {
+			// 	roomId,
+			// 	label: event.candidate.sdpMLineIndex,
+			// 	candidate: event.candidate.candidate,
+			// },id 
+			// )
+			{
+				const message = new Message("webrtc_ice_candidate", {
+					roomId: this.room,
+					label: event.candidate.sdpMLineIndex,
+					candidate: event.candidate.candidate,
+					id
+				});
+				message.sendWith(this.server);
+			}
+		}
+	},
+
+	async startCall(id, user) {
+		if(!this.connections[id]){
+			this.connections[id] = new RTCPeerConnection(this.iceServers);
+			this.addLocalTracks(this.connections[id])
+			this.connections[id].ontrack = (event) => {
+				this.setRemoteStream(event,id)
+			}
+			this.connections[id].onicecandidate  = (event) => {
+				this.sendIceCandidate(event,id)
+			}
+			await this.createOffer(this.connections[id], id)                                                
+		}
+	},
+
+	async createOffer(rtcPeerConnection, toID) {
+		let sessionDescription
+		try {
+			sessionDescription = await rtcPeerConnection.createOffer()
+			rtcPeerConnection.setLocalDescription(sessionDescription)
+		} catch (error) {
+			console.error(error)
+		}
+	
+		// socket.emit('webrtc_offer2', {
+		// 	type: 'webrtc_offer',
+		// 	sdp: sessionDescription,
+		// 	roomId,
+		// },
+		// toID)
+
+		const message = new Message("webrtc_offer2", {
+			type: 'webrtc_offer',
+			sdp: sessionDescription,
+			roomId: this.room,
+			id: toID
+		});
+		message.sendWith(this.server);
+		
+	},
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function connectToWorld(opt={}) {
 
 	let options = Object.assign({
@@ -82,9 +224,13 @@ function connectToWorld(opt={}) {
 						}
 						break;
 					case "user":
+						console.log("new user", msg.val)
 						// Accept notification of a new user joining, 
 						// or an existing user changing their persistent data.
 						options.onuser(msg.val.id, msg.val.user);
+
+						voice.startCall(msg.val.id, msg.val.user)
+
 						break;
 					case "others":
 						// Accept an update of all users' volatile data. Prune out information about ourselves.
@@ -101,7 +247,12 @@ function connectToWorld(opt={}) {
 					case "project":
 						// Accept JSON representing the current state of the world contents.
 						if (options.onproject) options.onproject(msg.val);
-						break;					
+						break;			
+						
+					// audio socket messages:
+
+
+
 					default: 
 						options.log("unknown message", msg);
 				}			
@@ -112,8 +263,15 @@ function connectToWorld(opt={}) {
 				const message = new Message("user", users.self.user);
 				message.sendWith(server);
 			}
+			{
+				voice.setLocalStream();
+				// const message = new Message("audio_join", options.room);
+				// message.sendWith(server);
+			}
 		}
 
+		voice.server = server;
+		voice.room = options.room
 		return server
 	}
 
