@@ -17,6 +17,15 @@ const lastSqueezed = [false, false];
 /** @type {number} Which controller is actively used for pointing/teleporting? -1 = none. */
 let activeControllerIndex = -1;
 
+let origin;
+let aim;
+
+let o;
+let a;
+
+/** @type {boolean} State of buttons on controller. */
+let uiTrigger;
+
 /**
  * Call this to intialize VR controls.
  * @param {World} newWorld World to apply control logic to.
@@ -64,20 +73,25 @@ function updateControls(dt) {
             }
 
             // Aim teleport based on pointing direction.
-            const origin = new THREE.Vector3();
-            controller.getWorldPosition(origin);            
+            origin = new THREE.Vector3();
+            controller.getWorldPosition(origin);   
+            o = origin;
             
-            const aim = new THREE.Vector3();
+            aim = new THREE.Vector3();
             controller.getWorldDirection(aim);
             aim.multiplyScalar(-1);
 
-            world.updateTeleportTargetFromRay(origin, aim);
+            a = aim;
 
+            world.updateTeleportTargetFromRay(origin, aim);
+ 
             const trigger = gamepad.buttons[0].pressed;
             if (trigger && !lastSqueezed[i]) {
                 world.tryTeleportToTarget();
             }
             lastSqueezed[i] = trigger;
+
+            if ( i = 1 ) uiTrigger = gamepad.buttons[0].pressed;
         }
     }
 
@@ -86,5 +100,13 @@ function updateControls(dt) {
         activeControllerIndex = -1;
 }
 
+function getOrigin(){
+    return o;
+}
 
-export { initializeControls, updateControls }
+function getAim(){
+    return a;
+}
+
+
+export { origin, aim, uiTrigger, initializeControls, updateControls, getOrigin, getAim }

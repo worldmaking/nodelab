@@ -83,6 +83,7 @@ let world;
  * @type {Replica} */
 let clientReplica;
 
+
 // Load a font that we can use to display user names of other users, 
 // and prepare a material to use for text rendering.
 const loader = new THREE.FontLoader();
@@ -128,6 +129,8 @@ class Replica {
 
     #displayName;
 
+    #colour;
+
     /**
      * Create a replica with these user properties.
      * @param {string} displayName Name to display for this replica user.
@@ -142,8 +145,9 @@ class Replica {
         // Otherwise, make a custom material for this replica, 
         // and cache it for re-use and cleanup when we're done.
         if (colour) {
-            material = new THREE.MeshLambertMaterial({color: new THREE.Color(colourTripletToHex(colour))});
-            this.#material = material;
+            this.#colour = new THREE.Color(colourTripletToHex(colour));
+            material = new THREE.MeshLambertMaterial({color: this.#colour});
+            this.#material = material;            
         }
         this.#head = new THREE.Group();
         world.scene.add(this.#head);
@@ -212,6 +216,9 @@ class Replica {
         return replica;
     }
 
+    getBody(){
+        return this.#body;
+    }
     /**
      * Call this when a user chances their colour/name to update their appearance.
      * @param userData data structure containing rgb colour and name string.
@@ -234,8 +241,8 @@ class Replica {
         for (let hand of this.#hands) {
             if (hand && hand.parent) world.scene.remove(hand);
         }
+        if(this.#nameGeo) this.#nameGeo.dispose();
         
-        this.#nameGeo.dispose();
         if (this.#material) this.#material.dispose();
     }
 
@@ -346,6 +353,10 @@ class Replica {
 
         this.#tryReplicateHand(HandID.left, userData.poses[1], scale);
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
+    }
+
+    getColour() {
+        return this.#colour;
     }
 }
 
@@ -463,6 +474,13 @@ function disposeUserReplica(id) {
     }
 }
 
+function getOwnReplicaBody() {
+    return clientReplica.getBody();
+}
+function getUserReplica(id) {
+    return replicas[id];
+}
+
 function getOwnReplica() {
     return clientReplica;
 }
@@ -472,5 +490,7 @@ export {
     updateUserReplica,
     replicatePoses,
     disposeUserReplica,
-    getOwnReplica
+    getOwnReplicaBody,
+    getOwnReplica,
+    getUserReplica
 }

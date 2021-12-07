@@ -29,9 +29,23 @@
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
+    <script type="module" src="audioConnect.mjs"></script>
+
     <script type="text/javascript" src="networkMessages.js"></script>
   </head>
   <body>
+    <div id='emojis'>
+      <button name=";p" class= "button">;p</button>
+      <button name="laugh" class= "button">Laugh</button>
+      <button name="love" class= "button">love</button>
+      <button name="smile" class= "button">Smile</button>
+      <button name="surprised" class= "button">Surprised</button>
+      <button name="thinking" class= "button">Thinking</button>
+      <button name="brain" class= "button">Brain Explode</button>
+    </div>
+    
     <div id="avatar-customization">
       <div class="avatar-background">
         <h1>Avatar Customization</h1>
@@ -80,14 +94,18 @@
     <script type="module">
       'use strict';
       
+      
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
-      import { TransformControls } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/TransformControls.js";       
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplica } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody, getUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
+      import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
+      import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
+      
+      document.getElementById('emojis').style.display = 'none';
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -104,7 +122,9 @@
       }
       document.getElementById('login-button').onclick = logIn;
 
-
+      function myFunction(){
+        console.log("here");
+      }
       
 
       function getFormColour() {        
@@ -221,162 +241,78 @@
         
         ////////////////////////////////////////////////////////////////////////
         
-        // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
-        const UI = {
-          raycaster: new THREE.Raycaster(),
-          //pointer: new THREE.Vector2(), MKControl.mouse
+        UI.init(world);
+        UI.addTextGroupTo( getOwnReplicaBody() );
+        UI.addButtonsTo( getOwnReplicaBody() );
+        
+        //UI.animate(UI.emotes());
 
-          // TODO: do we need separate VRControl ?
-          control: new TransformControls(world.mouseCamera, world.renderer.domElement),
+        // UI.print("it's printing!");
 
-          clickable: [],
-          intersected: null,
-
-          // currently active object:
-          activeObj: null,
-
-          tools: {},
-
-          init(world) {
-            this.control.addEventListener("dragging-changed", function (event) {
-              MKControl.enableOrbit(!event.value)
-            });
-            world.scene.add(this.control);
-
-            // addButtons
-            {
-              const buttonGeo = new THREE.DodecahedronGeometry(1, 0);
-              const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
-              const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
-              const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
-              const buttonMat4 = new THREE.MeshLambertMaterial({ color: 0x66dd66 });
-              const buttonMat5 = new THREE.MeshLambertMaterial({ color: 0xdd6666 });
-
-              const buttonTranslate = new THREE.Mesh(buttonGeo, buttonMat1);
-              buttonTranslate.position.z = 10;
-              buttonTranslate.position.x = -6;
-
-              const  buttonRotate = new THREE.Mesh(buttonGeo, buttonMat2);
-              buttonRotate.position.z = 10;
-              buttonRotate.position.x = -3;
-
-              const buttonScale = new THREE.Mesh(buttonGeo, buttonMat3);
-              buttonScale.position.z = 10;
-              buttonScale.position.x = 0;
-
-              const buttonAdd = new THREE.Mesh(buttonGeo, buttonMat4);
-              buttonAdd.position.z = 10;
-              buttonAdd.position.x = 3;
-
-              const buttonRemove = new THREE.Mesh(buttonGeo, buttonMat5);
-              buttonRemove.position.z = 10;
-              buttonRemove.position.x = 6;
-
-              // scene.add(buttonTranslate);
-              // scene.add(buttonRotate);
-              // scene.add(buttonScale);
-              // scene.add(buttonAdd);
-
-              const buttonGroup = new THREE.Group();
-
-              this.clickable.push(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-              buttonGroup.add(buttonTranslate, buttonRotate, buttonScale, buttonAdd, buttonRemove);
-
-              world.scene.add(buttonGroup);
-
-              this.tools = {
-                buttonTranslate,
-                buttonRotate,
-                buttonScale,
-                buttonAdd,
-                buttonRemove
-              }
+         // hides or shows the 3D text in the scene when 'l' is pressed
+         document.addEventListener('keypress', (event) => {
+          if(event.key == "l"){
+            if(UI.isVisible){
+              UI.textGroup.visible = false;
+              UI.isVisible = false;
             }
-          },
-
-          activateObj( obj ) {
-  
-            this.control.detach();
-            this.control.attach( obj );
-            this.activeObj = obj;
-            
-          },
-
-          updateMK(dt, MKControl, camera) {
-            this.raycaster.setFromCamera(MKControl.mouse, camera);
-
-            const intersects = this.raycaster.intersectObjects(this.clickable, false);
-            if (intersects.length > 0) {
-              if (this.intersected != intersects[0].object) {
-                if (this.intersected)
-                this.intersected.material.emissive.setHex(this.intersected.currentHex);
-
-                this.intersected = intersects[0].object;
-                this.intersected.currentHex = this.intersected.material.emissive.getHex();
-                this.intersected.material.emissive.setHex(0x333333);
-              }
-            } else {
-              if (this.intersected) {
-                this.intersected.material.emissive.setHex(this.intersected.currentHex);
-              }
-              this.intersected = null;
+            else {
+              UI.textGroup.visible = true;
+              UI.isVisible = true;
             }
-            if(MKControl.mouseButtons[0] && this.intersected) {
-              const obj = this.intersected;
-              switch (obj) {
-                case this.tools.buttonTranslate:
-                  this.control.setMode("translate");
-                  break;
+          }
+          //the commented code below moved to the ui.mjs!!
 
-                case this.tools.buttonRotate:
-                this.control.setMode("rotate");
-                  break;
+          //UI main panel open with keyboard "m"
+          // if(event.key == "m"){
+          //   if(UI.colorPanel.isVisible){
+          //     UI.colorPanel.isVisible = false;
+          //     console.log("inside if");
+          //     world.scene.remove(UI.colorPanel);
+          //   } else {
+          //     UI.colorPanel.isVisible = true;
+          //     UI.colorPanel.position.set(0,0,0.2);
+          //     world.scene.add(UI.colorPanel);
+          //     console.log(UI.colorPanel.position.x);
+          //   }
+          // }
+        });
 
-                case this.tools.buttonScale:
-                this.control.setMode("scale");
-                  break;
-
-                // case this.tools.buttonAdd:
-                //   this.addMode = true;
-                //   addNewObj(helperWidth);
-                //   break;
-
-                // case this.tools.buttonRemove:
-                // this.removeMode = true;
-                //   // updateActiveButton( obj );
-                //   break;
-              }
-
-              // if ( buttonGroup.children.includes(obj) && obj != buttonRemove ) {  // if the obj is a button, but not the remove button, turn remove mode off.
-              //   removeMode = false;
-                
-              // }
-              
-              // if (objects.includes(obj)) { // if the obj is part of the malleable objects array,
-              //   if (removeMode) {
-              //     scene.remove(obj);
-              //     if ( obj == activeObj ) {
-              //       control.detach();
-              //       activeObj = null;
-              //     }
-              //   } else if (obj !== activeObj) {
-              //     activateObj ( obj );
-              //   }
-              // }
-            }
-          },
-        };
-
-        UI.init(world)
-
+        // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
+        document.addEventListener('contextmenu', function(event){
+          if(document.getElementById('emojis').style.display == 'none')
+            document.getElementById('emojis').style.display = 'block';
+          else 
+            document.getElementById('emojis').style.display = 'none';
+        })
+        //getting all the emoji buttons
+        let emojis = document.getElementsByClassName("button");
+        //adds the functionality to the emoji buttons calling the emote function on the ui to display the right emoji
+        for(let i = 0; i < emojis.length; i++){
+          emojis[i].addEventListener('click', function(){
+            UI.emotes(getOwnReplicaBody(), emojis[i].name + ".fbx");
+            document.getElementById('emojis').style.display = 'none';
+            UI.isEmoting = true;
+          })
+        }
 
         ////////////////////////////////////////////////////////////////////////
 
         // Main rendering loop.
         function animate() {
+          
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
+
+
+          // animates emojis
+          UI.animate(dt);
+          
+          
+
+          // ui update - needs to be manually updated in here
+          ThreeMeshUI.update();
 
           if (world.renderer.xr.isPresenting) {
             activeCamera = world.vrCamera;
@@ -384,12 +320,12 @@
             // (At least until headsets give us eye tracking...)            
             MKControl.mouse.set(0, 0);            
             VRControl.updateControls(dt);
+            UI.updateVR(dt, VRControl);
           } else {
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
             MKControl.updateControls(dt);
-            
-            UI.updateMK(dt, MKControl, activeCamera)
+            UI.updateMK(dt, MKControl, activeCamera);
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
@@ -416,13 +352,30 @@
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
 
-          //console.log(getOwnReplica())
+
+          if (UI.lastAction.action === 'emote') {
+            self.volatile.emote = UI.lastAction.value;
+            console.log("Sending emote to server: ", self.volatile.emote);
+          } else if (!UI.isEmoting) {
+            self.volatile.emote = undefined;
+          }
+
+          for (let o of others) {
+            if (o.emote) {              
+              UI.playEmoteOnReplica(getUserReplica(o.id), o.emote);
+            }
+          }
+
+          // console.log(getOwnReplica());
           
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
 
           showReadout(readout);
         }
+
+        
+
 
         // Start animating!
         
