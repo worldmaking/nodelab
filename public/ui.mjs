@@ -9,6 +9,7 @@ import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 
+
 const UI = {
 
   raycaster: new THREE.Raycaster(),
@@ -56,9 +57,11 @@ const UI = {
   emotePanel: null,
   emotesGroup: new THREE.Group(),
 
-  //UI panel for main buttons
+  //UI panel for main buttons 
   colorPanel: null,
 
+  //VR variable for choosing the state
+  selectState: false,
 
   init(world) {
     this.world = world;
@@ -122,12 +125,12 @@ const UI = {
     });
     world.scene.add(this.control);
 
-    this.colorPanel.position.set(0, 0., 0.2);
+    this.colorPanel.position.set(0, -0.1, 0.2);
     this.colorPanel.rotation.x = -0.4; 
     this.world.scene.add(this.colorPanel);
 
 
-        const buttonGeo = new THREE.DodecahedronGeometry(0.05, 0); //(0.1,0)
+        const buttonGeo = new THREE.DodecahedronGeometry(0.07, 0); //(0.1,0)
         const buttonMat1 = new THREE.MeshLambertMaterial({ color: 0xdd66dd });
         const buttonMat2 = new THREE.MeshLambertMaterial({ color: 0xdddd66 });
         const buttonMat3 = new THREE.MeshLambertMaterial({ color: 0x66dddd });
@@ -226,10 +229,32 @@ const UI = {
           height: 0.15,
           justifyContent: 'center',
           alignContent: 'center',
-          offset: 0.005, // - Distance on the Z direction between this component and its parent. 
+          offset: 0.05, // - Distance on the Z direction between this component and its parent. 
           margin: 0.02, //0.02 - Space between the component border and outer or neighbours components outer border.
           fontSize: 0.04,
           borderRadius: 0.075
+        };
+
+        // Options for component.setupState().
+	      // It must contain a 'state' parameter, which you will refer to with component.setState( 'name-of-the-state' ).
+        const hoveredStateAttributes = {
+          state: "hovered",
+          attributes: {
+            offset: 0.035,
+            backgroundColor: new THREE.Color( 0x999999 ),
+            backgroundOpacity: 1,
+            fontColor: new THREE.Color( 0xffffff )
+          },
+        };
+
+        const idleStateAttributes = {
+          state: "idle",
+          attributes: {
+            offset: 0.035,
+            backgroundColor: new THREE.Color( 0x666666 ),
+            backgroundOpacity: 0.3,
+            fontColor: new THREE.Color( 0xffffff )
+          },
         };
 
          //UI inner panel for emote texts
@@ -243,7 +268,7 @@ const UI = {
           fontSize: 0.04,
           borderRadius: 0.075
         };
-    
+
         // Buttons creation, with the options objects passed in parameters.
         this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText); 
         this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText); 
@@ -276,6 +301,53 @@ const UI = {
         this.thinking.add(new ThreeMeshUI.Text({ content: "thinking" }), thinking);
         this.p.add(new ThreeMeshUI.Text({ content: ";p" }), p);
   
+        // Create states for the buttons.
+        // In the loop, we will call component.setState( 'state-name' ) when mouse hover or click
+
+        const selectedAttributes = {
+          offset: 0.02,
+          backgroundColor: new THREE.Color( 0x777777 ),
+          fontColor: new THREE.Color( 0x222222 )
+        };
+
+        this.buttonTranslateText.setupState({
+          state:"selected",
+          attributes: selectedAttributes
+        });
+        this.buttonRotateText.setupState({
+          state:"selected",
+          attributes: selectedAttributes
+        });
+        this.buttonScaleText.setupState({
+          state:"selected",
+          attributes: selectedAttributes
+        });
+        this.buttonAddText.setupState({
+          state:"selected",
+          attributes: selectedAttributes
+        });
+        this.buttonRemoveText.setupState({
+          state:"selected",
+          attributes: selectedAttributes
+        });
+        this.callButtonText.setupState({
+          state:"selected",
+          attributes: selectedAttributes
+        });
+
+        this.buttonTranslateText.setupState( hoveredStateAttributes );
+	      this.buttonTranslateText.setupState( idleStateAttributes );
+        this.buttonRotateText.setupState( hoveredStateAttributes );
+	      this.buttonRotateText.setupState( idleStateAttributes );
+        this.buttonScaleText.setupState( hoveredStateAttributes );
+	      this.buttonScaleText.setupState( idleStateAttributes );
+        this.buttonAddText.setupState( hoveredStateAttributes );
+	      this.buttonAddText.setupState( idleStateAttributes );
+        this.buttonRemoveText.setupState( hoveredStateAttributes );
+	      this.buttonRemoveText.setupState( idleStateAttributes );
+        this.callButtonText.setupState( hoveredStateAttributes );
+	      this.callButtonText.setupState( idleStateAttributes );
+
         this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText,this.buttonAddText, this.buttonRemoveText, this.callButtonText);
         this.emotePanel.add(this.p, this.brainText, this.laugh, this.love);
         this.emotePanel2.add(this.smile, this.surprised, this.thinking);
@@ -298,7 +370,7 @@ const UI = {
     addButtonsTo( destination ) {
        // destination.add( this.buttonGroup );
        this.parent = destination;
-      // destination.add(this.colorPanel);
+      //destination.add(this.colorPanel);
        destination.add(this.emotePanel);
        destination.add(this.emotePanel2);
 
@@ -491,10 +563,19 @@ const UI = {
         this.intersected.material.emissive.setHex(0x333333);
       }
     } else {
-      if (this.intersected) {
-        this.intersected.material.emissive.setHex(this.intersected.currentHex);
-      }
-      this.intersected = null;
+      // if (this.intersected) {
+      //   this.intersected.material.emissive.setHex(this.intersected.currentHex);
+      // }
+      // this.intersected = null;
+      
+      if(this.intersects && this.intersects.object.UI){ //Filiz's test code for VR
+        if(selectState){
+          intersects.object.setState('selected');
+        } else {
+          intersects.object.setState('hovered');
+        };
+      };
+
     }
 
     //   if (this.addMode) {
