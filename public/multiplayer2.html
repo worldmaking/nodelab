@@ -321,11 +321,13 @@
             MKControl.mouse.set(0, 0);            
             VRControl.updateControls(dt);
             UI.updateVR(dt, VRControl);
+            UI.updatePanelPos('vr');
           } else {
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
             MKControl.updateControls(dt);
             UI.updateMK(dt, MKControl, activeCamera);
+            UI.updatePanelPos('mk');
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
