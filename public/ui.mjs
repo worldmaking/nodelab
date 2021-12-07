@@ -341,7 +341,7 @@ const UI = {
     //     this.rollOverMesh.visible = false;
     //   }
 
-    if ( ( MKControl.mouseButtons[0] || VRControl.uiTrigger ) && this.intersected) {
+    if ( MKControl.mouseButtons[0] && this.intersected) {
 
       if (!this.leftClicked) {
 
@@ -437,10 +437,139 @@ const UI = {
       }
     }
 
-    if ( !MKControl.mouseButtons[0] || !VRControl.uiTrigger ) { // if left mouse button is up
+    if ( !MKControl.mouseButtons[0]) { // if left mouse button is up
       this.leftClicked = false;
     }
   },
+
+  updateVR(dt, VRControl) {
+    this.raycaster.set(VRControl.origin, VRControl.aim);
+
+    const intersects = this.raycaster.intersectObjects(this.clickable, false);
+    if (intersects.length > 0) {
+      if (this.intersected != intersects[0].object) {
+        if (this.intersected)
+          this.intersected.material.emissive.setHex(this.intersected.currentHex);
+
+        this.intersected = intersects[0].object;
+        this.intersected.currentHex = this.intersected.material.emissive.getHex();
+        this.intersected.material.emissive.setHex(0x333333);
+      }
+    } else {
+      if (this.intersected) {
+        this.intersected.material.emissive.setHex(this.intersected.currentHex);
+      }
+      this.intersected = null;
+    }
+
+    //   if (this.addMode) {
+    //     this.rollOverMesh.visible = true;
+    //     this.rollOverMesh.position.copy( intersects[ 0 ].point ).add( intersects[ 0 ].face.normal );
+    //   } else {
+    //     this.rollOverMesh.visible = false;
+    //   }
+
+    if ( VRControl.uiTrigger && this.intersected) {
+
+      if (!this.leftClicked) {
+
+        this.leftClicked = true;
+        const obj = this.intersected;
+
+        switch (obj) {
+          case this.tools.buttonTranslate:
+            this.control.setMode("translate");
+            break;
+
+          case this.tools.buttonRotate:
+            this.control.setMode("rotate");
+            break;
+
+          case this.tools.buttonScale:
+            this.control.setMode("scale");
+            break;
+
+          case this.tools.buttonAdd:
+            this.addMode = true;
+            this.addNewObj(new THREE.Vector3().random());
+            break;
+
+          case this.tools.buttonRemove:
+            this.removeMode = true;
+            // updateActiveButton( obj );
+            break;
+
+          case this.tools.callButton:
+            if (this.callMode == false) {
+              this.callMode = true;
+              console.log('calling');
+              joinRoom();
+            }
+            break;
+          case this.emojis.brain:
+            this.emotes(this.parent, 'brain.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.p:
+            this.emotes(this.parent, ';p.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.smile:
+            this.emotes(this.parent, 'smile.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.laugh:
+            this.emotes(this.parent, 'laugh.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.thinking:
+            this.emotes(this.parent, 'thinking.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.love:
+            this.emotes(this.parent, 'love.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.surprised:
+            this.emotes(this.parent, 'surprised.fbx')
+            this.isEmoting = true;
+            break;
+
+        }
+
+        if (Object.values(this.tools).includes(obj)) {
+
+          if (obj != this.tools.buttonAdd) {  // if the obj is a button, but not the remove button, turn remove mode off.
+            this.addMode = false;
+          }
+
+          if (obj != this.tools.buttonRemove) {  // if the obj is a button, but not the remove button, turn remove mode off.
+            this.removeMode = false;
+            // console.log('you clicked a button thats not buttonRemove');
+          }
+
+        }
+
+        if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
+          if (this.removeMode) {
+            this.world.scene.remove(obj);
+            this.print("box removed");
+            if (obj == this.activeObj) {
+              this.control.detach();
+              this.activeObj = null;
+            }
+          } else if (obj !== this.activeObj) {
+            this.activateObj(obj);
+          }
+        }
+      }
+    }
+
+    if ( !VRControl.uiTrigger ) { // if left mouse button is up
+      this.leftClicked = false;
+    }
+  },
+  
   // adds the emoji to the scene
   emotes(parent, s) {
     
