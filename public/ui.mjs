@@ -12,8 +12,36 @@ import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 /** @type {THREE.Group[]} Reference to left (0) and right (1) controller.*/
 let controllers;
 
+const loader = new FBXLoader();
+
+const emojiDuration = 8;
+const emojiSpinRate = Math.PI;
+
+const modelCache = { 
+  tryLoad: function(fileName, container) {
+    let result = this[fileName];
+    if (result) {
+      console.log("recycling cached model " + fileName);
+      container.add(result);
+      return;
+    }
+    
+    const path = './models/fbx/' + fileName    
+    console.log("loading emote from " + path);
+    const cache = this;
+    loader.load(path, function (fbx, emote) {
+      fbx.scale.set(0.003, 0.003, 0.003);
+      fbx.position.y = 0;
+      fbx.rotation.y = 180;
+      container.add(fbx);
+      cache[fileName] = fbx;
+    });
+  }
+};
 
 const UI = {
+
+  lastAction: {action: null, value: null},
 
   raycaster: new THREE.Raycaster(),
   //pointer: new THREE.Vector2(), MKControl.mouse
@@ -64,6 +92,8 @@ const UI = {
   //UI panel for main buttons 
   colorPanel: null,
 
+  replicaEmotes: [],
+
   init(world) {
     this.world = world;
     this.control = new TransformControls(world.mouseCamera, world.renderer.domElement);
@@ -90,6 +120,8 @@ const UI = {
       height: 0.2
     });
     this.emotePanel.position.set(0, 0, -1);
+    this.emotePanel.rotation.x = -0.4;
+    this.emotePanel.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.emotePanel);
 
     this.emotePanel2 = new ThreeMeshUI.Block({
@@ -106,7 +138,9 @@ const UI = {
       width: 1.4,
       height: 0.2
     });
-    this.emotePanel2.position.set(0, -0.3, -1);
+    this.emotePanel2.position.set(0, -0.15, -1);
+    this.emotePanel2.rotation.x = -0.4;
+    this.emotePanel2.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.emotePanel2);
 
      //UI panelContainer
@@ -126,8 +160,9 @@ const UI = {
     });
     world.scene.add(this.control);
 
-    this.colorPanel.position.set(0, -0.1, -0.5);
-    this.colorPanel.rotation.x = -0.4; 
+    this.colorPanel.position.set(0, 0.2, -1);
+    this.colorPanel.rotation.x = -0.4;
+    this.colorPanel.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.colorPanel);
 
 
@@ -304,22 +339,26 @@ const UI = {
        // destination.add( this.buttonGroup );
        this.parent = destination;
       //destination.add(this.colorPanel);
-       destination.add(this.emotePanel);
-       destination.add(this.emotePanel2);
+       //destination.add(this.emotePanel);
+       //destination.add(this.emotePanel2);
 
-       this.world.scene.remove(this.colorPanel);
+       this.world.scene.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
       //main ui control with the key "m"
        document.addEventListener('keypress', (event) => {
         if(event.key == "m"){
          if(this.colorPanel.isVisible){
             this.colorPanel.isVisible = false;
+            this.emotePanel.isVisible = false;
+            this.emotePanel2.isVisible = false;
            // console.log("inside if");
-            this.world.scene.remove(this.colorPanel);
-            destination.remove(this.colorPanel);
+            this.world.scene.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
+            destination.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
          } else {
             this.colorPanel.isVisible = true;
-            this.world.scene.add(this.colorPanel);
-            destination.add(this.colorPanel);
+            this.emotePanel.isVisible = true;
+            this.emotePanel2.isVisible = true;
+            this.world.scene.add(this.colorPanel, this.emotePanel, this.emotePanel2);
+            destination.add(this.colorPanel, this.emotePanel, this.emotePanel2);
           //  console.log(UI.colorPanel.position.x);
          }
         }
@@ -355,6 +394,11 @@ const UI = {
   },
 
   updateMK(dt, MKControl, camera) {
+
+
+    this.lastAction.action = null;
+    this.lastAction.value = null;
+
     this.raycaster.setFromCamera(MKControl.mouse, camera);
 
     const intersects = this.raycaster.intersectObjects(this.clickable, false);
@@ -483,6 +527,10 @@ const UI = {
   },
 
   updateVR(dt, VRControl) {
+
+    this.lastAction.action = null;
+    this.lastAction.value = null;
+
     if(VRControl.getOrigin() != undefined)
     this.raycaster.set(VRControl.getOrigin(), VRControl.getAim());
 
@@ -615,22 +663,16 @@ const UI = {
   
   // adds the emoji to the scene
   emotes(parent, s) {
+    this.lastAction.action = "emote";
+    this.lastAction.value = s;
     
     this.timer = new Date().getTime();
-    this.deleteEmote(parent);
+    this.deleteEmote();
     this.emote.position.y = 0.55
     parent.add(this.emote);
     let tempemote = this.emote;
-    let directory = './models/fbx/' + s
-    let loader = new FBXLoader();
-    loader.load(directory, function (fbx, emote) {
-      console.log("parent");
-      fbx.scale.set(0.003, 0.003, 0.003)
-      fbx.position.y = 0
-      fbx.rotation.y = 180;
-      tempemote.add(fbx);
-      // tempTextGroup.add(tempemote);
-    })
+
+    modelCache.tryLoad(s, tempemote);
   },
   //gets the time the emoji has been in the world
   getTime() {
@@ -639,16 +681,31 @@ const UI = {
     return seconds;
   },
   // deletes the emoji
-  deleteEmote(parent) {
+  deleteEmote() {
     this.emote.remove(this.emote.children[0]);
-    parent.remove(this.emote);
+    this.parent.remove(this.emote);
+    this.isEmoting = false;
   },
   //animates the emoji
-  animate() {
-    if (this.emote.position.y < 1) {
-      this.emote.position.y += 0.01;
+  animate(dt) {
+    if (this.isEmoting && this.getTime() < emojiDuration) {
+      this.emote.position.y +=(1.0 - this.emote.position.y) * dt;
+      this.emote.rotation.y += emojiSpinRate * dt;
+    } else {
+      this.deleteEmote();
     }
-    this.emote.rotation.y += 0.01;
+
+    for (const e of this.replicaEmotes) {
+      if (e.userData.lifeSpan <= 0) continue;
+
+      e.position.y += (1.0 - e.position.y) * dt;
+      e.rotation.y += emojiSpinRate * dt;
+      e.userData.lifeSpan -= dt;
+      
+      if (e.userData.lifeSpan <= 0 && e.parent) {
+        e.parent.remove(e);   
+      }
+    }
   },
 
 
@@ -684,6 +741,32 @@ const UI = {
       }
     }
     );
+  },
+
+  playEmoteOnReplica(replica, fileName) {
+    let container = replica.emote;
+
+    if (!container) {    
+      container = new THREE.Group();    
+      replica.emote = container;
+      this.replicaEmotes.push(container);
+    } 
+    
+    if (!container.parent) {
+      replica.getBody().add(container);
+    }
+
+    if (container.lastEmote === fileName) {
+      return;
+    }    
+
+    console.log(`remote user sends emote ${fileName}`);
+
+    container.clear();
+    container.position.y = 0.55;
+    container.userData.lifeSpan = emojiDuration;
+    modelCache.tryLoad(fileName, container);
+    replica.emote.lastEmote = fileName;
   }
 };
 
