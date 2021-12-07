@@ -353,6 +353,20 @@
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
 
+
+          if (UI.lastAction.action === 'emote') {
+            self.volatile.emote = UI.lastAction.value;
+            console.log("Sending emote to server: ", self.volatile.emote);
+          } else {
+            self.volatile.emote = undefined;
+          }
+
+          for (let o of others) {
+            if (o.emote) {
+              console.log(`user ${o.id} sends emote ${o.emote}`);
+            }
+          }
+
           // console.log(getOwnReplica());
           
           // Render with the appropriate camera for either VR or non-VR modes.

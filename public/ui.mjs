@@ -38,6 +38,8 @@ const modelCache = {
 
 const UI = {
 
+  lastAction: {action: null, value: null},
+
   raycaster: new THREE.Raycaster(),
   //pointer: new THREE.Vector2(), MKControl.mouse
 
@@ -387,6 +389,11 @@ const UI = {
   },
 
   updateMK(dt, MKControl, camera) {
+
+
+    this.lastAction.action = null;
+    this.lastAction.value = null;
+
     this.raycaster.setFromCamera(MKControl.mouse, camera);
 
     const intersects = this.raycaster.intersectObjects(this.clickable, false);
@@ -515,6 +522,10 @@ const UI = {
   },
 
   updateVR(dt, VRControl) {
+
+    this.lastAction.action = null;
+    this.lastAction.value = null;
+
     if(VRControl.getOrigin() != undefined)
     this.raycaster.set(VRControl.getOrigin(), VRControl.getAim());
 
@@ -647,6 +658,8 @@ const UI = {
   
   // adds the emoji to the scene
   emotes(parent, s) {
+    this.lastAction.action = "emote";
+    this.lastAction.value = s;
     
     this.timer = new Date().getTime();
     this.deleteEmote(parent);
