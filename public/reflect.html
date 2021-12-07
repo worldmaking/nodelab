@@ -329,7 +329,7 @@ and creating/updating avatars for remote users based on the latest data synched 
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world, colourTriplet, customAvatar);
         //Agents Palette
-        const MAX_NUM_AGENTS = 52;
+        const MAX_NUM_AGENTS = 30;
 
         const NUM_INSTANCES = MAX_NUM_AGENTS;
 
@@ -366,7 +366,7 @@ and creating/updating avatars for remote users based on the latest data synched 
               })
             ));
           light.position.x = Math.random() * 100 - 50;
-          light.position.y = Math.random() * 50;
+          light.position.y = Math.random() * 20;
           light.position.z = Math.random() * 100 - 50;
           objects.push(light);
           world.scene.add(light);
@@ -453,8 +453,8 @@ and creating/updating avatars for remote users based on the latest data synched 
             var b = 10;
             if (o.position.x > b) o.position.x -= b * 2;
             if (o.position.x < -b) o.position.x += b * 2;
-            if (o.position.y > b / 2) o.position.y -= b * 2;
-            if (o.position.y < -0.5) o.position.y += b * 2;
+            if (o.position.y > b / 2) o.position.y -= b ;
+            if (o.position.y < -0.5) o.position.y += b ;
             if (o.position.z > b) o.position.z -= b * 2;
             if (o.position.z < -b) o.position.z += b * 2;
 
