@@ -97,7 +97,7 @@
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody, getUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
       import { UI } from "./ui.mjs"; 
@@ -300,17 +300,16 @@
 
         // Main rendering loop.
         function animate() {
-          // animates the emoji if its within 10 seconds of being spawned, otherwise it deletes ii from the scene
-          if(UI.isEmoting && UI.getTime() < 10){
-            UI.animate();
-          }
-          else {
-            UI.deleteEmote(getOwnReplicaBody())
-          }
           
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
+
+
+          // animates emojis
+          UI.animate(dt);
+          
+          
 
           // ui update - needs to be manually updated in here
           ThreeMeshUI.update();
@@ -357,13 +356,13 @@
           if (UI.lastAction.action === 'emote') {
             self.volatile.emote = UI.lastAction.value;
             console.log("Sending emote to server: ", self.volatile.emote);
-          } else {
+          } else if (!UI.isEmoting) {
             self.volatile.emote = undefined;
           }
 
           for (let o of others) {
-            if (o.emote) {
-              console.log(`user ${o.id} sends emote ${o.emote}`);
+            if (o.emote) {              
+              UI.playEmoteOnReplica(getUserReplica(o.id), o.emote);
             }
           }
 

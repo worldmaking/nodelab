@@ -14,6 +14,9 @@ let controllers;
 
 const loader = new FBXLoader();
 
+const emojiDuration = 8;
+const emojiSpinRate = Math.PI;
+
 const modelCache = { 
   tryLoad: function(fileName, container) {
     let result = this[fileName];
@@ -88,6 +91,8 @@ const UI = {
 
   //UI panel for main buttons 
   colorPanel: null,
+
+  replicaEmotes: [],
 
   init(world) {
     this.world = world;
@@ -662,7 +667,7 @@ const UI = {
     this.lastAction.value = s;
     
     this.timer = new Date().getTime();
-    this.deleteEmote(parent);
+    this.deleteEmote();
     this.emote.position.y = 0.55
     parent.add(this.emote);
     let tempemote = this.emote;
@@ -676,16 +681,31 @@ const UI = {
     return seconds;
   },
   // deletes the emoji
-  deleteEmote(parent) {
+  deleteEmote() {
     this.emote.remove(this.emote.children[0]);
-    parent.remove(this.emote);
+    this.parent.remove(this.emote);
+    this.isEmoting = false;
   },
   //animates the emoji
-  animate() {
-    if (this.emote.position.y < 1) {
-      this.emote.position.y += 0.01;
+  animate(dt) {
+    if (this.isEmoting && this.getTime() < emojiDuration) {
+      this.emote.position.y +=(1.0 - this.emote.position.y) * dt;
+      this.emote.rotation.y += emojiSpinRate * dt;
+    } else {
+      this.deleteEmote();
     }
-    this.emote.rotation.y += 0.01;
+
+    for (const e of this.replicaEmotes) {
+      if (e.userData.lifeSpan <= 0) continue;
+
+      e.position.y += (1.0 - e.position.y) * dt;
+      e.rotation.y += emojiSpinRate * dt;
+      e.userData.lifeSpan -= dt;
+      
+      if (e.userData.lifeSpan <= 0 && e.parent) {
+        e.parent.remove(e);   
+      }
+    }
   },
 
 
@@ -721,6 +741,31 @@ const UI = {
       }
     }
     );
+  },
+
+  playEmoteOnReplica(replica, fileName) {
+    let container = replica.emote;
+
+    if (!container) {    
+      container = new THREE.Group();    
+      replica.emote = container;
+      this.replicaEmotes.push(container);
+    } 
+    
+    if (!container.parent) {
+      replica.getBody().add(container);
+    }
+
+    if (container.lastEmote === fileName) {
+      return;
+    }
+
+    console.log(`remote user sends emote ${fileName}`);
+
+    container.position.y = 0.55;
+    container.userData.lifeSpan = emojiDuration;
+    modelCache.tryLoad(fileName, container);
+    replica.emote.lastEmote = fileName;
   }
 };
 
