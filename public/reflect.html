@@ -63,34 +63,8 @@ and creating/updating avatars for remote users based on the latest data synched 
     <div id="audio-chat-container" class="videos" style="display: none">
       <!-- <video id="local-video" autoplay="autoplay"></video> -->
       <!-- <video id="remote-video" autoplay="autoplay"></video> -->
-      </div>
-    <script type="x-shader/x-vertex" id="vertexshader">
+    </div>
 
-attribute float scale;
-
-void main() {
-
-vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-
-gl_PointSize = scale * ( 300.0 / - mvPosition.z );
-
-gl_Position = projectionMatrix * mvPosition;
-
-}
-</script>
-
-    <script type="x-shader/x-fragment" id="fragmentshader">
-
-uniform vec3 color;
-
-void main() {
-
-if ( length( gl_PointCoord - vec2( 0.5, 0.5 ) ) > 0.475 ) discard;
-
-gl_FragColor = vec4( color, 0.2 );
-
-}
-</script>
     <script src="https://cdn.socket.io/4.2.0/socket.io.min.js"
       integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj"
       crossorigin="anonymous"></script>
@@ -107,7 +81,7 @@ gl_FragColor = vec4( color, 0.2 );
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
       import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
-      
+
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
       const displayNameField = document.getElementById('username');
@@ -310,12 +284,12 @@ gl_FragColor = vec4( color, 0.2 );
           j++;
         }
 
-        const ParticleGeo = new THREE.BufferGeometry();
-        ParticleGeo.setAttribute(
-          'position',
-          new THREE.BufferAttribute(positions, 3)
-        );
-        ParticleGeo.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+        // const ParticleGeo = new THREE.BufferGeometry();
+        // ParticleGeo.setAttribute(
+        //   'position',
+        //   new THREE.BufferAttribute(positions, 3)
+        // );
+        //ParticleGeo.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
 
 
         //world.scene.add(particles);
@@ -323,25 +297,32 @@ gl_FragColor = vec4( color, 0.2 );
         //CustomAvatar
         function customAvatar(head, body, material) {
           // const cube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), world.defaultMaterial);
-          const particleMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-              color: { value: material.color },
-            },
-            vertexShader: document.getElementById('vertexshader').textContent,
-            fragmentShader: document.getElementById('fragmentshader').textContent,
-            transparent: true,
-          });
+          // const particleMaterial = new THREE.ShaderMaterial({
+          //   uniforms: {
+          //     color: { value: material.color },
+          //   },
+          //   vertexShader: document.getElementById('vertexshader').textContent,
+          //   fragmentShader: document.getElementById('fragmentshader').textContent,
+          //   transparent: true,
+          // });
 
           //
           const materialcube = new THREE.MeshPhongMaterial({
-            color: 'lightblue',
-            wireframe: false,
-            side: THREE.FrontSide, opacity: 0.2
+            shininess: 100,
+            color: 0xffffff,
+            specular: 0xffffff,
+            transparent: true,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
           })
           const cube = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.1), materialcube);
-          particles = new THREE.Points(ParticleGeo, particleMaterial);
-          head.add(particles);
-          body.add(cube);
+          const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 8), materialcube);
+          //particles = new THREE.Points(ParticleGeo, particleMaterial);
+          const light = new THREE.PointLight(material.color, 0.2, 2.5);
+          light.add(cube);
+          head.add(sphere);
+          body.add(light);
           // console.log(head);
         }
 
@@ -353,11 +334,11 @@ gl_FragColor = vec4( color, 0.2 );
         const NUM_INSTANCES = MAX_NUM_AGENTS;
 
         const colors = [];
-        const palette = [
-          new THREE.Color('#b36200'),
-          new THREE.Color('#00008b'),
-          new THREE.Color('#b30000'),
-        ];
+        // const palette = [
+        //   new THREE.Color('#b36200'),
+        //   new THREE.Color('#00008b'),
+        //   new THREE.Color('#b30000'),
+        // ];
 
 
         //Agents of Light
@@ -369,7 +350,7 @@ gl_FragColor = vec4( color, 0.2 );
           };
         }
         for (let i = 0; i < MAX_NUM_AGENTS; i++) {
-          var randomColor = palette[Math.floor(Math.random() * palette.length)];
+          // var randomColor = palette[Math.floor(Math.random() * palette.length)];
           const light = new THREE.PointLight('#b36200', 0.5, 7);
           light.add(
             new THREE.Mesh(
@@ -400,7 +381,7 @@ gl_FragColor = vec4( color, 0.2 );
               let y = (a.position.y - b.position.y) / 0.2;
               let z = (a.position.z - b.position.z) / 0.2;
               let dist = Math.sqrt(x * x + y * y + z * z);
-              if (dist < 5) {
+              if (dist < 2) {
                 if (a == b) {
                 } else {
                   if (a.color.getHex() == b.color.getHex()) {
@@ -495,6 +476,10 @@ gl_FragColor = vec4( color, 0.2 );
         world.scene.add(ico);
         let mesh;
         // MeshFloor
+
+
+        let texture = new THREE.TextureLoader().load("/images/beaten-up-metal1-Height.png");
+
         let USE_WIREFRAME = false;
         const meshFloor = new THREE.Mesh(
           new THREE.PlaneGeometry(
@@ -506,6 +491,7 @@ gl_FragColor = vec4( color, 0.2 );
           new THREE.MeshPhongMaterial({
             color: 'lightblue',
             wireframe: USE_WIREFRAME,
+            normalMap: texture,
           })
         );
 
@@ -515,6 +501,9 @@ gl_FragColor = vec4( color, 0.2 );
         // Cast shadows on Floor
         meshFloor.receiveShadow = true;
         world.scene.add(meshFloor);
+
+        const ambiance = new THREE.AmbientLight('white', 0.1);
+        world.scene.add(ambiance);
         //SplitArrayIntoChunks=4 $groups of 38 agents for each of the 4 chemicals
         function splitArrayIntoChunks(agents, maxChunkCount) {
           const chunks = [];
@@ -572,8 +561,8 @@ gl_FragColor = vec4( color, 0.2 );
           }
 
           //Artificial Chemistry Update
-          const positions = ParticleGeo.attributes.position.array;
-          const scales = ParticleGeo.attributes.scale.array;
+          // const positions = ParticleGeo.attributes.position.array;
+          // const scales = ParticleGeo.attributes.scale.array;
 
           let i = 0,
             j = 0;
@@ -581,7 +570,7 @@ gl_FragColor = vec4( color, 0.2 );
           for (let i = 0; i < chems.length; i++) {
             let c = chems[i];
             let radius = Math.sqrt(Math.min(10, Math.max(1, c)) / Math.PI);
-            scales[i] = radius;
+            //scales[i] = radius;
             for (let item of chunks[i]) {
               item.scale.x = c;
               item.scale.y = c;
@@ -591,7 +580,7 @@ gl_FragColor = vec4( color, 0.2 );
           }
 
           //console.log(scales);
-          ParticleGeo.attributes.scale.needsUpdate = true;
+          // ParticleGeo.attributes.scale.needsUpdate = true;
           // Get the data objects that sync to/from the server.
           let { self, others } = app.users;
           colorSteal(self);
@@ -612,7 +601,7 @@ gl_FragColor = vec4( color, 0.2 );
         // Start animating!
 
         world.renderer.setAnimationLoop(animate);
-        
+
       }
       joinRoom();
     </script>
