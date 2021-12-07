@@ -8,6 +8,9 @@ function connectToWorld(opt={}) {
 		userName: "Anonymous",
 		userRGB: [Math.random(), Math.random(), Math.random()],		
 		log: console.log,
+		onconnect: function(myID) {
+			options.log ("Received connection handshake, but no 'onconnect' handler was provided.");
+		},		
 		onproject: function(projectData) { 
 			options.log ("Received project message, but ignored it since no 'onproject' handler was provided.")
 		},		
@@ -68,7 +71,9 @@ function connectToWorld(opt={}) {
 				switch (msg.cmd) {
 					case "handshake":
 						// Accept our new ID.
-						users.self.id = msg.val.id;
+						users.self.id = msg.val.id;						
+
+						options.onconnect(users.self.id);
 
 						// Initialize replication for all other users already in the room.
 						for (let o of msg.val.others) {
