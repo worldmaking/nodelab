@@ -344,6 +344,7 @@ and creating/updating avatars for remote users based on the latest data synched 
         //Agents of Light
         let agents = [];
         let objects = [];
+        let unlit = []; 
         for (let i = 0; i < MAX_NUM_AGENTS; i++) {
           agents[i] = {
             quat: new THREE.Quaternion(),
@@ -371,6 +372,25 @@ and creating/updating avatars for remote users based on the latest data synched 
           objects.push(light);
           world.scene.add(light);
         }
+        // for (let i = 0; i < MAX_NUM_AGENTS; i++) {
+        //   // var randomColor = palette[Math.floor(Math.random() * palette.length)];
+        //   const unlitobj = new THREE.Mesh(
+        //       sphere,
+        //       new THREE.MeshPhongMaterial({
+        //         shininess: 100,
+        //         color: 0xffffff,
+        //         specular: 0xffffff,
+        //         transparent: true,
+        //         side: THREE.BackSide,
+        //         blending: THREE.AdditiveBlending,
+        //         depthWrite: false,
+        //       }));
+        //   unlitobj.position.x = Math.random() * 100 - 50;
+        //   unlitobj.position.y = Math.random() * 20+20;
+        //   unlitobj.position.z = Math.random() * 100 - 50;
+        //   unlit.push(unlitobj);
+        //   world.scene.add(unlitobj);
+        // }
         function syncColors() {
           for (let i = 0; i < MAX_NUM_AGENTS; i++) {
             for (let j = 1; j < MAX_NUM_AGENTS; j++) {
