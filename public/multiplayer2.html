@@ -244,6 +244,7 @@
         UI.init(world);
         UI.addTextGroupTo( getOwnReplicaBody() );
         UI.addButtonsTo( getOwnReplicaBody() );
+        
         //UI.animate(UI.emotes());
 
         // UI.print("it's printing!");
@@ -258,12 +259,25 @@
             else {
               UI.textGroup.visible = true;
               UI.isVisible = true;
-              
             }
-            
           }
-          
+          //the commented code below moved to the ui.mjs!!
+
+          //UI main panel open with keyboard "m"
+          // if(event.key == "m"){
+          //   if(UI.colorPanel.isVisible){
+          //     UI.colorPanel.isVisible = false;
+          //     console.log("inside if");
+          //     world.scene.remove(UI.colorPanel);
+          //   } else {
+          //     UI.colorPanel.isVisible = true;
+          //     UI.colorPanel.position.set(0,0,0.2);
+          //     world.scene.add(UI.colorPanel);
+          //     console.log(UI.colorPanel.position.x);
+          //   }
+          // }
         });
+
         // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
         document.addEventListener('contextmenu', function(event){
           if(document.getElementById('emojis').style.display == 'none')

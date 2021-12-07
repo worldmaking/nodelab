@@ -9,6 +9,10 @@ import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 
+/** @type {THREE.Group[]} Reference to left (0) and right (1) controller.*/
+let controllers;
+
+
 const UI = {
 
   raycaster: new THREE.Raycaster(),
@@ -17,6 +21,7 @@ const UI = {
   world: null,
   scale: 0,
   emote: new THREE.Group(),
+  
 
   // TODO: do we need separate VRControl ?
   control: null,
@@ -52,9 +57,12 @@ const UI = {
   isEmoting: false,
   timer: 0,
     
+  //UI panel for emotes
   emotePanel: null,
   emotesGroup: new THREE.Group(),
 
+  //UI panel for main buttons 
+  colorPanel: null,
 
   init(world) {
     this.world = world;
@@ -78,7 +86,7 @@ const UI = {
       fontSize: 0.13,
       padding: 0,
       borderRadius: 0.11,
-      width: 2.1,
+      width: 1.7,
       height: 0.2
     });
     this.emotePanel.position.set(0, 0, -1);
@@ -95,7 +103,7 @@ const UI = {
       fontSize: 0.13,
       padding: 0,
       borderRadius: 0.11,
-      width: 1.6,
+      width: 1.4,
       height: 0.2
     });
     this.emotePanel2.position.set(0, -0.3, -1);
@@ -105,21 +113,21 @@ const UI = {
     this.colorPanel = new ThreeMeshUI.Block({
       justifyContent: 'center',
       alignContent: 'center',
-      contentDirection: "column",
+      contentDirection: "row",
       fontFamily:
         "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
       fontTexture:
         "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
       fontSize: 0.17,
-      padding: 0.002,
-      borderRadius: 0.11, //0.11
-      width: 0.7,
-      height: 2
+      padding: 0.2, 
+      borderRadius: 0.05, 
+      width: 2.2, 
+      height: 0.4 
     });
     world.scene.add(this.control);
 
-    this.colorPanel.position.set(-1, 1, 0);
-    this.colorPanel.rotation.x = -0.3; 
+    this.colorPanel.position.set(0, -0.1, -0.5);
+    this.colorPanel.rotation.x = -0.4; 
     this.world.scene.add(this.colorPanel);
 
 
@@ -216,17 +224,30 @@ const UI = {
           thinking,
         }
 
+        //UI inner panel for texts
         let colorPanelText = {
-          width: 0.4,
-          height: 0.17,
+          width: 0.3,
+          height: 0.15,
+          justifyContent: 'center',
+          alignContent: 'center',
+          offset: 0.05, // - Distance on the Z direction between this component and its parent. 
+          margin: 0.02, //0.02 - Space between the component border and outer or neighbours components outer border.
+          fontSize: 0.04,
+          borderRadius: 0.075
+        };
+
+         //UI inner panel for emote texts
+         let EmotePanelText = {
+          width: 0.3,
+          height: 0.15,
           justifyContent: 'center',
           alignContent: 'center',
           offset: 0.005, // - Distance on the Z direction between this component and its parent. 
-          margin: 0.07, //0.02 - Space between the component border and outer or neighbours components outer border.
-          fontSize: 0.07,
+          margin: 0.02, //0.02 - Space between the component border and outer or neighbours components outer border.
+          fontSize: 0.04,
           borderRadius: 0.075
         };
-    
+
         // Buttons creation, with the options objects passed in parameters.
         this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText); 
         this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText); 
@@ -235,16 +256,15 @@ const UI = {
         this.buttonRemoveText = new ThreeMeshUI.Block(colorPanelText); 
         this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
 
-        this.brainText = new ThreeMeshUI.Block(colorPanelText); 
-        this.smile = new ThreeMeshUI.Block(colorPanelText);
-        this.laugh = new ThreeMeshUI.Block(colorPanelText);
-        this.love = new ThreeMeshUI.Block(colorPanelText);
-        this.surprised = new ThreeMeshUI.Block(colorPanelText);
-        this.thinking = new ThreeMeshUI.Block(colorPanelText);
-        this.p = new ThreeMeshUI.Block(colorPanelText); 
+        this.brainText = new ThreeMeshUI.Block(EmotePanelText); 
+        this.smile = new ThreeMeshUI.Block(EmotePanelText);
+        this.laugh = new ThreeMeshUI.Block(EmotePanelText);
+        this.love = new ThreeMeshUI.Block(EmotePanelText);
+        this.surprised = new ThreeMeshUI.Block(EmotePanelText);
+        this.thinking = new ThreeMeshUI.Block(EmotePanelText);
+        this.p = new ThreeMeshUI.Block(EmotePanelText); 
        
         // Add texts and buttons to the panel
-      //  this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.buttonGroup); 
         this.buttonTranslateText.add(new ThreeMeshUI.Text({ content: "Translate" }), buttonTranslate);
         this.buttonRotateText.add(new ThreeMeshUI.Text({ content: "Rotate" }), buttonRotate); 
         this.buttonScaleText.add(new ThreeMeshUI.Text({ content: "Scale" }), buttonScale);
@@ -259,7 +279,8 @@ const UI = {
         this.surprised.add(new ThreeMeshUI.Text({ content: "Surprised" }), surprised);
         this.thinking.add(new ThreeMeshUI.Text({ content: "thinking" }), thinking);
         this.p.add(new ThreeMeshUI.Text({ content: ";p" }), p);
-  
+
+
         this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText,this.buttonAddText, this.buttonRemoveText, this.callButtonText);
         this.emotePanel.add(this.p, this.brainText, this.laugh, this.love);
         this.emotePanel2.add(this.smile, this.surprised, this.thinking);
@@ -282,9 +303,28 @@ const UI = {
     addButtonsTo( destination ) {
        // destination.add( this.buttonGroup );
        this.parent = destination;
-       destination.add(this.colorPanel);
+      //destination.add(this.colorPanel);
        destination.add(this.emotePanel);
        destination.add(this.emotePanel2);
+
+       this.world.scene.remove(this.colorPanel);
+      //main ui control with the key "m"
+       document.addEventListener('keypress', (event) => {
+        if(event.key == "m"){
+         if(this.colorPanel.isVisible){
+            this.colorPanel.isVisible = false;
+           // console.log("inside if");
+            this.world.scene.remove(this.colorPanel);
+            destination.remove(this.colorPanel);
+         } else {
+            this.colorPanel.isVisible = true;
+            this.world.scene.add(this.colorPanel);
+            destination.add(this.colorPanel);
+          //  console.log(UI.colorPanel.position.x);
+         }
+        }
+     });
+
     },
 
     addNewObj(pos) {
@@ -443,7 +483,8 @@ const UI = {
   },
 
   updateVR(dt, VRControl) {
-    this.raycaster.set(VRControl.origin, VRControl.aim);
+    if(VRControl.getOrigin() != undefined)
+    this.raycaster.set(VRControl.getOrigin(), VRControl.getAim());
 
     const intersects = this.raycaster.intersectObjects(this.clickable, false);
     if (intersects.length > 0) {
@@ -460,6 +501,8 @@ const UI = {
         this.intersected.material.emissive.setHex(this.intersected.currentHex);
       }
       this.intersected = null;
+      
+
     }
 
     //   if (this.addMode) {
@@ -565,7 +608,7 @@ const UI = {
       }
     }
 
-    if ( !VRControl.uiTrigger ) { // if left mouse button is up
+    if ( !VRControl.uiOtherTrigger ) { // if left mouse button is up
       this.leftClicked = false;
     }
   },
