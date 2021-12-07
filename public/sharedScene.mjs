@@ -33,6 +33,8 @@ function getPropertyValue(node, propertyName) {
                     array[i] = navigateToContents(content.props, i).value;
 
                 return array;
+            case 'list':
+                return content.edits[0].values;
         }
             
     }
@@ -215,6 +217,7 @@ class SharedScene {
 
                     console.log("created scene: " + this.sceneRoot.userData.mergeId);
                 } else {
+                    /*
                     if (doc.objects) {
                         const roots = doc.objects.filter(obj => { return obj.name === "root"});
                         if (roots && roots.length > 0) {
@@ -225,6 +228,7 @@ class SharedScene {
                             console.log("no scene root found!");
                         }
                     }
+                    */
                 }
 
                 console.log("INITIAL DOC: ",this.merger.getDocument());
@@ -242,14 +246,12 @@ class SharedScene {
 
 
 
-    parsePatch(patch) {
-        
+    parsePatch(patch) {        
         const geoChanges = checkTableForChanges(patch, 'geometries');        
         if (geoChanges) {
             for (let key of Object.keys(geoChanges)) {
                 if (!this.sceneGeometries[key]) {
-                    const data = navigateToContents(geoChanges, key);
-                    console.log("outer data", geoChanges[key],"inner data: ", data);
+                    const data = navigateToContents(geoChanges, key);                    
                     const geo = new THREE.BufferGeometry();
                     geo.name = getPropertyValue(data, 'name');
                     const pos = getPropertyValue(data, 'position');
@@ -268,7 +270,7 @@ class SharedScene {
         const matChanges = checkTableForChanges(patch, 'materials');        
         if (matChanges) {
             for (let key of Object.keys(matChanges)) {
-                if (!this.sceneGeometries[key]) {
+                if (!this.sceneMaterials[key]) {
                     const data = navigateToContents(matChanges, key);
                     // TODO: read material type / colour info to reproduce it more accurately.
                     const mat = new THREE.MeshLambertMaterial();
@@ -279,7 +281,56 @@ class SharedScene {
                 } // TODO: else case - handle a change to an existing key.
             }
         }
+
+        const objectChanges = checkTableForChanges(patch, 'objects');
+        const parentingQueue = [];
+        if (objectChanges) {
+            for (let key of Object.keys(objectChanges)) {
+                const data = navigateToContents(objectChanges, key);
+                console.log("Object data: ",  data);
+                if (!this.sceneObjects[key]) {
+                    // New object we've never seen before!                    
+                    const pos = getPropertyValue(data, 'position');
+                    if (pos === null && !this.sceneRoot.userData.mergeId) {
+                        // Found scene root for the first time - it's the only one allowed to have a null position.
+                        this.sceneObjects.add(key, this.sceneRoot);
+                        console.log("Received scene root:", key);
+                        continue;
+                    }
+
+                    // TODO: Support types *other* than meshes.
+                    const geo = this.sceneGeometries[getPropertyValue(data, 'geometry')];
+                    const mat = this.sceneMaterials[getPropertyValue(data, 'material')];
+
+                    const mesh = new THREE.Mesh(geo, mat);
+
+                    mesh.position.set(pos[0], pos[1], pos[2]);
+
+                    const quat = getPropertyValue(data, 'quaternion');
+                    mesh.quaternion.set(quat[0], quat[1], quat[2], quat[3]);
+
+                    const scale = getPropertyValue(data, 'scale');
+                    mesh.scale.set(scale[0], scale[1], scale[2]);
+
+                    const parentID = getPropertyValue(data, 'parent');
+                    if (parentID) {
+                        // We might not have loaded the parent yet, so queue this change to handle at the end.
+                        parentingQueue.push({child: mesh, parentKey: parentID});
+                    }
+                    console.log("New object at ", pos, geo, mat);
+                    
+                } else {
+
+                }
+            }
+        }
         
+        // Once we've loaded all objects in this patch, wire up parent relationships.
+        for (let item of parentingQueue) {
+            console.log("parenting to", item.parentKey)
+            const parent = this.sceneObjects[item.parentKey];
+            parent.add(item.child);
+        }
     }
 
     fakeUpdate() {
