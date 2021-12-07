@@ -218,7 +218,7 @@ gl_FragColor = vec4( color, 0.2 );
         const raycaster = new THREE.Raycaster();
 
         world.scene.background = null;
-        world.scene.fog = null;
+        world.scene.fog = new THREE.FogExp2('#00008b', 0.01);
         // Keep track of the last looked-at object - for future use.
         let gazeObject = null;
 
@@ -576,7 +576,7 @@ gl_FragColor = vec4( color, 0.2 );
 
           for (let i = 0; i < chems.length; i++) {
             let c = chems[i];
-            let radius = Math.sqrt(Math.min(2, Math.max(0, c)) / Math.PI);
+            let radius = Math.sqrt(Math.min(10, Math.max(1, c)) / Math.PI);
             scales[i] = radius;
             for (let item of chunks[i]) {
               item.scale.x = c;
