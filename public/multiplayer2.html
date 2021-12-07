@@ -321,6 +321,7 @@
             // (At least until headsets give us eye tracking...)            
             MKControl.mouse.set(0, 0);            
             VRControl.updateControls(dt);
+            VRControl.getOrigin();
             UI.updateVR(dt, VRControl);
           } else {
             activeCamera = world.mouseCamera;
