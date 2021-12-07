@@ -29,9 +29,23 @@
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
+    <script type="module" src="audioConnect.mjs"></script>
+
     <script type="text/javascript" src="networkMessages.js"></script>
   </head>
   <body>
+    <div id='emojis'>
+      <button name=";p" class= "button">;p</button>
+      <button name="laugh" class= "button">Laugh</button>
+      <button name="love" class= "button">love</button>
+      <button name="smile" class= "button">Smile</button>
+      <button name="surprised" class= "button">Surprised</button>
+      <button name="thinking" class= "button">Thinking</button>
+      <button name="brain" class= "button">Brain Explode</button>
+    </div>
+    
     <div id="avatar-customization">
       <div class="avatar-background">
         <h1>Avatar Customization</h1>
@@ -80,6 +94,7 @@
     <script type="module">
       'use strict';
       
+      
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
       import { World } from "./world.mjs"; 
       import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
@@ -88,6 +103,9 @@
       import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
+      import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
+      
+      document.getElementById('emojis').style.display = 'none';
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -104,7 +122,9 @@
       }
       document.getElementById('login-button').onclick = logIn;
 
-
+      function myFunction(){
+        console.log("here");
+      }
       
 
       function getFormColour() {        
@@ -224,6 +244,7 @@
         UI.init(world);
         UI.addTextGroupTo( getOwnReplicaBody() );
         UI.addButtonsTo( getOwnReplicaBody() );
+        //UI.animate(UI.emotes());
 
         // UI.print("it's printing!");
 
@@ -241,16 +262,44 @@
             }
             
           }
+          
         });
-
+        // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
+        document.addEventListener('contextmenu', function(event){
+          if(document.getElementById('emojis').style.display == 'none')
+            document.getElementById('emojis').style.display = 'block';
+          else 
+            document.getElementById('emojis').style.display = 'none';
+        })
+        //getting all the emoji buttons
+        let emojis = document.getElementsByClassName("button");
+        //adds the functionality to the emoji buttons calling the emote function on the ui to display the right emoji
+        for(let i = 0; i < emojis.length; i++){
+          emojis[i].addEventListener('click', function(){
+            UI.emotes(getOwnReplicaBody(), emojis[i].name + ".fbx");
+            document.getElementById('emojis').style.display = 'none';
+            UI.isEmoting = true;
+          })
+        }
 
         ////////////////////////////////////////////////////////////////////////
 
         // Main rendering loop.
         function animate() {
+          // animates the emoji if its within 10 seconds of being spawned, otherwise it deletes ii from the scene
+          if(UI.isEmoting && UI.getTime() < 10){
+            UI.animate();
+          }
+          else {
+            UI.deleteEmote(getOwnReplicaBody())
+          }
+          
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
+
+          // ui update - needs to be manually updated in here
+          ThreeMeshUI.update();
 
           if (world.renderer.xr.isPresenting) {
             activeCamera = world.vrCamera;
@@ -262,7 +311,6 @@
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
             MKControl.updateControls(dt);
-            
             UI.updateMK(dt, MKControl, activeCamera);
           }
 

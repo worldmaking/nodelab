@@ -8,9 +8,12 @@ const app = express()
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
 
-//app.use('/', express.static('public'))
+let clientList_UUID_conv = {}
 
+//app.use('/', express.static('public'))
 io.on('connection', (socket) => {
+
+  console.log("connected")
   socket.on('join', (roomId) => {
 
     let numberOfClients = 0;
@@ -124,5 +127,5 @@ io.on('connection', (socket) => {
 // START THE SERVER =================================================================
 const port = process.env.PORT || 3123
 server.listen(port, () => {
-  console.log(`Express server listening on port ${port}`)
+  console.log(`NEW Express server listening on port ${port}`)
 })
