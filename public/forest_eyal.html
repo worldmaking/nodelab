@@ -29,23 +29,8 @@
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="styles.css">
-
-    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
-    <script type="module" src="audioConnect.mjs"></script>
-
-    <script type="text/javascript" src="networkMessages.js"></script>
-  </head>
+    <script type="text/javascript" src="networkMessages.js"></script> 
   <body>
-    <div id='emojis'>
-      <button name=";p" class= "button">;p</button>
-      <button name="laugh" class= "button">Laugh</button>
-      <button name="love" class= "button">love</button>
-      <button name="smile" class= "button">Smile</button>
-      <button name="surprised" class= "button">Surprised</button>
-      <button name="thinking" class= "button">Thinking</button>
-      <button name="brain" class= "button">Brain Explode</button>
-    </div>
-    
     <div id="avatar-customization">
       <div class="avatar-background">
         <h1>Avatar Customization</h1>
@@ -91,21 +76,20 @@
         </div>
       </div>
 
-    <script type="module">
+      <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+      <script src="./forest.mjs"></script>
+      <script type="module">
       'use strict';
       
-      
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody, getUserReplica } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
-      import { UI } from "./ui.mjs"; 
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
-      import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
-      
-      document.getElementById('emojis').style.display = 'none';
+
+      import { buildForest } from "./forest_eyal.mjs"; 
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -122,9 +106,7 @@
       }
       document.getElementById('login-button').onclick = logIn;
 
-      function myFunction(){
-        console.log("here");
-      }
+
       
 
       function getFormColour() {        
@@ -175,13 +157,18 @@
 
         const colourTriplet = getFormColour();
 
+        function customAvatar(head, body, material) {
+          return true;
+          
+        }
+
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world, colourTriplet);
+        initializeReplication(world, colourTriplet, customAvatar);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
           reload_on_disconnect: true, // useful for local dev
-          room: "/multiplayer",
+          room: "/forest",
           url: location.origin.replace(/^http/, 'ws'),
           userName: document.getElementById('username').value,
           userRGB: colourTriplet,
@@ -224,12 +211,6 @@
 
         // Keep track of the last looked-at object - for future use.
         let gazeObject = null;
-        
-        // Fill scene with some basic demo content.
-        const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
-        cube.position.set(0, 1.5, 0);
-        cube.castShadow = true;
-        world.scene.add(cube);
 
         // Create pointer object that follows mouse/gaze.
         const ico = new THREE.Mesh(world.primitiveGeo.ico,
@@ -237,82 +218,15 @@
         );
         ico.scale.set(0.1, 0.1, 0.1);
         ico.position.z = -1;
-        world.scene.add(ico);   
+        world.scene.add(ico);       
         
-        ////////////////////////////////////////////////////////////////////////
-        
-        UI.init(world);
-        UI.addTextGroupTo( getOwnReplicaBody() );
-        UI.addButtonsTo( getOwnReplicaBody() );
-        
-        //UI.animate(UI.emotes());
-
-        // UI.print("it's printing!");
-
-         // hides or shows the 3D text in the scene when 'l' is pressed
-         document.addEventListener('keypress', (event) => {
-          if(event.key == "l"){
-            if(UI.isVisible){
-              UI.textGroup.visible = false;
-              UI.isVisible = false;
-            }
-            else {
-              UI.textGroup.visible = true;
-              UI.isVisible = true;
-            }
-          }
-          //the commented code below moved to the ui.mjs!!
-
-          //UI main panel open with keyboard "m"
-          // if(event.key == "m"){
-          //   if(UI.colorPanel.isVisible){
-          //     UI.colorPanel.isVisible = false;
-          //     console.log("inside if");
-          //     world.scene.remove(UI.colorPanel);
-          //   } else {
-          //     UI.colorPanel.isVisible = true;
-          //     UI.colorPanel.position.set(0,0,0.2);
-          //     world.scene.add(UI.colorPanel);
-          //     console.log(UI.colorPanel.position.x);
-          //   }
-          // }
-        });
-
-        // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
-        document.addEventListener('contextmenu', function(event){
-          if(document.getElementById('emojis').style.display == 'none')
-            document.getElementById('emojis').style.display = 'block';
-          else 
-            document.getElementById('emojis').style.display = 'none';
-        })
-        //getting all the emoji buttons
-        let emojis = document.getElementsByClassName("button");
-        //adds the functionality to the emoji buttons calling the emote function on the ui to display the right emoji
-        for(let i = 0; i < emojis.length; i++){
-          emojis[i].addEventListener('click', function(){
-            UI.emotes(getOwnReplicaBody(), emojis[i].name + ".fbx");
-            document.getElementById('emojis').style.display = 'none';
-            UI.isEmoting = true;
-          })
-        }
-
-        ////////////////////////////////////////////////////////////////////////
+        const updateForest = buildForest(world);
 
         // Main rendering loop.
         function animate() {
-          
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
-
-
-          // animates emojis
-          UI.animate(dt);
-          
-          
-
-          // ui update - needs to be manually updated in here
-          ThreeMeshUI.update();
 
           if (world.renderer.xr.isPresenting) {
             activeCamera = world.vrCamera;
@@ -320,19 +234,15 @@
             // (At least until headsets give us eye tracking...)            
             MKControl.mouse.set(0, 0);            
             VRControl.updateControls(dt);
-            UI.updateVR(dt, VRControl);
-            UI.updatePanelPos('vr');
           } else {
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
-            MKControl.updateControls(dt);
-            UI.updateMK(dt, MKControl, activeCamera);
-            UI.updatePanelPos('mk');
+            MKControl.updateControls(dt);            
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
           raycaster.setFromCamera(MKControl.mouse, activeCamera);
-          const intersects = raycaster.intersectObjects([cube, ...world.walkable]);
+          const intersects = raycaster.intersectObjects([...world.walkable]);
 
           let newGaze = null;
           if (intersects.length > 0) {
@@ -342,10 +252,6 @@
           // TODO: handle gaze enter / exit events when the gaze target changes.
           if (newGaze) gazeObject = newGaze;
 
-          // update the scene:
-          cube.rotation.x += 0.01;
-          cube.rotation.y += 0.01;
-
           ico.rotation.x -= 0.01;
           ico.rotation.y -= 0.01;
 
@@ -353,31 +259,14 @@
           let { self, others } = app.users;
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
+                    
+          updateForest(t, dt);
 
-
-          if (UI.lastAction.action === 'emote') {
-            self.volatile.emote = UI.lastAction.value;
-            console.log("Sending emote to server: ", self.volatile.emote);
-          } else if (!UI.isEmoting) {
-            self.volatile.emote = undefined;
-          }
-
-          for (let o of others) {
-            if (o.emote) {              
-              UI.playEmoteOnReplica(getUserReplica(o.id), o.emote);
-            }
-          }
-
-          // console.log(getOwnReplica());
-          
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
 
           showReadout(readout);
         }
-
-        
-
 
         // Start animating!
         

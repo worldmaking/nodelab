@@ -1,7 +1,8 @@
 /*
 Updated code with Wind info, random colors for apples and auras
 Random number of apples inside trees
-Added comments
+
+
 */
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';

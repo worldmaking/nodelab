@@ -758,14 +758,27 @@ const UI = {
 
     if (container.lastEmote === fileName) {
       return;
-    }
+    }    
 
     console.log(`remote user sends emote ${fileName}`);
 
+    container.clear();
     container.position.y = 0.55;
     container.userData.lifeSpan = emojiDuration;
     modelCache.tryLoad(fileName, container);
     replica.emote.lastEmote = fileName;
+  },
+
+  updatePanelPos(mode) {
+    if (mode == 'vr') {
+      this.colorPanel.position.set(0, -0.2, -1);
+      this.emotePanel.position.set(0, 0, -1);
+      this.emotePanel2.position.set(0, 0.2, -1);
+    } else if (mode == 'mk') {
+      this.colorPanel.position.set(0, 0, 0.4);
+      this.emotePanel.position.set(0, 0.2, 0.3);
+      this.emotePanel2.position.set(0, 0.4, 0.2);
+    }
   }
 };
 
