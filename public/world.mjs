@@ -2,6 +2,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.m
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 import {print, vectorToString} from './utility.mjs';
 
+// added ramp to floor; expanded plane and gridHelper
+
+
 /**
  * Bundles up the boilerplate of setting up a THREE.js scene for VR,
  * and packs up the items we want to use most often into a "world" object with type information
