@@ -9,3 +9,11 @@ this is 7
 *poetry*
 
 and then i changed this
+code can be poetry
+
+13
+14
+15
+Another poetic justice'd orange
+
+*sing*
