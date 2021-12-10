@@ -1,6 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 
-
 function checkTableForChanges(patch, tableName) {
     const changes = patch.diffs.props[tableName];
     if (!changes) return null;
@@ -28,7 +27,7 @@ function getPropertyValue(node, propertyName) {
 
                 const first = navigateToContents(content.props, 0);
                 
-                const array = first.datatype === 'int' ? new Int32Array(length) : new Float32Array(length);
+                const array = first.datatype === 'int' ? [] : new Float32Array(length);
                 for (let i = 0; i < length; i++)
                     array[i] = navigateToContents(content.props, i).value;
 
@@ -51,6 +50,7 @@ class ObjectCache {
     add(id, thing) {
         this[id] = thing;
         thing.userData.mergeId = id;
+        // console.log("Added object to cache", id, thing);
     }
 
     getByName(name) {
@@ -192,7 +192,6 @@ class SharedScene {
             if (!reply) {
                 // We're up to date!
                 console.log('Completed first sync.')
-                console.log(doc);
                 this.initialSyncCompleted = true;               
 
                 if (!doc.objects) {
@@ -204,7 +203,7 @@ class SharedScene {
                     });
 
                     this.merger.applyChange("scene root", doc => {
-                        this.sceneRoot.userData.mergeId= doc.objects.add({
+                        const rootKey = doc.objects.add({
                             name: "root",
                             parent: null,
                             position: null,
@@ -213,6 +212,8 @@ class SharedScene {
                             geometry: null,
                             material: null
                         });
+
+                        this.sceneObjects.add(rootKey, this.sceneRoot);
                     });                    
 
                     console.log("created scene: " + this.sceneRoot.userData.mergeId);
@@ -257,10 +258,11 @@ class SharedScene {
                     const pos = getPropertyValue(data, 'position');
                     const index = getPropertyValue(data, 'index');
                     
-                    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-                    geo.setIndex(new THREE.BufferAttribute(index));
+                    geo.setIndex(index);
+                    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));                    
+                    geo.computeVertexNormals();
 
-                    console.log("Received new geometry", geo.name, key);
+                    console.log("Received new geometry", geo.name, key);                    
                     
                     this.sceneGeometries.add(key, geo);
                 } // TODO: else case - handle a change to an existing key.
@@ -303,6 +305,7 @@ class SharedScene {
                     const mat = this.sceneMaterials[getPropertyValue(data, 'material')];
 
                     const mesh = new THREE.Mesh(geo, mat);
+                    mesh.name = getPropertyValue(data, 'name');
 
                     mesh.position.set(pos[0], pos[1], pos[2]);
 
@@ -317,7 +320,7 @@ class SharedScene {
                         // We might not have loaded the parent yet, so queue this change to handle at the end.
                         parentingQueue.push({child: mesh, parentKey: parentID});
                     }
-                    console.log("New object at ", pos, geo, mat);
+                    console.log(`New object ${mesh.name} at `, pos, geo.name, mat.name);
                     
                 } else {
 
@@ -327,17 +330,18 @@ class SharedScene {
         
         // Once we've loaded all objects in this patch, wire up parent relationships.
         for (let item of parentingQueue) {
-            console.log("parenting to", item.parentKey)
             const parent = this.sceneObjects[item.parentKey];
             parent.add(item.child);
         }
+
+        console.log("Scene after patch: ", this.sceneRoot.toJSON());
     }
 
     fakeUpdate() {
         const geoName = "box-111";
-        let geo = this.sceneGeometries.getByName(geoName);
+        let geo = null; //this.sceneGeometries.getByName(geoName);
         if (!geo) {
-            geo = new THREE.BoxGeometry(1, 1, 1);
+            geo = new THREE.BoxGeometry(1, 1, 1);      
             geo.name = geoName;
             this.registerGeometry(geo);
             console.log("Geometry not found - making a new one: ", geo.userData.mergeId);

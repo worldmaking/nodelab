@@ -43,7 +43,7 @@ function setupMerge(sourceDocument, actorID) {
         backends.doc1 = nextBackend;
         syncStates[senderID] = nextSyncState;
         // console.log('sync\n','nextBackend', nextBackend, '\n\nnextSyncState', nextSyncState, '\n\npatch', patch)
-        console.log('patch', patch);
+        // console.log('patch', patch);
         return patch;
     }
 
