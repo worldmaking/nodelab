@@ -2,6 +2,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.m
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 import {print, vectorToString} from './utility.mjs';
 
+// added ramp to floor; expanded plane and gridHelper
+
+
 /**
  * Bundles up the boilerplate of setting up a THREE.js scene for VR,
  * and packs up the items we want to use most often into a "world" object with type information
@@ -96,6 +99,51 @@ class World {
         const material = new THREE.MeshLambertMaterial();
         this.defaultMaterial = material;
 
+        // ! radial gradient material
+
+        let floorMat = new THREE.ShaderMaterial({
+        //let floorMat = new THREE.MeshLambertMaterial({
+            uniforms: {
+              color1: { value: new THREE.Color(0xffffff)},
+              color2: { value: new THREE.Color(0x104A80)},
+              ratio: {value: innerWidth / innerHeight}
+            },
+            // vertexShader: `varying vec2 vUv;
+            //   void main(){
+            //     vUv = uv;
+            //     gl_Position = vec4(position, 1.);
+            //   }`,
+            //       fragmentShader: `varying vec2 vUv;
+            //     uniform vec3 color1;
+            //     uniform vec3 color2;
+            //     uniform float ratio;
+            //     void main(){
+            //         vec2 uv = (vUv - 0.5) * vec2(ratio, 1.);
+            //       gl_FragColor = vec4( mix( color1, color2, length(uv)), 1. );
+            //     }`,
+            //     wireframe: true
+            // });
+            vertexShader: `
+                varying vec2 vUv;
+
+                void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color1;
+                uniform vec3 color2;
+            
+                varying vec2 vUv;
+                
+                void main() {
+                
+                gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
+                }
+            `
+            });
+
         // Set up an attractive fog in the distance, to obscure harsh cutoff where the geometry ends,
         // and to give some atmospheric perspective, to help with depth perception (esp. in non-VR view).
         const fadeColor = 0x5099c5;
@@ -103,13 +151,13 @@ class World {
         scene.fog = new THREE.FogExp2(fadeColor, 0.05);
 
         // Create a floor plane marked with a grid to give local landmarks, so you can tell when you move.
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), material);
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(200,200), floorMat);
         floor.receiveShadow = true;
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
         this.walkable = [floor];
 
-        const grid = new THREE.GridHelper(35, 35, 0x333366, 0x666666);
+        const grid = new THREE.GridHelper(200,200, 0x333366, 0x666666);
         scene.add(grid);
         
         if (makeLights){        

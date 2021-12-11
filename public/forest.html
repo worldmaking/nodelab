@@ -7,8 +7,7 @@
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="stylesheet" type="text/css" href="styles.css">
-    <script type="text/javascript" src="networkMessages.js"></script>
-  </head>
+    <script type="text/javascript" src="networkMessages.js"></script> 
   <body>
     <div id="avatar-customization">
       <div class="avatar-background">
@@ -55,7 +54,9 @@
         </div>
       </div>
 
-    <script type="module">
+      <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+      <script src="./forest.mjs"></script>
+      <script type="module">
       'use strict';
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';            
@@ -66,7 +67,7 @@
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
 
-      import { buildForest, updateForest } from "./forest.mjs"; 
+      import { buildForest } from "./forest.mjs"; 
 
       // Setup login form. Randomize the colour value for variety.
       const form = document.getElementById('avatar-customization');
@@ -134,8 +135,13 @@
 
         const colourTriplet = getFormColour();
 
+        function customAvatar(head, body, material) {
+          return true;
+          
+        }
+
         // Set up our replication system so it's ready to receive information about users.
-        initializeReplication(world, colourTriplet);
+        initializeReplication(world, colourTriplet, customAvatar);
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
@@ -192,7 +198,7 @@
         ico.position.z = -1;
         world.scene.add(ico);       
         
-        buildForest(world);
+        const updateForest = buildForest(world);
 
         // Main rendering loop.
         function animate() {

@@ -9,7 +9,39 @@ import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
 
+/** @type {THREE.Group[]} Reference to left (0) and right (1) controller.*/
+let controllers;
+
+const loader = new FBXLoader();
+
+const emojiDuration = 8;
+const emojiSpinRate = Math.PI;
+
+const modelCache = { 
+  tryLoad: function(fileName, container) {
+    let result = this[fileName];
+    if (result) {
+      console.log("recycling cached model " + fileName);
+      container.add(result);
+      return;
+    }
+    
+    const path = './models/fbx/' + fileName    
+    console.log("loading emote from " + path);
+    const cache = this;
+    loader.load(path, function (fbx, emote) {
+      fbx.scale.set(0.003, 0.003, 0.003);
+      fbx.position.y = 0;
+      fbx.rotation.y = 180;
+      container.add(fbx);
+      cache[fileName] = fbx;
+    });
+  }
+};
+
 const UI = {
+
+  lastAction: {action: null, value: null},
 
   raycaster: new THREE.Raycaster(),
   //pointer: new THREE.Vector2(), MKControl.mouse
@@ -17,6 +49,7 @@ const UI = {
   world: null,
   scale: 0,
   emote: new THREE.Group(),
+  
 
   // TODO: do we need separate VRControl ?
   control: null,
@@ -52,9 +85,14 @@ const UI = {
   isEmoting: false,
   timer: 0,
     
+  //UI panel for emotes
   emotePanel: null,
   emotesGroup: new THREE.Group(),
 
+  //UI panel for main buttons 
+  colorPanel: null,
+
+  replicaEmotes: [],
 
   init(world) {
     this.world = world;
@@ -78,10 +116,12 @@ const UI = {
       fontSize: 0.13,
       padding: 0,
       borderRadius: 0.11,
-      width: 2.1,
+      width: 1.7,
       height: 0.2
     });
     this.emotePanel.position.set(0, 0, -1);
+    this.emotePanel.rotation.x = -0.4;
+    this.emotePanel.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.emotePanel);
 
     this.emotePanel2 = new ThreeMeshUI.Block({
@@ -95,31 +135,34 @@ const UI = {
       fontSize: 0.13,
       padding: 0,
       borderRadius: 0.11,
-      width: 1.6,
+      width: 1.4,
       height: 0.2
     });
-    this.emotePanel2.position.set(0, -0.3, -1);
+    this.emotePanel2.position.set(0, -0.15, -1);
+    this.emotePanel2.rotation.x = -0.4;
+    this.emotePanel2.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.emotePanel2);
 
      //UI panelContainer
     this.colorPanel = new ThreeMeshUI.Block({
       justifyContent: 'center',
       alignContent: 'center',
-      contentDirection: "column",
+      contentDirection: "row",
       fontFamily:
         "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.json",
       fontTexture:
         "https://unpkg.com/three-mesh-ui/examples/assets/Roboto-msdf.png",
       fontSize: 0.17,
-      padding: 0.002,
-      borderRadius: 0.11, //0.11
-      width: 0.7,
-      height: 2
+      padding: 0.2, 
+      borderRadius: 0.05, 
+      width: 2.2, 
+      height: 0.4 
     });
     world.scene.add(this.control);
 
-    this.colorPanel.position.set(-1, 1, 0);
-    this.colorPanel.rotation.x = -0.3; 
+    this.colorPanel.position.set(0, 0.2, -1);
+    this.colorPanel.rotation.x = -0.4;
+    this.colorPanel.scale.set(0.5,0.5,0.5); 
     this.world.scene.add(this.colorPanel);
 
 
@@ -216,17 +259,30 @@ const UI = {
           thinking,
         }
 
+        //UI inner panel for texts
         let colorPanelText = {
-          width: 0.4,
-          height: 0.17,
+          width: 0.3,
+          height: 0.15,
+          justifyContent: 'center',
+          alignContent: 'center',
+          offset: 0.05, // - Distance on the Z direction between this component and its parent. 
+          margin: 0.02, //0.02 - Space between the component border and outer or neighbours components outer border.
+          fontSize: 0.04,
+          borderRadius: 0.075
+        };
+
+         //UI inner panel for emote texts
+         let EmotePanelText = {
+          width: 0.3,
+          height: 0.15,
           justifyContent: 'center',
           alignContent: 'center',
           offset: 0.005, // - Distance on the Z direction between this component and its parent. 
-          margin: 0.07, //0.02 - Space between the component border and outer or neighbours components outer border.
-          fontSize: 0.07,
+          margin: 0.02, //0.02 - Space between the component border and outer or neighbours components outer border.
+          fontSize: 0.04,
           borderRadius: 0.075
         };
-    
+
         // Buttons creation, with the options objects passed in parameters.
         this.buttonTranslateText = new ThreeMeshUI.Block(colorPanelText); 
         this.buttonRotateText = new ThreeMeshUI.Block(colorPanelText); 
@@ -235,16 +291,15 @@ const UI = {
         this.buttonRemoveText = new ThreeMeshUI.Block(colorPanelText); 
         this.callButtonText = new ThreeMeshUI.Block(colorPanelText); 
 
-        this.brainText = new ThreeMeshUI.Block(colorPanelText); 
-        this.smile = new ThreeMeshUI.Block(colorPanelText);
-        this.laugh = new ThreeMeshUI.Block(colorPanelText);
-        this.love = new ThreeMeshUI.Block(colorPanelText);
-        this.surprised = new ThreeMeshUI.Block(colorPanelText);
-        this.thinking = new ThreeMeshUI.Block(colorPanelText);
-        this.p = new ThreeMeshUI.Block(colorPanelText); 
+        this.brainText = new ThreeMeshUI.Block(EmotePanelText); 
+        this.smile = new ThreeMeshUI.Block(EmotePanelText);
+        this.laugh = new ThreeMeshUI.Block(EmotePanelText);
+        this.love = new ThreeMeshUI.Block(EmotePanelText);
+        this.surprised = new ThreeMeshUI.Block(EmotePanelText);
+        this.thinking = new ThreeMeshUI.Block(EmotePanelText);
+        this.p = new ThreeMeshUI.Block(EmotePanelText); 
        
         // Add texts and buttons to the panel
-      //  this.callButtonText.add(new ThreeMeshUI.Text({ content: "Call Button" }), this.buttonGroup); 
         this.buttonTranslateText.add(new ThreeMeshUI.Text({ content: "Translate" }), buttonTranslate);
         this.buttonRotateText.add(new ThreeMeshUI.Text({ content: "Rotate" }), buttonRotate); 
         this.buttonScaleText.add(new ThreeMeshUI.Text({ content: "Scale" }), buttonScale);
@@ -259,7 +314,8 @@ const UI = {
         this.surprised.add(new ThreeMeshUI.Text({ content: "Surprised" }), surprised);
         this.thinking.add(new ThreeMeshUI.Text({ content: "thinking" }), thinking);
         this.p.add(new ThreeMeshUI.Text({ content: ";p" }), p);
-  
+
+
         this.colorPanel.add(this.buttonTranslateText, this.buttonRotateText, this.buttonScaleText,this.buttonAddText, this.buttonRemoveText, this.callButtonText);
         this.emotePanel.add(this.p, this.brainText, this.laugh, this.love);
         this.emotePanel2.add(this.smile, this.surprised, this.thinking);
@@ -282,9 +338,32 @@ const UI = {
     addButtonsTo( destination ) {
        // destination.add( this.buttonGroup );
        this.parent = destination;
-       destination.add(this.colorPanel);
-       destination.add(this.emotePanel);
-       destination.add(this.emotePanel2);
+      //destination.add(this.colorPanel);
+       //destination.add(this.emotePanel);
+       //destination.add(this.emotePanel2);
+
+       this.world.scene.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
+      //main ui control with the key "m"
+       document.addEventListener('keypress', (event) => {
+        if(event.key == "m"){
+         if(this.colorPanel.isVisible){
+            this.colorPanel.isVisible = false;
+            this.emotePanel.isVisible = false;
+            this.emotePanel2.isVisible = false;
+           // console.log("inside if");
+            this.world.scene.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
+            destination.remove(this.colorPanel, this.emotePanel, this.emotePanel2);
+         } else {
+            this.colorPanel.isVisible = true;
+            this.emotePanel.isVisible = true;
+            this.emotePanel2.isVisible = true;
+            this.world.scene.add(this.colorPanel, this.emotePanel, this.emotePanel2);
+            destination.add(this.colorPanel, this.emotePanel, this.emotePanel2);
+          //  console.log(UI.colorPanel.position.x);
+         }
+        }
+     });
+
     },
 
     addNewObj(pos) {
@@ -315,6 +394,11 @@ const UI = {
   },
 
   updateMK(dt, MKControl, camera) {
+
+
+    this.lastAction.action = null;
+    this.lastAction.value = null;
+
     this.raycaster.setFromCamera(MKControl.mouse, camera);
 
     const intersects = this.raycaster.intersectObjects(this.clickable, false);
@@ -341,7 +425,7 @@ const UI = {
     //     this.rollOverMesh.visible = false;
     //   }
 
-    if ( ( MKControl.mouseButtons[0] || VRControl.uiTrigger ) && this.intersected) {
+    if ( MKControl.mouseButtons[0] && this.intersected) {
 
       if (!this.leftClicked) {
 
@@ -437,28 +521,158 @@ const UI = {
       }
     }
 
-    if ( !MKControl.mouseButtons[0] || !VRControl.uiTrigger ) { // if left mouse button is up
+    if ( !MKControl.mouseButtons[0]) { // if left mouse button is up
       this.leftClicked = false;
     }
   },
+
+  updateVR(dt, VRControl) {
+
+    this.lastAction.action = null;
+    this.lastAction.value = null;
+
+    if(VRControl.getOrigin() != undefined)
+    this.raycaster.set(VRControl.getOrigin(), VRControl.getAim());
+
+    const intersects = this.raycaster.intersectObjects(this.clickable, false);
+    if (intersects.length > 0) {
+      if (this.intersected != intersects[0].object) {
+        if (this.intersected)
+          this.intersected.material.emissive.setHex(this.intersected.currentHex);
+
+        this.intersected = intersects[0].object;
+        this.intersected.currentHex = this.intersected.material.emissive.getHex();
+        this.intersected.material.emissive.setHex(0x333333);
+      }
+    } else {
+      if (this.intersected) {
+        this.intersected.material.emissive.setHex(this.intersected.currentHex);
+      }
+      this.intersected = null;
+      
+
+    }
+
+    //   if (this.addMode) {
+    //     this.rollOverMesh.visible = true;
+    //     this.rollOverMesh.position.copy( intersects[ 0 ].point ).add( intersects[ 0 ].face.normal );
+    //   } else {
+    //     this.rollOverMesh.visible = false;
+    //   }
+
+    if ( VRControl.uiTrigger && this.intersected) {
+
+      if (!this.leftClicked) {
+
+        this.leftClicked = true;
+        const obj = this.intersected;
+
+        switch (obj) {
+          case this.tools.buttonTranslate:
+            this.control.setMode("translate");
+            break;
+
+          case this.tools.buttonRotate:
+            this.control.setMode("rotate");
+            break;
+
+          case this.tools.buttonScale:
+            this.control.setMode("scale");
+            break;
+
+          case this.tools.buttonAdd:
+            this.addMode = true;
+            this.addNewObj(new THREE.Vector3().random());
+            break;
+
+          case this.tools.buttonRemove:
+            this.removeMode = true;
+            // updateActiveButton( obj );
+            break;
+
+          case this.tools.callButton:
+            if (this.callMode == false) {
+              this.callMode = true;
+              console.log('calling');
+              joinRoom();
+            }
+            break;
+          case this.emojis.brain:
+            this.emotes(this.parent, 'brain.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.p:
+            this.emotes(this.parent, ';p.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.smile:
+            this.emotes(this.parent, 'smile.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.laugh:
+            this.emotes(this.parent, 'laugh.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.thinking:
+            this.emotes(this.parent, 'thinking.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.love:
+            this.emotes(this.parent, 'love.fbx')
+            this.isEmoting = true;
+            break;
+          case this.emojis.surprised:
+            this.emotes(this.parent, 'surprised.fbx')
+            this.isEmoting = true;
+            break;
+
+        }
+
+        if (Object.values(this.tools).includes(obj)) {
+
+          if (obj != this.tools.buttonAdd) {  // if the obj is a button, but not the remove button, turn remove mode off.
+            this.addMode = false;
+          }
+
+          if (obj != this.tools.buttonRemove) {  // if the obj is a button, but not the remove button, turn remove mode off.
+            this.removeMode = false;
+            // console.log('you clicked a button thats not buttonRemove');
+          }
+
+        }
+
+        if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
+          if (this.removeMode) {
+            this.world.scene.remove(obj);
+            this.print("box removed");
+            if (obj == this.activeObj) {
+              this.control.detach();
+              this.activeObj = null;
+            }
+          } else if (obj !== this.activeObj) {
+            this.activateObj(obj);
+          }
+        }
+      }
+    }
+
+    if ( !VRControl.uiOtherTrigger ) { // if left mouse button is up
+      this.leftClicked = false;
+    }
+  },
+  
   // adds the emoji to the scene
   emotes(parent, s) {
+    this.lastAction.action = "emote";
+    this.lastAction.value = s;
     
     this.timer = new Date().getTime();
-    this.deleteEmote(parent);
+    this.deleteEmote();
     this.emote.position.y = 0.55
     parent.add(this.emote);
     let tempemote = this.emote;
-    let directory = './models/fbx/' + s
-    let loader = new FBXLoader();
-    loader.load(directory, function (fbx, emote) {
-      console.log("parent");
-      fbx.scale.set(0.003, 0.003, 0.003)
-      fbx.position.y = 0
-      fbx.rotation.y = 180;
-      tempemote.add(fbx);
-      // tempTextGroup.add(tempemote);
-    })
+
+    modelCache.tryLoad(s, tempemote);
   },
   //gets the time the emoji has been in the world
   getTime() {
@@ -467,16 +681,31 @@ const UI = {
     return seconds;
   },
   // deletes the emoji
-  deleteEmote(parent) {
+  deleteEmote() {
     this.emote.remove(this.emote.children[0]);
-    parent.remove(this.emote);
+    this.parent.remove(this.emote);
+    this.isEmoting = false;
   },
   //animates the emoji
-  animate() {
-    if (this.emote.position.y < 1) {
-      this.emote.position.y += 0.01;
+  animate(dt) {
+    if (this.isEmoting && this.getTime() < emojiDuration) {
+      this.emote.position.y +=(1.0 - this.emote.position.y) * dt;
+      this.emote.rotation.y += emojiSpinRate * dt;
+    } else {
+      this.deleteEmote();
     }
-    this.emote.rotation.y += 0.01;
+
+    for (const e of this.replicaEmotes) {
+      if (e.userData.lifeSpan <= 0) continue;
+
+      e.position.y += (1.0 - e.position.y) * dt;
+      e.rotation.y += emojiSpinRate * dt;
+      e.userData.lifeSpan -= dt;
+      
+      if (e.userData.lifeSpan <= 0 && e.parent) {
+        e.parent.remove(e);   
+      }
+    }
   },
 
 
@@ -512,6 +741,44 @@ const UI = {
       }
     }
     );
+  },
+
+  playEmoteOnReplica(replica, fileName) {
+    let container = replica.emote;
+
+    if (!container) {    
+      container = new THREE.Group();    
+      replica.emote = container;
+      this.replicaEmotes.push(container);
+    } 
+    
+    if (!container.parent) {
+      replica.getBody().add(container);
+    }
+
+    if (container.lastEmote === fileName) {
+      return;
+    }    
+
+    console.log(`remote user sends emote ${fileName}`);
+
+    container.clear();
+    container.position.y = 0.55;
+    container.userData.lifeSpan = emojiDuration;
+    modelCache.tryLoad(fileName, container);
+    replica.emote.lastEmote = fileName;
+  },
+
+  updatePanelPos(mode) {
+    if (mode == 'vr') {
+      this.colorPanel.position.set(0, -0.2, -1);
+      this.emotePanel.position.set(0, 0, -1);
+      this.emotePanel2.position.set(0, 0.2, -1);
+    } else if (mode == 'mk') {
+      this.colorPanel.position.set(0, 0, 0.4);
+      this.emotePanel.position.set(0, 0.2, 0.3);
+      this.emotePanel2.position.set(0, 0.4, 0.2);
+    }
   }
 };
 

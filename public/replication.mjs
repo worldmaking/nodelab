@@ -162,7 +162,7 @@ class Replica {
         this.#head = new THREE.Group();
         world.scene.add(this.#head);
         this.#body = new THREE.Group();
-        world.scene.add(this.#body);
+        world.scene.add(this.#body);           
 
         let makeDefaultAvatar = true;
 

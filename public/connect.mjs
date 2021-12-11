@@ -144,7 +144,7 @@ function connectToWorld(opt={}) {
 		server,
 		sync: function(syncMessage) {
 			if (syncMessage) {
-				console.log("Sending local change to server.");
+				//console.log("Sending local change to server.");
 				(new Message('sync', `[${syncMessage.toString()}]`)).sendWith(server);
 			}
 		}

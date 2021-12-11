@@ -97,7 +97,7 @@
       
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
       import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody } from "./replication.mjs"; 
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody, getUserReplica } from "./replication.mjs"; 
       import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
       import { connectToWorld } from "./connect.mjs"; 
       import { UI } from "./ui.mjs"; 
@@ -244,6 +244,7 @@
         UI.init(world);
         UI.addTextGroupTo( getOwnReplicaBody() );
         UI.addButtonsTo( getOwnReplicaBody() );
+        
         //UI.animate(UI.emotes());
 
         // UI.print("it's printing!");
@@ -258,12 +259,25 @@
             else {
               UI.textGroup.visible = true;
               UI.isVisible = true;
-              
             }
-            
           }
-          
+          //the commented code below moved to the ui.mjs!!
+
+          //UI main panel open with keyboard "m"
+          // if(event.key == "m"){
+          //   if(UI.colorPanel.isVisible){
+          //     UI.colorPanel.isVisible = false;
+          //     console.log("inside if");
+          //     world.scene.remove(UI.colorPanel);
+          //   } else {
+          //     UI.colorPanel.isVisible = true;
+          //     UI.colorPanel.position.set(0,0,0.2);
+          //     world.scene.add(UI.colorPanel);
+          //     console.log(UI.colorPanel.position.x);
+          //   }
+          // }
         });
+
         // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
         document.addEventListener('contextmenu', function(event){
           if(document.getElementById('emojis').style.display == 'none')
@@ -286,17 +300,16 @@
 
         // Main rendering loop.
         function animate() {
-          // animates the emoji if its within 10 seconds of being spawned, otherwise it deletes ii from the scene
-          if(UI.isEmoting && UI.getTime() < 10){
-            UI.animate();
-          }
-          else {
-            UI.deleteEmote(getOwnReplicaBody())
-          }
           
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
+
+
+          // animates emojis
+          UI.animate(dt);
+          
+          
 
           // ui update - needs to be manually updated in here
           ThreeMeshUI.update();
@@ -307,11 +320,14 @@
             // (At least until headsets give us eye tracking...)            
             MKControl.mouse.set(0, 0);            
             VRControl.updateControls(dt);
+            UI.updateVR(dt, VRControl);
+            UI.updatePanelPos('vr');
           } else {
             activeCamera = world.mouseCamera;
             // In non-VR, step the mouse and keyboard controls.
             MKControl.updateControls(dt);
             UI.updateMK(dt, MKControl, activeCamera);
+            UI.updatePanelPos('mk');
           }
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
@@ -337,6 +353,20 @@
           let { self, others } = app.users;
           // Update our data into the self object, and update avatars for remote users from the others object.
           replicatePoses(self, others);
+
+
+          if (UI.lastAction.action === 'emote') {
+            self.volatile.emote = UI.lastAction.value;
+            console.log("Sending emote to server: ", self.volatile.emote);
+          } else if (!UI.isEmoting) {
+            self.volatile.emote = undefined;
+          }
+
+          for (let o of others) {
+            if (o.emote) {              
+              UI.playEmoteOnReplica(getUserReplica(o.id), o.emote);
+            }
+          }
 
           // console.log(getOwnReplica());
           

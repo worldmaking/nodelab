@@ -17,8 +17,10 @@ const dotenv = require("dotenv").config();
 const merge = require('./public/merge.js');
 
 
-// this will be true if there's no .env file
-const IS_HTTP = (!process.env.PORT_HTTP);
+// this will be true if this server is running on Heroku
+const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
+// this will be true if we are running on Heroku (HTTP ONLY), or there's no .env file
+const IS_HTTP = IS_HEROKU || (!process.env.PORT_HTTP);
 
 const PORT_HTTP = IS_HTTP ? (process.env.PORT || 3000) : (process.env.PORT_HTTP || 80);
 const PORT_HTTPS = process.env.PORT_HTTPS || 443;

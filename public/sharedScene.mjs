@@ -34,14 +34,21 @@ function getPropertyValue(node, propertyName) {
                 return array;
             }
             case 'list': {
-                const first = content.edits[0];
-                if (first.action === "multi-insert")
-                    return content.edits[0].values;
-                
-                const array = [];
+                const array = [];                
                 for (const entry of content.edits) {
-                    array[entry.index] = entry.value.value;
+                    switch (entry.action) {
+                        case 'multi-insert':
+                            array.splice(entry.index, 0, ...entry.values);
+                            break;
+                        case 'insert':
+                            array.splice(entry.index, 0, entry.value.value);
+                            break;
+                        case 'update':
+                            array[entry.index] = entry.value.value;
+                            break;
+                    }
                 }
+                //console.log(propertyName + ":", array);
                 return array;
             }
         }
@@ -239,7 +246,6 @@ class SharedScene {
                 this.initialSyncCompleted = true;               
 
                 if (!doc.objects) {
-                    console.log('document is empty - populating data structures');
                     this.merger.applyChange("initial scene content", doc => {
                         doc.objects = new Automerge.Table();
                         doc.geometries = new Automerge.Table();
@@ -260,10 +266,10 @@ class SharedScene {
                         this.sceneObjects.add(rootKey, this.sceneRoot);
                     });                    
 
-                    console.log("created scene: " + this.sceneRoot.userData.mergeId);
+                    console.log("Document was empty - created initial scene: " + this.sceneRoot.userData.mergeId);
                 } 
 
-                console.log("INITIAL DOC: ",this.merger.getDocument());
+                //console.log("INITIAL DOC: ",this.merger.getDocument());
                 setTimeout(()=> this.fakeUpdate(), 1000);
             }
         }
@@ -277,7 +283,7 @@ class SharedScene {
     }
 
     parsePatch(patch) {
-        console.log("Processing patch ", patch);     
+        //console.log("Processing patch ", patch);     
         const geoChanges = checkTableForChanges(patch, 'geometries');        
         if (geoChanges) {
             for (let key of Object.keys(geoChanges)) {
@@ -292,9 +298,10 @@ class SharedScene {
                     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));                    
                     geo.computeVertexNormals();
 
-                    console.log("Received new geometry", geo.name, key);                    
+                    //console.log("Received new geometry", geo.name, key);                    
                     
                     this.sceneGeometries.add(key, geo);
+
                 } // TODO: else case - handle a change to an existing key.
             }
         }
@@ -308,8 +315,9 @@ class SharedScene {
                     const mat = new THREE.MeshLambertMaterial();
                     mat.name = getPropertyValue(data, 'name');                  
 
-                    console.log("Received new material", mat.name, key);                    
+                    //console.log("Received new material", mat.name, key);                    
                     this.sceneMaterials.add(key, mat);
+
                 } // TODO: else case - handle a change to an existing key.
             }
         }
@@ -319,7 +327,7 @@ class SharedScene {
         if (objectChanges) {
             for (let key of Object.keys(objectChanges)) {
                 const data = navigateToContents(objectChanges, key);
-                console.log(key, "Object data: ",  data);
+                //console.log(key, "Object data: ",  data);
                 const sceneObject = this.sceneObjects[key];
                 if (!sceneObject) {
                     // New object we've never seen before!                    
@@ -327,7 +335,7 @@ class SharedScene {
                     if (pos === null && !this.sceneRoot.userData.mergeId) {
                         // Found scene root for the first time - it's the only one allowed to have a null position.
                         this.sceneObjects.add(key, this.sceneRoot);
-                        console.log("Received scene root:", key);
+                        //console.log("Received scene root:", key);
                         continue;
                     }
                     
@@ -352,14 +360,17 @@ class SharedScene {
                         parentingQueue.push({child: mesh, parentKey: parentID});
                     }
                     this.sceneObjects.add(key, mesh);
-                    console.log(`New object ${mesh.name}/${key} at `, pos, geo.name, mat.name);                    
+                    //console.log(`New object ${mesh.name}/${key} at `, pos, quat, geo.name, mat.name);                    
                 } else {                    
-                    if (tryUpdateTuple(sceneObject.position, data, 'position'))
-                        console.log("...moved to", sceneObject.position);
-                    if (tryUpdateTuple(sceneObject.quaternion, data, 'quaternion')) 
-                        console.log("...rotated to", sceneObject.quaternion);
-                    if (tryUpdateTuple(sceneObject.scale, data, 'scale'))
-                        console.log("...scaled to", sceneObject.scale);
+                    if (tryUpdateTuple(sceneObject.position, data, 'position')) {
+                        //console.log("...moved to", sceneObject.position);
+                    }
+                    if (tryUpdateTuple(sceneObject.quaternion, data, 'quaternion')) { 
+                        //console.log("...rotated to", sceneObject.quaternion);
+                    }
+                    if (tryUpdateTuple(sceneObject.scale, data, 'scale')) {
+                        //console.log("...scaled to", sceneObject.scale);
+                    }
                 }
             }
         }
@@ -380,7 +391,7 @@ class SharedScene {
             geo = new THREE.BoxGeometry(1, 1, 1);      
             geo.name = geoName;
             this.registerGeometry(geo);
-            console.log("Geometry not found - making a new one: ", geo.userData.mergeId);
+            //console.log("Geometry not found - making a new one: ", geo.userData.mergeId);
         }
 
         const matName = "default material";        
@@ -389,7 +400,7 @@ class SharedScene {
             mat = new THREE.MeshLambertMaterial();
             mat.name = matName;
             this.registerMaterial(mat);
-            console.log("Material not found - making a new one: ", mat.userData.mergeId);
+            //console.log("Material not found - making a new one: ", mat.userData.mergeId);
         }
 
         const mesh = new THREE.Mesh(geo, mat);
@@ -398,17 +409,17 @@ class SharedScene {
         this.sceneRoot.add(mesh);
         this.registerMesh(mesh);
 
-        console.log("MODIFIED DOC: ",this.merger.getDocument());
-        console.log("added test mesh", mesh.name, mesh.userData.mergeId);
-        console.log("added test geo " + geo.userData.mergeId);
-        console.log("added test mat " + mat.userData.mergeId);
+        //console.log("MODIFIED DOC: ",this.merger.getDocument());
+        //console.log("added test mesh", mesh.name, mesh.userData.mergeId);
+        //console.log("added test geo " + geo.userData.mergeId);
+        //console.log("added test mat " + mat.userData.mergeId);
 
         function fakeFollowUp() {
             mesh.position.x += 5;
             mesh.quaternion.set(0, 0.6,	0.5, 0.6244998);
             mesh.scale.z = 2;
 
-            console.log("Moved to ", mesh.position);
+            //console.log("Moved to ", mesh.position);
             this.updateTransformation(mesh);
         }
 
