@@ -40,6 +40,8 @@ function getPropertyValue(node, propertyName) {
     return undefined;
 }
 
+
+
 function navigateToContents(data, key) {
     const container = data[key];    
     return Object.values(container)[0];
@@ -65,6 +67,16 @@ class ObjectCache {
         // TODO: Evaluate "delete this[id]" - may cause JIT to take slow path.
     }
 }
+
+const objectProperties = [
+   'position',
+   'quaternion',
+   'scale' 
+];
+
+const arrayMemberNames = [
+    'x','y','z','w'
+];
 
 
 class SharedScene {
@@ -141,6 +153,7 @@ class SharedScene {
 
     dbFromObject(object3D) {
         return {
+            name: object3D.name,
             parent: object3D.parent?.userData.mergeId,
             position: [object3D.position.x, object3D.position.y, object3D.position.z],
             quaternion: [object3D.quaternion.x, object3D.quaternion.y, object3D.quaternion.z, object3D.quaternion.w],
@@ -245,9 +258,8 @@ class SharedScene {
         return reply;
     }
 
-
-
-    parsePatch(patch) {        
+    parsePatch(patch) {
+        console.log("Processing patch ", patch);     
         const geoChanges = checkTableForChanges(patch, 'geometries');        
         if (geoChanges) {
             for (let key of Object.keys(geoChanges)) {
@@ -289,8 +301,9 @@ class SharedScene {
         if (objectChanges) {
             for (let key of Object.keys(objectChanges)) {
                 const data = navigateToContents(objectChanges, key);
-                console.log("Object data: ",  data);
-                if (!this.sceneObjects[key]) {
+                console.log(key, "Object data: ",  data);
+                const sceneObject = this.sceneObjects[key];
+                if (!sceneObject) {
                     // New object we've never seen before!                    
                     const pos = getPropertyValue(data, 'position');
                     if (pos === null && !this.sceneRoot.userData.mergeId) {
@@ -299,7 +312,7 @@ class SharedScene {
                         console.log("Received scene root:", key);
                         continue;
                     }
-
+                    
                     // TODO: Support types *other* than meshes.
                     const geo = this.sceneGeometries[getPropertyValue(data, 'geometry')];
                     const mat = this.sceneMaterials[getPropertyValue(data, 'material')];
@@ -320,10 +333,11 @@ class SharedScene {
                         // We might not have loaded the parent yet, so queue this change to handle at the end.
                         parentingQueue.push({child: mesh, parentKey: parentID});
                     }
-                    console.log(`New object ${mesh.name} at `, pos, geo.name, mat.name);
+                    this.sceneObjects.add(key, mesh);
+                    console.log(`New object ${mesh.name}/${key} at `, pos, geo.name, mat.name);
                     
                 } else {
-
+                    
                 }
             }
         }
@@ -334,7 +348,7 @@ class SharedScene {
             parent.add(item.child);
         }
 
-        console.log("Scene after patch: ", this.sceneRoot.toJSON());
+        //console.log("Scene after patch: ", this.sceneRoot.toJSON());
     }
 
     fakeUpdate() {
@@ -363,9 +377,21 @@ class SharedScene {
         this.registerMesh(mesh);
 
         console.log("MODIFIED DOC: ",this.merger.getDocument());
-        console.log("added test mesh " + mesh.name);
+        console.log("added test mesh", mesh.name, mesh.userData.mergeId);
         console.log("added test geo " + geo.userData.mergeId);
         console.log("added test mat " + mat.userData.mergeId);
+
+        function fakeFollowUp() {
+            this.merger.applyChange("move object.", doc => {
+                const row = doc.objects.byId(mesh.userData.mergeId);
+                row.position[0] += 2.0;
+                row.position[2] *= 2.0;
+                row.scale[1] += 0.01;
+                row.quaternion = [1, 0, 0, 0];
+            });
+        }
+
+        setTimeout(fakeFollowUp.bind(this), 1000);
     }
 
     tryGenerateSyncMessage() {
