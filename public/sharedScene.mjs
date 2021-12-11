@@ -19,7 +19,7 @@ function getPropertyValue(node, propertyName) {
         if (!content) continue;
         switch (content.type) {
             case 'value': return content.value;
-            case 'map':                
+            case 'map': {
                 let length = 0;
                 while (content.props[length] !== undefined) {length++}
 
@@ -32,8 +32,18 @@ function getPropertyValue(node, propertyName) {
                     array[i] = navigateToContents(content.props, i).value;
 
                 return array;
-            case 'list':
-                return content.edits[0].values;
+            }
+            case 'list': {
+                const first = content.edits[0];
+                if (first.action === "multi-insert")
+                    return content.edits[0].values;
+                
+                const array = [];
+                for (const entry of content.edits) {
+                    array[entry.index] = entry.value.value;
+                }
+                return array;
+            }
         }
             
     }
@@ -68,16 +78,19 @@ class ObjectCache {
     }
 }
 
-const objectProperties = [
-   'position',
-   'quaternion',
-   'scale' 
-];
-
 const arrayMemberNames = [
     'x','y','z','w'
 ];
 
+function tryUpdateTuple(tuple, data, propertyName) {
+    const edit = getPropertyValue(data, propertyName);
+    if (!edit) return false;
+    for (let i = 0; i < 4; i++) {
+        if (typeof(edit[i]) === 'number')
+            tuple[arrayMemberNames[i]] = edit[i];
+    }
+    return true;
+}
 
 class SharedScene {
 
@@ -194,6 +207,24 @@ class SharedScene {
         })
     }
 
+    updateTransformation(sceneObject) {
+        this.merger.applyChange("transform " + sceneObject.name, doc => {
+            const row = doc.objects.byId(sceneObject.userData.mergeId);
+            row.position[0] = sceneObject.position.x;
+            row.position[1] = sceneObject.position.y;
+            row.position[2] = sceneObject.position.z;
+
+            row.quaternion[0] = sceneObject.quaternion.x;
+            row.quaternion[1] = sceneObject.quaternion.y;
+            row.quaternion[2] = sceneObject.quaternion.z;
+            row.quaternion[3] = sceneObject.quaternion.w;
+
+            row.scale[0] = sceneObject.scale.x;
+            row.scale[1] = sceneObject.scale.y;
+            row.scale[2] = sceneObject.scale.z;
+        });
+    }
+
     handleSyncMessage(syncMessage, senderID) {
         const patch = this.merger.handleSyncMessage(syncMessage, senderID);
 
@@ -230,20 +261,7 @@ class SharedScene {
                     });                    
 
                     console.log("created scene: " + this.sceneRoot.userData.mergeId);
-                } else {
-                    /*
-                    if (doc.objects) {
-                        const roots = doc.objects.filter(obj => { return obj.name === "root"});
-                        if (roots && roots.length > 0) {
-                            const id = roots[0].id;
-                            console.log("found scene root", roots[0]);
-                            this.sceneObjects.add(id, this.sceneRoot);
-                        } else {
-                            console.log("no scene root found!");
-                        }
-                    }
-                    */
-                }
+                } 
 
                 console.log("INITIAL DOC: ",this.merger.getDocument());
                 setTimeout(()=> this.fakeUpdate(), 1000);
@@ -334,10 +352,14 @@ class SharedScene {
                         parentingQueue.push({child: mesh, parentKey: parentID});
                     }
                     this.sceneObjects.add(key, mesh);
-                    console.log(`New object ${mesh.name}/${key} at `, pos, geo.name, mat.name);
-                    
-                } else {
-                    
+                    console.log(`New object ${mesh.name}/${key} at `, pos, geo.name, mat.name);                    
+                } else {                    
+                    if (tryUpdateTuple(sceneObject.position, data, 'position'))
+                        console.log("...moved to", sceneObject.position);
+                    if (tryUpdateTuple(sceneObject.quaternion, data, 'quaternion')) 
+                        console.log("...rotated to", sceneObject.quaternion);
+                    if (tryUpdateTuple(sceneObject.scale, data, 'scale'))
+                        console.log("...scaled to", sceneObject.scale);
                 }
             }
         }
@@ -382,13 +404,12 @@ class SharedScene {
         console.log("added test mat " + mat.userData.mergeId);
 
         function fakeFollowUp() {
-            this.merger.applyChange("move object.", doc => {
-                const row = doc.objects.byId(mesh.userData.mergeId);
-                row.position[0] += 2.0;
-                row.position[2] *= 2.0;
-                row.scale[1] += 0.01;
-                row.quaternion = [1, 0, 0, 0];
-            });
+            mesh.position.x += 5;
+            mesh.quaternion.set(0, 0.6,	0.5, 0.6244998);
+            mesh.scale.z = 2;
+
+            console.log("Moved to ", mesh.position);
+            this.updateTransformation(mesh);
         }
 
         setTimeout(fakeFollowUp.bind(this), 1000);
