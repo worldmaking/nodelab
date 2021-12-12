@@ -534,7 +534,7 @@ const UI = {
               this.control.detach();
               this.activeObj = null;
             }
-            this.world.sharedScene.remove(obj);
+            this.world.shared.remove(obj);
             this.print("box removed");
           } else if (obj !== this.activeObj) {
             this.activateObj(obj);

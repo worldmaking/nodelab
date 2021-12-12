@@ -170,7 +170,7 @@ class SharedScene {
         if (parent) {
             parent.addChild(child);            
         } else if (child.parent) {
-            child.removeFromParent();
+            child.parent.remove(child);
         }
     }
 
@@ -249,7 +249,10 @@ class SharedScene {
             this.onSceneObjectRemoved(sceneObject);
         }
         
-        sceneObject.removeFromParent();
+        if (sceneObject.parent)
+            sceneObject.parent.remove(sceneObject);
+
+        this.sceneObjects.remove(sceneObject.userData.mergeId);
     }
 
     handleSyncMessage(syncMessage, senderID) {
@@ -303,7 +306,7 @@ class SharedScene {
     }
 
     parsePatch(patch) {
-        //console.log("Processing patch ", patch);     
+        console.log("Processing patch ", patch);     
         const geoChanges = checkTableForChanges(patch, 'geometries');        
         if (geoChanges) {
             for (let key of Object.keys(geoChanges)) {
@@ -351,9 +354,20 @@ class SharedScene {
         if (objectChanges) {
             for (let key of Object.keys(objectChanges)) {
                 const data = navigateToContents(objectChanges, key);
-                //console.log(key, "Object data: ",  data);
+                console.log(key, "Object data: ",  data);
                 const sceneObject = this.sceneObjects[key];
-                if (!sceneObject) {
+                if (!data) {
+                    // Deleted object
+                    if (sceneObject) {
+                        if (this.onSceneObjectRemoved)
+                            this.onSceneObjectRemoved(sceneObject);
+                        if (sceneObject.parent) {
+                            sceneObject.parent.remove(sceneObject);
+                        }
+                        this.sceneObjects.remove(key);
+                    }
+                }
+                else if (!sceneObject) {
                     // New object we've never seen before!                    
                     const pos = getPropertyValue(data, 'position');
                     if (pos === null && !this.sceneRoot.userData.mergeId) {
@@ -384,7 +398,7 @@ class SharedScene {
 
                     this.sceneObjects.add(key, mesh);
                     //console.log(`New object ${mesh.name}/${key} at `, pos, quat, geo.name, mat.name);                    
-                } else {                    
+                } else {                           
                     if (tryUpdateTuple(sceneObject.position, data, 'position')) {
                         //console.log("...moved to", sceneObject.position);
                     }
