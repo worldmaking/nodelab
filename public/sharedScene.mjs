@@ -111,6 +111,9 @@ class SharedScene {
 
     initialSyncCompleted = false;
 
+    onSceneObjectAdded;
+    onSceneObjectRemoved;
+
     constructor(parentScene, myID, serverID) {
         console.log("setting up SharedScene", myID, serverID);
         this.serverID = serverID;
@@ -189,6 +192,9 @@ class SharedScene {
             const id = doc.objects.add(entry);
             this.sceneObjects.add(id, mesh);
         });
+
+        if (this.onSceneObjectAdded)
+            this.onSceneObjectAdded(mesh);
     }
 
     registerGeometry(geo) {
@@ -215,6 +221,8 @@ class SharedScene {
     }
 
     updateTransformation(sceneObject) {
+        console.log("transforming object", this.merger.getDocument().objects.byId(sceneObject.userData.mergeId), sceneObject.position, sceneObject.quaternion, sceneObject.scale);
+
         this.merger.applyChange("transform " + sceneObject.name, doc => {
             const row = doc.objects.byId(sceneObject.userData.mergeId);
             row.position[0] = sceneObject.position.x;
@@ -230,6 +238,18 @@ class SharedScene {
             row.scale[1] = sceneObject.scale.y;
             row.scale[2] = sceneObject.scale.z;
         });
+    }
+
+    remove(sceneObject) {
+        this.merger.applyChange("remove " + sceneObject.name, doc => {
+            doc.objects.remove(sceneObject.userData.mergeId);
+        });
+
+        if (this.onSceneObjectRemoved) {
+            this.onSceneObjectRemoved(sceneObject);
+        }
+        
+        sceneObject.removeFromParent();
     }
 
     handleSyncMessage(syncMessage, senderID) {
@@ -270,7 +290,7 @@ class SharedScene {
                 } 
 
                 //console.log("INITIAL DOC: ",this.merger.getDocument());
-                setTimeout(()=> this.fakeUpdate(), 1000);
+                //setTimeout(()=> this.fakeUpdate(), 1000);
             }
         }
 
@@ -311,8 +331,12 @@ class SharedScene {
             for (let key of Object.keys(matChanges)) {
                 if (!this.sceneMaterials[key]) {
                     const data = navigateToContents(matChanges, key);
-                    // TODO: read material type / colour info to reproduce it more accurately.
-                    const mat = new THREE.MeshLambertMaterial();
+                    // TODO: read material type to reproduce it more accurately.
+                    const color = getPropertyValue(data, 'color');
+                    console.log(color, new THREE.Color(color));
+                    const mat = new THREE.MeshLambertMaterial({
+                        color: new THREE.Color(color[0], color[1], color[2])
+                    });
                     mat.name = getPropertyValue(data, 'name');                  
 
                     //console.log("Received new material", mat.name, key);                    
@@ -355,10 +379,9 @@ class SharedScene {
                     mesh.scale.set(scale[0], scale[1], scale[2]);
 
                     const parentID = getPropertyValue(data, 'parent');
-                    if (parentID) {
-                        // We might not have loaded the parent yet, so queue this change to handle at the end.
-                        parentingQueue.push({child: mesh, parentKey: parentID});
-                    }
+                    // We might not have loaded the parent yet, so queue this change to handle at the end.
+                    parentingQueue.push({child: mesh, parentKey: parentID});
+
                     this.sceneObjects.add(key, mesh);
                     //console.log(`New object ${mesh.name}/${key} at `, pos, quat, geo.name, mat.name);                    
                 } else {                    
@@ -377,8 +400,12 @@ class SharedScene {
         
         // Once we've loaded all objects in this patch, wire up parent relationships.
         for (let item of parentingQueue) {
-            const parent = this.sceneObjects[item.parentKey];
-            parent.add(item.child);
+            if (item.parentKey) {
+                const parent = this.sceneObjects[item.parentKey];
+                parent.add(item.child);
+            }
+            if (this.onSceneObjectAdded)
+                this.onSceneObjectAdded(item.child);
         }
 
         //console.log("Scene after patch: ", this.sceneRoot.toJSON());
@@ -386,7 +413,7 @@ class SharedScene {
 
     fakeUpdate() {
         const geoName = "box-111";
-        let geo = null; //this.sceneGeometries.getByName(geoName);
+        let geo = this.sceneGeometries.getByName(geoName);
         if (!geo) {
             geo = new THREE.BoxGeometry(1, 1, 1);      
             geo.name = geoName;

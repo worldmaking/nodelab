@@ -1,110 +1,77 @@
-<!--
-  Douglas Gregory - 219033117
-
-  This web app demonstrates a proof of concept for network replication, showing...
-  - Presenting the user with a sign-in interface to set their display name and appearance (colour hex code)
-  - Transitioning the user to a THREE.js scene with the option to enter VR
-  - Detecting VR controllers and rendering them with matching 3D models (based on the example at https://github.com/mrdoob/three.js/blob/master/examples/webxr_vr_ballshooter.html)
-  - Establishing a connection to a WebSocket server (courtesy of Graham Wakefield's connect.js and server.js code for nodemon)
-  - Synchronizing the local user's camera/HMD pose to the server, along with controller poses if available
-  - Replicating remote users' pose data synchronized from the server, and visualizing them with custom-named and -coloured avatars
-  - Handling removal of an avatar when its user is disconnected
-  - Remembering user preferences between visits to the app, using local storage
-
-  It consists of 5 main parts:
-  - This file, multiplayer.html, responsible for the login form, and calling into the other modules to set up the world/scene/connection, and running the rendering loop.
-  - world.mjs, which encapsulates the work of creating an almost-blank-slate THREE.js space with a floor and lighting, and a button to enter VR.
-  - connect.mjs, which handles connecting to a Heroku server (running server.mjs) and synchonizing user data over that connection.
-  - server.mjs, which handles running the Heroku server, serving the other files and assets to the web browser, and acting as a relay to share data over WebSocket.
-  - replication.mjs, which is responsible for tracking and displaying the local user's controllers, saving that information into the data structure connect.js synchronizes,
-    and creating/updating avatars for remote users based on the latest data synched using connect.mjs.
--->
-
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="icon" href="/favicon.ico">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="stylesheet" type="text/css" href="styles.css">
 
-    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
-    <script type="module" src="audioConnect.mjs"></script>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" type="text/css" href="styles.css">
 
-    <script type="text/javascript" src="networkMessages.js"></script>
-  </head>
-  <body>
-    <div id='emojis'>
-      <button name=";p" class= "button">;p</button>
-      <button name="laugh" class= "button">Laugh</button>
-      <button name="love" class= "button">love</button>
-      <button name="smile" class= "button">Smile</button>
-      <button name="surprised" class= "button">Surprised</button>
-      <button name="thinking" class= "button">Thinking</button>
-      <button name="brain" class= "button">Brain Explode</button>
-    </div>
-    
-    <div id="avatar-customization">
-      <div class="avatar-background">
-        <h1>Avatar Customization</h1>
-        <div class="color-grid">
-          <div class="grid-item">
-            <h2 style="color: red">Red</h2>
-            <input type="range" min="0" max="255" value="255" id="red-slider" />
-            <h2 style="color: green">Green</h2>
-            <input
-              id="green-slider"
-              type="range"
-              min="0"
-              max="255"
-              value="255"
-            />
-            <h2 style="color: blue">Blue</h2>
-            <input
-              id="blue-slider"
-              type="range"
-              min="0"
-              max="255"
-              value="255"
-            />
-          </div>
-          <div class="grid-item">
-            <div id="login-section">
-              <label for="username">Username:</label><br />
-              <input type="text" id="username" name="username" /><br /><br/><br/><br/>
-              <button id="login-button" type="button">Login</button>
-            </div>
-          </div>
-          <div class="grid-item">
-            <h2>Size</h2>
-            <input
-              type="range"
-              min="50"
-              max="100"
-              value="75"
-              id="size-slider"
-            /><br/><br/>
-            <div id="colour-swatch" style="width:100%; height:50px; background-color: black"></div>
+  <script src="https://cdn.socket.io/4.2.0/socket.io.min.js"
+    integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj"
+    crossorigin="anonymous"></script>
+  <script type="module" src="audioConnect.mjs"></script>
+
+  <script type="text/javascript" src="automergeBundle.js"></script>
+  <script type="text/javascript" src="merge.js"></script>
+  <script type="text/javascript" src="networkMessages.js"></script>
+</head>
+
+<body>
+  <div id='emojis'>
+    <button name=";p" class="button">;p</button>
+    <button name="laugh" class="button">Laugh</button>
+    <button name="love" class="button">love</button>
+    <button name="smile" class="button">Smile</button>
+    <button name="surprised" class="button">Surprised</button>
+    <button name="thinking" class="button">Thinking</button>
+    <button name="brain" class="button">Brain Explode</button>
+  </div>
+
+  <div id="avatar-customization">
+    <div class="avatar-background">
+      <h1>Avatar Customization</h1>
+      <div class="color-grid">
+        <div class="grid-item">
+          <h2 style="color: red">Red</h2>
+          <input type="range" min="0" max="255" value="255" id="red-slider" />
+          <h2 style="color: green">Green</h2>
+          <input id="green-slider" type="range" min="0" max="255" value="255" />
+          <h2 style="color: blue">Blue</h2>
+          <input id="blue-slider" type="range" min="0" max="255" value="255" />
+        </div>
+        <div class="grid-item">
+          <div id="login-section">
+            <label for="username">Username:</label><br />
+            <input type="text" id="username" name="username" /><br /><br /><br /><br />
+            <button id="login-button" type="button">Login</button>
           </div>
         </div>
+        <div class="grid-item">
+          <h2>Size</h2>
+          <input type="range" min="50" max="100" value="75" id="size-slider" /><br /><br />
+          <div id="colour-swatch" style="width:100%; height:50px; background-color: black"></div>
+        </div>
       </div>
+    </div>
 
     <script type="module">
       'use strict';
-      
-      
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';     
-      import { World } from "./world.mjs"; 
-      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody, getUserReplica } from "./replication.mjs"; 
-      import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs"; 
-      import { connectToWorld } from "./connect.mjs"; 
-      import { UI } from "./ui.mjs"; 
+
+
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
+      import { World } from "./world.mjs";
+      import { initializeReplication, updateUserReplica, replicatePoses, disposeUserReplica, getOwnReplicaBody, getUserReplica } from "./replication.mjs";
+      import { randomColourHex, colourHexToString, colourHexToTriplet, colourTripletToHex, print, showReadout } from "./utility.mjs";
+      import { connectToWorld } from "./connect.mjs";
+      import { SharedScene } from "./sharedScene.mjs"; 
+      import { UI } from "./ui.mjs";
       import * as MKControl from './mouseKeyboardControl.mjs';
       import * as VRControl from './vrControl.mjs';
       import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
-      
+
       document.getElementById('emojis').style.display = 'none';
 
       // Setup login form. Randomize the colour value for variety.
@@ -122,23 +89,18 @@
       }
       document.getElementById('login-button').onclick = logIn;
 
-      function myFunction(){
-        console.log("here");
-      }
-      
-
-      function getFormColour() {        
+      function getFormColour() {
         return [
-          colourSliders[0].value/255,
-          colourSliders[1].value/255,
-          colourSliders[2].value/255
+          colourSliders[0].value / 255,
+          colourSliders[1].value / 255,
+          colourSliders[2].value / 255
         ];
       }
 
       function updateSwatch() {
         const colour = colourTripletToHex(getFormColour());
         document.getElementById('colour-swatch').style.backgroundColor = colourHexToString(colour);
-      }      
+      }
 
       // Attempt to retrieve user name and preferences stored on the last successful login.
       // If available, use these values to overwrite the form defaults.
@@ -148,8 +110,8 @@
         let name = storage.getItem('userName');
         if (name) displayNameField.value = name;
 
-        let colour = parseInt(storage.getItem('userColour'));        
-        if (colour) {          
+        let colour = parseInt(storage.getItem('userColour'));
+        if (colour) {
           const triplet = colourHexToTriplet(parseInt(colour));
           for (let i = 0; i < 3; i++) {
             colourSliders[i].value = triplet[i] * 255;
@@ -157,26 +119,39 @@
         }
 
         localStorageAvailable = true;
-      } finally {}
+      } finally { }
 
       updateSwatch();
 
       // Enter our 3D scene and initiate server communication once user has picked their name and signed in.
-      function logIn() {       
+      function logIn() {
 
         // Prep a DOM element to display debug messages.
         const readout = document.createElement('div');
         readout.style.position = 'absolute';
         readout.style.top = '0px';
-        document.body.appendChild(readout);       
+        document.body.appendChild(readout);
 
         // Setup a basic THREE.js scene with camera, floor, etc.
-        const world = new World();    
+        const world = new World();
 
         const colourTriplet = getFormColour();
 
         // Set up our replication system so it's ready to receive information about users.
         initializeReplication(world, colourTriplet);
+
+        // Testing of shared scene setup.
+        function onConnect(myID, serverID) {
+          world.shared = new SharedScene(world.scene, myID, serverID);
+        
+          UI.attachToSharedScene(world.shared);
+        }
+
+        function onSync(syncMessage, senderID) {
+          syncMessage = JSON.parse(syncMessage);          
+          const reply = world.shared.handleSyncMessage(syncMessage, senderID);          
+          return reply;
+        }
 
         // Connect to server, wiring up handlers for various messages.
         const app = connectToWorld({
@@ -185,6 +160,8 @@
           url: location.origin.replace(/^http/, 'ws'),
           userName: document.getElementById('username').value,
           userRGB: colourTriplet,
+          onconnect: onConnect,
+          onsync: onSync,
           onuser: updateUserReplica,
           onuserexit: disposeUserReplica
         });
@@ -193,7 +170,7 @@
         if (localStorageAvailable) {
           let storage = window.localStorage;
           storage.setItem('userName', displayNameField.value);
-          const colour =  colourTripletToHex(colourTriplet);          
+          const colour = colourTripletToHex(colourTriplet);
           storage.setItem('userColour', colour);
         }
 
@@ -220,16 +197,9 @@
 
         // Set up raycasting for mouse/gaze picking.
         const raycaster = new THREE.Raycaster();
-        
 
         // Keep track of the last looked-at object - for future use.
         let gazeObject = null;
-        
-        // Fill scene with some basic demo content.
-        const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
-        cube.position.set(0, 1.5, 0);
-        cube.castShadow = true;
-        world.scene.add(cube);
 
         // Create pointer object that follows mouse/gaze.
         const ico = new THREE.Mesh(world.primitiveGeo.ico,
@@ -237,22 +207,19 @@
         );
         ico.scale.set(0.1, 0.1, 0.1);
         ico.position.z = -1;
-        world.scene.add(ico);   
-        
+        world.scene.add(ico);
+
         ////////////////////////////////////////////////////////////////////////
-        
+
         UI.init(world);
-        UI.addTextGroupTo( getOwnReplicaBody() );
-        UI.addButtonsTo( getOwnReplicaBody() );
-        
-        //UI.animate(UI.emotes());
+        UI.addTextGroupTo(getOwnReplicaBody());
+        UI.addButtonsTo(getOwnReplicaBody());
 
-        // UI.print("it's printing!");
 
-         // hides or shows the 3D text in the scene when 'l' is pressed
-         document.addEventListener('keypress', (event) => {
-          if(event.key == "l"){
-            if(UI.isVisible){
+        // hides or shows the 3D text in the scene when 'l' is pressed
+        document.addEventListener('keypress', (event) => {
+          if (event.key == "l") {
+            if (UI.isVisible) {
               UI.textGroup.visible = false;
               UI.isVisible = false;
             }
@@ -279,17 +246,17 @@
         });
 
         // emoji 2d menu shows up or is hidden when righ click is pressed on the mouse
-        document.addEventListener('contextmenu', function(event){
-          if(document.getElementById('emojis').style.display == 'none')
+        document.addEventListener('contextmenu', function (event) {
+          if (document.getElementById('emojis').style.display == 'none')
             document.getElementById('emojis').style.display = 'block';
-          else 
+          else
             document.getElementById('emojis').style.display = 'none';
         })
         //getting all the emoji buttons
         let emojis = document.getElementsByClassName("button");
         //adds the functionality to the emoji buttons calling the emote function on the ui to display the right emoji
-        for(let i = 0; i < emojis.length; i++){
-          emojis[i].addEventListener('click', function(){
+        for (let i = 0; i < emojis.length; i++) {
+          emojis[i].addEventListener('click', function () {
             UI.emotes(getOwnReplicaBody(), emojis[i].name + ".fbx");
             document.getElementById('emojis').style.display = 'none';
             UI.isEmoting = true;
@@ -300,7 +267,7 @@
 
         // Main rendering loop.
         function animate() {
-          
+
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
           let activeCamera;
@@ -308,8 +275,8 @@
 
           // animates emojis
           UI.animate(dt);
-          
-          
+
+
 
           // ui update - needs to be manually updated in here
           ThreeMeshUI.update();
@@ -318,7 +285,7 @@
             activeCamera = world.vrCamera;
             // In VR, we want our gaze ray to always go through the center of the view.
             // (At least until headsets give us eye tracking...)            
-            MKControl.mouse.set(0, 0);            
+            MKControl.mouse.set(0, 0);
             VRControl.updateControls(dt);
             UI.updateVR(dt, VRControl);
             UI.updatePanelPos('vr');
@@ -332,7 +299,7 @@
 
           // Figure out what we're looking at and move our gaze marker icosahedron there.
           raycaster.setFromCamera(MKControl.mouse, activeCamera);
-          const intersects = raycaster.intersectObjects([cube, ...world.walkable]);
+          const intersects = raycaster.intersectObjects(world.walkable);
 
           let newGaze = null;
           if (intersects.length > 0) {
@@ -341,10 +308,6 @@
           }
           // TODO: handle gaze enter / exit events when the gaze target changes.
           if (newGaze) gazeObject = newGaze;
-
-          // update the scene:
-          cube.rotation.x += 0.01;
-          cube.rotation.y += 0.01;
 
           ico.rotation.x -= 0.01;
           ico.rotation.y -= 0.01;
@@ -363,26 +326,27 @@
           }
 
           for (let o of others) {
-            if (o.emote) {              
+            if (o.emote) {
               UI.playEmoteOnReplica(getUserReplica(o.id), o.emote);
             }
           }
 
-          // console.log(getOwnReplica());
-          
+          // Send any local scene changes from this frame up to the server.
+          if (world.shared) {
+            const message = world.shared.tryGenerateSyncMessage();
+            if (message) app.sync(message);
+          }
+
           // Render with the appropriate camera for either VR or non-VR modes.
           world.renderer.render(world.scene, activeCamera);
 
           showReadout(readout);
         }
 
-        
-
-
         // Start animating!
-        
         world.renderer.setAnimationLoop(animate);
       }
     </script>
-  </body>
+</body>
+
 </html>

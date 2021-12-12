@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
 import { colourTripletToHex, print, vectorToString } from './utility.mjs';
+import { font } from './font.mjs';
 
 /**
  * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.
@@ -83,14 +84,7 @@ let world;
  * @type {Replica} */
 let clientReplica;
 
-// Load a font that we can use to display user names of other users, 
-// and prepare a material to use for text rendering.
-const loader = new THREE.FontLoader();
-/** @type {THREE.Font} */
-let font;
-loader.load('fonts/Roboto_Regular.json', function (loadedFont) {
-    font = loadedFont;
-});
+
 const textMaterial = new THREE.MeshBasicMaterial({color:0x000000});
 
 
