@@ -221,7 +221,7 @@ class SharedScene {
     }
 
     updateTransformation(sceneObject) {
-        console.log("transforming object", this.merger.getDocument().objects.byId(sceneObject.userData.mergeId), sceneObject.position, sceneObject.quaternion, sceneObject.scale);
+        //console.log("transforming object", this.merger.getDocument().objects.byId(sceneObject.userData.mergeId), sceneObject.position, sceneObject.quaternion, sceneObject.scale);
 
         this.merger.applyChange("transform " + sceneObject.name, doc => {
             const row = doc.objects.byId(sceneObject.userData.mergeId);
@@ -306,7 +306,7 @@ class SharedScene {
     }
 
     parsePatch(patch) {
-        console.log("Processing patch ", patch);     
+        //console.log("Processing patch ", patch);     
         const geoChanges = checkTableForChanges(patch, 'geometries');        
         if (geoChanges) {
             for (let key of Object.keys(geoChanges)) {
@@ -336,7 +336,7 @@ class SharedScene {
                     const data = navigateToContents(matChanges, key);
                     // TODO: read material type to reproduce it more accurately.
                     const color = getPropertyValue(data, 'color');
-                    console.log(color, new THREE.Color(color));
+                    //console.log(color, new THREE.Color(color));
                     const mat = new THREE.MeshLambertMaterial({
                         color: new THREE.Color(color[0], color[1], color[2])
                     });
@@ -354,7 +354,7 @@ class SharedScene {
         if (objectChanges) {
             for (let key of Object.keys(objectChanges)) {
                 const data = navigateToContents(objectChanges, key);
-                console.log(key, "Object data: ",  data);
+                //console.log(key, "Object data: ",  data);
                 const sceneObject = this.sceneObjects[key];
                 if (!data) {
                     // Deleted object
