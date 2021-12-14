@@ -25,7 +25,7 @@
   <h3>Replication</h3>
 
   <p>
-    Multi-user interaction occurs in one of an arbitrary number of "<b>rooms</b>", each one identified by a string key. Users who have connected
+    Multi-user interaction occurs in one of an arbitrary number of "<strong>rooms</strong>", each one identified by a string key. Users who have connected
     to the same room are able to see and hear one another, and collaboratively edit a shared 3D scene that persists within that room,
     independent of all others.
   </p>
@@ -40,7 +40,7 @@
 
   <ul>
     <li>
-      <p><b>User data</b> like avatar position and pose are transmitted eagerly from client to server
+      <p><strong>User data</strong> like avatar position and pose are transmitted eagerly from client to server
         30 times per second, and the server in turn broadcasts the set of last known poses to all clients
         in the room at a similar rate. These poses are then interpolated for smoother animated display.</p>
       <p>This data is one-way and ephemeral. A client may report changes only to their own user data, and
@@ -48,7 +48,7 @@
         and is cleared when a user disconnects.
       </p></li>
     <li>
-      <p><b>Shared scene data</b> like the geometry, materials, and transformations of 3D objects in the world,
+      <p><strong>Shared scene data</strong> like the geometry, materials, and transformations of 3D objects in the world,
         are maintained in a syncrhonized document through the use of the 
       <a href="https://github.com/automerge/automerge" title="Automerge GitHub Repository">Automerge</a> library.</p>
       <p>This handles merging concurrent changes made to the scene by multiple users, and resolving conflicts
@@ -98,10 +98,10 @@
         <li>A reference to the room object this client occupies</li>
         <li>A shared data structure, representing data to be synchronized to other clients in the room, further divided into two parts:
           <ul>
-            <li><p>A "<b>volatile</b>" component, containing information that changes rapidly and should be syncrhonized eagerly, such as head and controller poses (initially assumed to be at the origin by default). The client's unique ID is also stored here,
+            <li><p>A "<strong>volatile</strong>" component, containing information that changes rapidly and should be syncrhonized eagerly, such as head and controller poses (initially assumed to be at the origin by default). The client's unique ID is also stored here,
               even though it does not change, for the convenience of being able to send an array of all the "volatile" structures and have them already pre-labelled with the client to whom they belong.              
             </p></li>
-            <li><p>A "<b>user</b>" component, containing long-lived user information, such as their display name and avatar customization. These are relayed only when a new user joins, 
+            <li><p>A "<strong>user</strong>" component, containing long-lived user information, such as their display name and avatar customization. These are relayed only when a new user joins, 
               though in future they could also be updated when a user changes their display properties. (The current interface does not give users a means to do this, but this is only a UI restriction)
             </p></li>
           </ul>
@@ -129,11 +129,40 @@
     used in the multiplayer2.html demo, discussed below, where information about a user's current emoting state is injected into the volatile structure to replicate to other users.
   </p>
 
-  <h4>"Shared Scene" & Automerge Integration</h4>
+  <h4>"Shared Scene" and Automerge Integration</h4>
 
   <p>When a new room is created, the server creates a blank Automerge document with its unique ID, 
-    and tracks a synchronization state for that document for each user who connects to the room.
+    and tracks a synchronization state for that document for each user who connects to the room. 
+    As with the volatile and user data structures, this document is then treated as opaque: the 
+    server has no opinions about its contents.
   </p>
+  <p>When a new user connects, immediately following the initial "handshake" message, the server generates an Automerge SyncMessage to
+    send to that user, as a message with the "sync" command. Both client and server, upon receiving a "sync" message, apply its updates
+    to their local copy of the shared document, and immediately try to generate a reply to send back as a "sync" message of their own. 
+    This conversation continues until both ends are up-to-date with one another and agree on the shared document contents (at which
+    point Automerge will generate a null SyncMessage signifying that there is nothing new to discuss).
+  </p>
+
+  <p>This foundation of document and conversation state management is handled by the "Merger" class in <a href="https://github.com/worldmaking/nodelab/blob/develop/public/merge.js">merge.js</a>, which provides a wrapper
+    around the common Automerge document transactions used on both client and server:
+  </p>
+  <ul>
+    <li><p><strong>merger = new Merger(sourceDocument, actorID)</strong> - creates a new Automerge document based on the provided source object (or initializes a blank document if this is omitted - that's what is used in the current version),
+    using the provided actor ID string to identify the local author for change tracking. If this actor ID is omitted, Automerge will automatically generate one, but in our case we use the client's unique ID assigned by the server 
+    so that our document change tracking matches our IDs used for room membership.</p></li>
+    <li><p><strong>merger.addClient(remoteActorID)</strong> - initializes conversation-tracking with another actor contributing to the document. The client calls this with the server's unique ID to track its synchronization state relative
+      to the server. The server calls this with the unique client ID each time a client joins a room, to manage the syncrhonizaton states of each client relative to its local document version.</p></li>
+    <li><p><strong>merger.applyChange(commitMessage, doc => { /* change function */})</strong> - applies a change to the local copy of the document, with an associated message describing the change. The client calls this to process
+      changes made by the local user to the shared scene. The shared document is only ever modified in the body of this change function - outside of this, it is treated as immutable.</p></li>
+    <li><p><strong>merger.makeSyncMessage(receiverID)</strong> - attempts to create and return an Automerge SyncMessage for the next stage of conversation with the actor identified by the "receiverID" string. If we're already synchronized 
+      with that recipient, this function returns null.</p></li>
+    <li><p><strong>merger.handleSyncMessage(syncMesage, senderID)</strong> - accepts a string representation of an Automerge SyncMessage received over the network from the specified actor, and applies it to the local document. 
+      It returns an AutoMerge Patch data structure describing the full set of changes that this message has made to the document, which we can parse to update our front end.</p></li>
+    <li><p><strong>merger.getDocument()</strong> - retrieves the current state of the shared Automerge document, which should be treated as read-only.</p></li>
+  </ul>
+
+  <p>On the client side, we create an abstraction over this basic document-synchronization, tailored to the needs of synchronizing a THREE.js scene, specifically. This is provided by the "SharedScene" class in 
+    <a href="https://github.com/worldmaking/nodelab/blob/develop/public/sharedScene.js">sharedScene.js</a></p>
 
   <h3>UI/HUD</h3>
 
