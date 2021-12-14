@@ -7,7 +7,54 @@
   <title>DIGM5520 Final Report</title>
 </head>
 <body>
-  <!-- your content here... -->
-  
+  <h1>WebXR Studio</h1>
+
+  <!-- Add your names here - I was a bit shy to accidentally misspell or omit a name, so I think it's best if we each add our own. ;) -->
+  <p class="date">2021 - 12 - 04</p>
+  <p class="authors">Douglas Gregory</p>
+
+  <!-- TODO: Add table of contents with anchor links to each section. -->
+
+  <h2>Overview</h2>
+
+  <h3>Related Works</h3>
+
+
+  <h2>Technical Components</h2>
+
+  <h3>Replication</h3>
+
+  <p>The application uses a client-server architecture over WebSocket connections to synchronize information about users 
+  in the shared environment, and the editable geometry of that shared environment.  These two channels of information
+  use different replication strategies:</p>
+
+  <ul>
+    <li>
+      <p><b>User data</b> like avatar position and pose are transmitted eagerly from client to server
+        30 times per second, and the server in turn broadcasts the set of last known poses to all clients
+        in the room at a similar rate. These poses are then interpolated for smoother animated display.</p>
+      <p>This data is one-way and ephemeral. A client may report changes only to their own user data, and
+        they are considered authoritative over it. Only the latest snapshot of the data is retained in memory,
+        and is cleared when a user disconnects.
+      </p></li>
+    <li>
+      <p><b>Shared scene data</b> like the geometry, materials, and transformations of 3D objects in the world,
+        are maintained in a syncrhonized document through the use of the 
+      <a href="https://github.com/automerge/automerge" title="Automerge GitHub Repository">Automerge</a> library.</p>
+      <p>This handles merging concurrent changes made to the scene by multiple users, and resolving conflicts
+        so that all users eventually agree on the same state of the shared 3D scene. It also retains a full
+        history of the changes made, so that the scene can be restored to previous versions or the edit sequence re-played.
+      </p>
+    </li>
+  </ul>
+
+  <h4>Websocket Communication Protocol</h4>
+
+  <h4>"Shared Scene" & Automerge Integration</h4>
+
+  <h2>Worlds</h2>
+
+  <h2>Future Work</h2>
+  <p></p>
 </body>
 </html>
