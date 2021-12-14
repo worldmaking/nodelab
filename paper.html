@@ -5,425 +5,471 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora">
+  <link rel="stylesheet" href="paper.css">
   <title>DIGM5520 Final Report</title>
 </head>
 
 <body>
-  <h1>WebXR Studio</h1>
+  <article>
+    <h1>WebXR Studio</h1>
 
-  <!-- Add your names here - I was a bit shy to accidentally misspell or omit a name, so I think it's best if we each add our own. ;) -->
-  <p class="date">2021 - 12 - 04</p>
-  <p class="authors">Douglas Gregory, Jorge de Oliveira</p>
+    <!-- Add your names here - I was a bit shy to accidentally misspell or omit a name, so I think it's best if we each add our own. ;) -->
+    
+    <p class="authors">Douglas Gregory, Jorge de Oliveira</p>
 
-  <!-- TODO: Add table of contents with anchor links to each section. -->
+    <p class="date">Prepared for York University course DIGM5520, 2021-12-04.</p>
 
-  <h2>Overview</h2>
+    <!-- TODO: Add table of contents with anchor links to each section. -->
 
-  <h3>Related Works</h3>
+    <h2>Overview</h2>
+
+    <h3>Related Works</h3>
 
 
-  <h2>Technical Components</h2>
+    <h2>Technical Components</h2>
 
-  <h3>Replication</h3>
+    <h3>Replication</h3>
 
-  <p>
-    Multi-user interaction occurs in one of an arbitrary number of "<strong>rooms</strong>", each one identified by a
-    string key. Users who have connected to the same room are able to see and hear one another, and collaboratively edit
-    a shared 3D scene that persists within that room, independent of all others.
-  </p>
-  <p>
-    At present, we use one "room" per HTML entry point to the application (so each "world" discussed below has its own
-    URL that always directs users into the same room). But this could be exposed to visitors to allow them to spin up
-    semi-private instances of a given world, behind a room key known only to them and those they invite to join them.
-  </p>
-  <p>The application uses a client-server architecture over WebSocket connections to synchronize information about users
-    in the shared environment of a given room, and the editable geometry of that shared environment. These two channels
-    of information use different replication strategies:</p>
+    <p>
+      Multi-user interaction occurs in one of an arbitrary number of "<strong>rooms</strong>", each one identified by a
+      string key. Users who have connected to the same room are able to see and hear one another, and collaboratively
+      edit
+      a shared 3D scene that persists within that room, independent of all others.
+    </p>
+    <p>
+      At present, we use one "room" per HTML entry point to the application (so each "world" discussed below has its own
+      URL that always directs users into the same room). But this could be exposed to visitors to allow them to spin up
+      semi-private instances of a given world, behind a room key known only to them and those they invite to join them.
+    </p>
+    <p>The application uses a client-server architecture over WebSocket connections to synchronize information about
+      users
+      in the shared environment of a given room, and the editable geometry of that shared environment. These two
+      channels
+      of information use different replication strategies:</p>
 
-  <ul>
-    <li>
-      <p><strong>User data</strong> like avatar position and pose are transmitted eagerly from client to server
-        30 times per second, and the server in turn broadcasts the set of last known poses to all clients
-        in the room at a similar rate. These poses are then interpolated for smoother animated display.</p>
-      <p>This data is one-way and ephemeral. A client may report changes only to their own user data, and
-        they are considered authoritative over it. Only the latest snapshot of the data is retained in memory,
-        and is cleared when a user disconnects.
-      </p>
-    </li>
-    <li>
-      <p><strong>Shared scene data</strong> like the geometry, materials, and transformations of 3D objects in the
-        world,
-        are maintained in a syncrhonized document through the use of the
-        <a href="https://github.com/automerge/automerge" title="Automerge GitHub Repository">Automerge</a> library.
-      </p>
-      <p>This handles merging concurrent changes made to the scene by multiple users, and resolving conflicts
-        so that all users eventually agree on the same state of the shared 3D scene. It also retains a full
-        history of the changes made, so that the scene can be restored to previous versions or the edit sequence
-        re-played.
-      </p>
-    </li>
-  </ul>
+    <ul>
+      <li>
+        <p><strong>User data</strong> like avatar position and pose are transmitted eagerly from client to server
+          30 times per second, and the server in turn broadcasts the set of last known poses to all clients
+          in the room at a similar rate. These poses are then interpolated for smoother animated display.</p>
+        <p>This data is one-way and ephemeral. A client may report changes only to their own user data, and
+          they are considered authoritative over it. Only the latest snapshot of the data is retained in memory,
+          and is cleared when a user disconnects.
+        </p>
+      </li>
+      <li>
+        <p><strong>Shared scene data</strong> like the geometry, materials, and transformations of 3D objects in the
+          world,
+          are maintained in a syncrhonized document through the use of the
+          <a href="https://github.com/automerge/automerge" title="Automerge GitHub Repository">Automerge</a> library.
+        </p>
+        <p>This handles merging concurrent changes made to the scene by multiple users, and resolving conflicts
+          so that all users eventually agree on the same state of the shared 3D scene. It also retains a full
+          history of the changes made, so that the scene can be restored to previous versions or the edit sequence
+          re-played.
+        </p>
+      </li>
+    </ul>
 
-  <p>A Node.js server is used as the central relay, as well as to host the user-facing web page content via the
-    <a href="https://www.npmjs.com/package/express" title="express npm package">express</a> library.
-  </p>
+    <p>A Node.js server is used as the central relay, as well as to host the user-facing web page content via the
+      <a href="https://www.npmjs.com/package/express" title="express npm package">express</a> library.
+    </p>
 
-  <h4>WebSocket Communication Protocol</h4>
+    <h4>WebSocket Communication Protocol</h4>
 
-  <p>Because WebSockets are built on top of TCP, our communication is reliable and in-order, so we don't need to
-    manually handle dropped or out-of-order messages. Interruptions in communication can still happen, but it's safe to
-    treat such cases as a disconnection, and allow the user to re-connect from scratch, rather than trying to recover
-    any state.</p>
+    <p>Because WebSockets are built on top of TCP, our communication is reliable and in-order, so we don't need to
+      manually handle dropped or out-of-order messages. Interruptions in communication can still happen, but it's safe
+      to
+      treat such cases as a disconnection, and allow the user to re-connect from scratch, rather than trying to recover
+      any state.</p>
 
-  <p>All WebSocket communication between the client and server occurs via "Message" objects in JSON text format, with
-    the following structure:</p>
+    <p>All WebSocket communication between the client and server occurs via "Message" objects in JSON text format, with
+      the following structure:</p>
 
-  <pre>
-  {
-    cmd: "command", // A short string indicating the message type.
-    val: {
-      // A JSON object with properties defining the mesage contents / payload.
-    }
+    <pre>
+{
+  cmd: "command", // A short string indicating the message type.
+  val: {
+    // A JSON object with properties defining the mesage contents / payload.
   }
-  </pre>
+}</pre>
 
-  <p>This communication structure is defined in a shared <a
-      href="https://github.com/worldmaking/nodelab/blob/main/public/networkMessages.js">networkMessages.js</a> file used
-    by both client and server code, for consistency.</p>
+    <p>This communication structure is defined in a shared <a
+        href="https://github.com/worldmaking/nodelab/blob/main/public/networkMessages.js">networkMessages.js</a> file
+      used
+      by both client and server code, for consistency.</p>
 
-  <p>The initial connection flow works like this (see the client side in
-    <a href="https://github.com/worldmaking/nodelab/blob/main/public/connect.mjs">connect.mjs</a>,
-    and the server side in <a href="https://github.com/worldmaking/nodelab/blob/main/server.js">server.js</a>)
-  </p>
-  <ol>
-    <li>
-      <p>The client initiates a connection to the server, by appending the desired room key onto the end of the server's
-        domain
-        and using this as the WebSocket request URL.</p>
-    </li>
-    <li>
-      <p>Upon receiving a new connection request, the server checks for an existing "room" object corresponding to the
-        path component of the request URL (trailing or doubled slashes in the room key are ignored). If no existing room
-        is found, it creates one, as an object dontaining:</p>
-      <ul>
-        <li>The room's key ("name")</li>
-        <li>A map of all clients in the room</li>
-        <li>A default scene document (see below), and a flag indicating whether there are local changes to syncrhonize
-          to the clients (initially false)</li>
-      </ul>
-    </li>
-    <li>
-      <p>Next, the server assigns the newly-connected client a unique ID (using the <a
-          href="https://www.npmjs.com/package/uuid" title="uuid npm package">uuid</a> library)
-        in RFC4122 version 4 format (though we strip out the hyphens for compatibility as an Automerge actor ID). It
-        then adds to the room's client map an object representing this client, containing:</p>
-      <ul>
-        <li>The WebSocket connection to use for communicating with this client</li>
-        <li>A reference to the room object this client occupies</li>
-        <li>A shared data structure, representing data to be synchronized to other clients in the room, further divided
-          into two parts:
-          <ul>
-            <li>
-              <p>A "<strong>volatile</strong>" component, containing information that changes rapidly and should be
-                syncrhonized eagerly, such as head and controller poses (initially assumed to be at the origin by
-                default). The client's unique ID is also stored here,
-                even though it does not change, for the convenience of being able to send an array of all the "volatile"
-                structures and have them already pre-labelled with the client to whom they belong.
-              </p>
-            </li>
-            <li>
-              <p>A "<strong>user</strong>" component, containing long-lived user information, such as their display name
-                and avatar customization. These are relayed only when a new user joins,
-                though in future they could also be updated when a user changes their display properties. (The current
-                interface does not give users a means to do this, but this is only a UI restriction)
-              </p>
-            </li>
-          </ul>
-        </li>
-      </ul>
-      <p>The server replies back to the client with a "handshake" message, containing the client's assigned unique ID,
-        the server's own unique ID,
-        and an array of the "shared" data objects for all other clients connected to the same room.</p>
-    </li>
-    <li>
-      <p>
-        As soon as the connection is established, the client sends a "user" message, containing the contents of its
-        shared user data structure as described above.
-      </p>
-    </li>
-    <li>
-      <p>Upon receiving the "handshake" message, the client stores its unique ID and the server's, and uses these to set
-        up its synchronized Automerge document (see below).
-        It also generates "replicas" or local copies of each remote client's avatars.</p>
-    </li>
-    <li>
-      <p>From then on, 30 times per second, the client sends the contents of its "volatile" shared data structure to the
-        serve as part of a "pose" message.
-        The server receives this data and uses it to overwrite the corresponding volatile portion of its data structure
-        for the user.</p>
-      <p>Similarly, 30 times per second, the server iterates through all of its rooms, and broadcasts an array of all
-        volatile data structures for all users in each room to all of those users.</p>
-    </li>
-    <li>
-      <p>When the server receives a "user" message, it repeats it to all other clients in that room, along with the
-        unique ID of the client who sent it so they know to which replica the change should be applied.</p>
-    </li>
-    <li>
-      <p>When the server detects that a client has disconnected, it sends an "exit" message to all clients in that room,
-        containing the disconnected client's ID, so that they can delete the corresponding replica.</p>
-    </li>
-  </ol>
+    <p>The initial connection flow works like this (see the client side in
+      <a href="https://github.com/worldmaking/nodelab/blob/main/public/connect.mjs">connect.mjs</a>,
+      and the server side in <a href="https://github.com/worldmaking/nodelab/blob/main/server.js">server.js</a>)
+    </p>
+    <ol>
+      <li>
+        <p>The client initiates a connection to the server, by appending the desired room key onto the end of the
+          server's
+          domain
+          and using this as the WebSocket request URL.</p>
+      </li>
+      <li>
+        <p>Upon receiving a new connection request, the server checks for an existing "room" object corresponding to the
+          path component of the request URL (trailing or doubled slashes in the room key are ignored). If no existing
+          room
+          is found, it creates one, as an object dontaining:</p>
+        <ul>
+          <li>The room's key ("name")</li>
+          <li>A map of all clients in the room</li>
+          <li>A default scene document (see below), and a flag indicating whether there are local changes to syncrhonize
+            to the clients (initially false)</li>
+        </ul>
+      </li>
+      <li>
+        <p>Next, the server assigns the newly-connected client a unique ID (using the <a
+            href="https://www.npmjs.com/package/uuid" title="uuid npm package">uuid</a> library)
+          in RFC4122 version 4 format (though we strip out the hyphens for compatibility as an Automerge actor ID). It
+          then adds to the room's client map an object representing this client, containing:</p>
+        <ul>
+          <li>The WebSocket connection to use for communicating with this client</li>
+          <li>A reference to the room object this client occupies</li>
+          <li>A shared data structure, representing data to be synchronized to other clients in the room, further
+            divided
+            into two parts:
+            <ul>
+              <li>
+                <p>A "<strong>volatile</strong>" component, containing information that changes rapidly and should be
+                  syncrhonized eagerly, such as head and controller poses (initially assumed to be at the origin by
+                  default). The client's unique ID is also stored here,
+                  even though it does not change, for the convenience of being able to send an array of all the
+                  "volatile"
+                  structures and have them already pre-labelled with the client to whom they belong.
+                </p>
+              </li>
+              <li>
+                <p>A "<strong>user</strong>" component, containing long-lived user information, such as their display
+                  name
+                  and avatar customization. These are relayed only when a new user joins,
+                  though in future they could also be updated when a user changes their display properties. (The current
+                  interface does not give users a means to do this, but this is only a UI restriction)
+                </p>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        <p>The server replies back to the client with a "handshake" message, containing the client's assigned unique ID,
+          the server's own unique ID,
+          and an array of the "shared" data objects for all other clients connected to the same room.</p>
+      </li>
+      <li>
+        <p>
+          As soon as the connection is established, the client sends a "user" message, containing the contents of its
+          shared user data structure as described above.
+        </p>
+      </li>
+      <li>
+        <p>Upon receiving the "handshake" message, the client stores its unique ID and the server's, and uses these to
+          set
+          up its synchronized Automerge document (see below).
+          It also generates "replicas" or local copies of each remote client's avatars.</p>
+      </li>
+      <li>
+        <p>From then on, 30 times per second, the client sends the contents of its "volatile" shared data structure to
+          the
+          serve as part of a "pose" message.
+          The server receives this data and uses it to overwrite the corresponding volatile portion of its data
+          structure
+          for the user.</p>
+        <p>Similarly, 30 times per second, the server iterates through all of its rooms, and broadcasts an array of all
+          volatile data structures for all users in each room to all of those users.</p>
+      </li>
+      <li>
+        <p>When the server receives a "user" message, it repeats it to all other clients in that room, along with the
+          unique ID of the client who sent it so they know to which replica the change should be applied.</p>
+      </li>
+      <li>
+        <p>When the server detects that a client has disconnected, it sends an "exit" message to all clients in that
+          room,
+          containing the disconnected client's ID, so that they can delete the corresponding replica.</p>
+      </li>
+    </ol>
 
-  <p>The networking code here is deliberately agnostic about the contents of the "volatile" and "user" data structures -
-    simply copying them verbatim as opaque containers.
-    This makes it easy for new prototypes and artworks to add new synchronized data into the protocol, without depending
-    on changes to the networking infrastructure.
-    Different experiences using divergent data streams can co-exist in different rooms running on the same shared
-    server. An example of this in action are the "emotes"
-    used in the multiplayer2.html demo, discussed below, where information about a user's current emoting state is
-    injected into the volatile structure to replicate to other users.
-  </p>
+    <p>The networking code here is deliberately agnostic about the contents of the "volatile" and "user" data structures
+      -
+      simply copying them verbatim as opaque containers.
+      This makes it easy for new prototypes and artworks to add new synchronized data into the protocol, without
+      depending
+      on changes to the networking infrastructure.
+      Different experiences using divergent data streams can co-exist in different rooms running on the same shared
+      server. An example of this in action are the "emotes"
+      used in the multiplayer2.html demo, discussed below, where information about a user's current emoting state is
+      injected into the volatile structure to replicate to other users.
+    </p>
 
-  <h4>"Shared Scene" and Automerge Integration</h4>
+    <h4>"Shared Scene" and Automerge Integration</h4>
 
-  <p>When a new room is created, the server creates a blank Automerge document with its unique ID,
-    and tracks a synchronization state for that document for each user who connects to the room.
-    As with the volatile and user data structures, this document is then treated as opaque: the
-    server has no opinions about its contents.
-  </p>
-  <p>When a new user connects, immediately following the initial "handshake" message, the server generates an Automerge
-    SyncMessage to send to that user, as a message with the "sync" command. Both client and server, upon receiving a
-    "sync" message, apply its updates to their local copy of the shared document, and immediately try to generate a
-    reply to send back as a "sync" message of their own. This conversation continues until both ends are up-to-date with
-    one another and agree on the shared document contents (at which point Automerge will generate a null SyncMessage
-    signifying that there is nothing new to discuss).
-  </p>
+    <p>When a new room is created, the server creates a blank Automerge document with its unique ID,
+      and tracks a synchronization state for that document for each user who connects to the room.
+      As with the volatile and user data structures, this document is then treated as opaque: the
+      server has no opinions about its contents.
+    </p>
+    <p>When a new user connects, immediately following the initial "handshake" message, the server generates an
+      Automerge
+      SyncMessage to send to that user, as a message with the "sync" command. Both client and server, upon receiving a
+      "sync" message, apply its updates to their local copy of the shared document, and immediately try to generate a
+      reply to send back as a "sync" message of their own. This conversation continues until both ends are up-to-date
+      with
+      one another and agree on the shared document contents (at which point Automerge will generate a null SyncMessage
+      signifying that there is nothing new to discuss).
+    </p>
 
-  <p>This foundation of document and conversation state management is handled by the "Merger" class in <a
-      href="https://github.com/worldmaking/nodelab/blob/develop/public/merge.js">merge.js</a>, which provides a wrapper
-    around the common Automerge document transactions used on both client and server:
-  </p>
-  <ul>
-    <li>
-      <p><strong>merger = new Merger(sourceDocument, actorID)</strong> - creates a new Automerge document based on the
-        provided source object (or initializes a blank document if this is omitted - that's what is used in the current
-        version),
-        using the provided actor ID string to identify the local author for change tracking. If this actor ID is
-        omitted, Automerge will automatically generate one, but in our case we use the client's unique ID assigned by
-        the server
-        so that our document change tracking matches our IDs used for room membership.</p>
-    </li>
-    <li>
-      <p><strong>merger.addClient(remoteActorID)</strong> - initializes conversation-tracking with another actor
-        contributing to the document. The client calls this with the server's unique ID to track its synchronization
-        state relative
-        to the server. The server calls this with the unique client ID each time a client joins a room, to manage the
-        syncrhonizaton states of each client relative to its local document version.</p>
-    </li>
-    <li>
-      <p><strong>merger.applyChange(commitMessage, doc => { /* change function */})</strong> - applies a change to the
-        local copy of the document, with an associated message describing the change. The client calls this to process
-        changes made by the local user to the shared scene. The shared document is only ever modified in the body of
-        this change function - outside of this, it is treated as immutable.</p>
-    </li>
-    <li>
-      <p><strong>merger.makeSyncMessage(receiverID)</strong> - attempts to create and return an Automerge SyncMessage
-        for the next stage of conversation with the actor identified by the "receiverID" string. If we're already
-        synchronized
-        with that recipient, this function returns null.</p>
-    </li>
-    <li>
-      <p><strong>merger.handleSyncMessage(syncMesage, senderID)</strong> - accepts a string representation of an
-        Automerge SyncMessage received over the network from the specified actor, and applies it to the local document.
-        It returns an AutoMerge Patch data structure describing the full set of changes that this message has made to
-        the document, which we can parse to update our front end.</p>
-    </li>
-    <li>
-      <p><strong>merger.getDocument()</strong> - retrieves the current state of the shared Automerge document, which
-        should be treated as read-only.</p>
-    </li>
-  </ul>
+    <p>This foundation of document and conversation state management is handled by the "Merger" class in <a
+        href="https://github.com/worldmaking/nodelab/blob/develop/public/merge.js">merge.js</a>, which provides a
+      wrapper
+      around the common Automerge document transactions used on both client and server:
+    </p>
+    <ul>
+      <li>
+        <p><strong>merger = new Merger(sourceDocument, actorID)</strong> - creates a new Automerge document based on the
+          provided source object (or initializes a blank document if this is omitted - that's what is used in the
+          current
+          version),
+          using the provided actor ID string to identify the local author for change tracking. If this actor ID is
+          omitted, Automerge will automatically generate one, but in our case we use the client's unique ID assigned by
+          the server
+          so that our document change tracking matches our IDs used for room membership.</p>
+      </li>
+      <li>
+        <p><strong>merger.addClient(remoteActorID)</strong> - initializes conversation-tracking with another actor
+          contributing to the document. The client calls this with the server's unique ID to track its synchronization
+          state relative
+          to the server. The server calls this with the unique client ID each time a client joins a room, to manage the
+          syncrhonizaton states of each client relative to its local document version.</p>
+      </li>
+      <li>
+        <p><strong>merger.applyChange(commitMessage, doc => { /* change function */})</strong> - applies a change to the
+          local copy of the document, with an associated message describing the change. The client calls this to process
+          changes made by the local user to the shared scene. The shared document is only ever modified in the body of
+          this change function - outside of this, it is treated as immutable.</p>
+      </li>
+      <li>
+        <p><strong>merger.makeSyncMessage(receiverID)</strong> - attempts to create and return an Automerge SyncMessage
+          for the next stage of conversation with the actor identified by the "receiverID" string. If we're already
+          synchronized
+          with that recipient, this function returns null.</p>
+      </li>
+      <li>
+        <p><strong>merger.handleSyncMessage(syncMesage, senderID)</strong> - accepts a string representation of an
+          Automerge SyncMessage received over the network from the specified actor, and applies it to the local
+          document.
+          It returns an AutoMerge Patch data structure describing the full set of changes that this message has made to
+          the document, which we can parse to update our front end.</p>
+      </li>
+      <li>
+        <p><strong>merger.getDocument()</strong> - retrieves the current state of the shared Automerge document, which
+          should be treated as read-only.</p>
+      </li>
+    </ul>
 
-  <p>On the server side, when a SyncMessage is received from the client, we mark the room as potentially in need
-    of syncrhonizaton. On our next 30-times-per-second loop sharing volatile information with all clients, we also
-    try to generate a SyncMessage for each one, and send it if it is non-null (ie. if there's a change on the server
-    that the remote client does not yet know about).
-  </p>
+    <p>On the server side, when a SyncMessage is received from the client, we mark the room as potentially in need
+      of syncrhonizaton. On our next 30-times-per-second loop sharing volatile information with all clients, we also
+      try to generate a SyncMessage for each one, and send it if it is non-null (ie. if there's a change on the server
+      that the remote client does not yet know about).
+    </p>
 
-  <p>On the client side, we create an abstraction over this basic document-synchronization, tailored to the needs of
-    synchronizing a THREE.js scene, specifically. This is provided by the "SharedScene" class in
-    <a href="https://github.com/worldmaking/nodelab/blob/develop/public/sharedScene.mjs">sharedScene.mjs</a>. This class
-    maintains collections of THREE.Geometry, Material, and Object3D objects used in the local copy of the scene, and
-    associates with each one a unique ID matching them to their corresponding entry in the Automerge document. This ID
-    is stored in the objects' "userData" object as a "mergeID" field. This allows code that interfaces with the shared
-    scene to work with regular THREE.js object references as they would for conventional/non-shared 3D content, rather
-    than working via a specialized synchronization handle or other abstraction. It also maintains maps of these mergeIDs
-    back to their corresponding objects, so that they can be fetched and modified in response to remote changes.
-  </p>
+    <p>On the client side, we create an abstraction over this basic document-synchronization, tailored to the needs of
+      synchronizing a THREE.js scene, specifically. This is provided by the "SharedScene" class in
+      <a href="https://github.com/worldmaking/nodelab/blob/develop/public/sharedScene.mjs">sharedScene.mjs</a>. This
+      class
+      maintains collections of THREE.Geometry, Material, and Object3D objects used in the local copy of the scene, and
+      associates with each one a unique ID matching them to their corresponding entry in the Automerge document. This ID
+      is stored in the objects' "userData" object as a "mergeID" field. This allows code that interfaces with the shared
+      scene to work with regular THREE.js object references as they would for conventional/non-shared 3D content, rather
+      than working via a specialized synchronization handle or other abstraction. It also maintains maps of these
+      mergeIDs
+      back to their corresponding objects, so that they can be fetched and modified in response to remote changes.
+    </p>
 
-  <p>Code that modifies the shared scene can create new geometries, materials, and meshes as THREE.js code normally
-    does. To publish a new mesh, it just needs to call shared.registerMesh(mesh), and the SharedScene class handles
-    making the necessary changes to the Automerge document and marking the object with its assigned unique ID.
-    It automatically handles registering the mesh's geometry and materials too, though this can also be done manually
-    with shared.registerGeometry() and .registerMaterial() respectively.
-  </p>
+    <p>Code that modifies the shared scene can create new geometries, materials, and meshes as THREE.js code normally
+      does. To publish a new mesh, it just needs to call shared.registerMesh(mesh), and the SharedScene class handles
+      making the necessary changes to the Automerge document and marking the object with its assigned unique ID.
+      It automatically handles registering the mesh's geometry and materials too, though this can also be done manually
+      with shared.registerGeometry() and .registerMaterial() respectively.
+    </p>
 
-  <p>Similarly, when changing an object's transformation or parenting, it suffices to call
-    shared.updateTransformation(obj) or shared.placeInParent(obj, parentObjectOrNull) for the SharedScene to
-    make the corresponding document updates.</p>
+    <p>Similarly, when changing an object's transformation or parenting, it suffices to call
+      shared.updateTransformation(obj) or shared.placeInParent(obj, parentObjectOrNull) for the SharedScene to
+      make the corresponding document updates.</p>
 
-  <p>The SharedScene class does not perform any de-duplication if two pieces of code (local or remote) attempt to
-    create equivalent geometry/material assets. But it does allow code to search its internal maps using eg.
-    shared.sceneGeometry.getByName(geoName), to check for and re-use an already-registered shared asset rather
-    than constructing a new one. It also does not currently handle reference counting or deletion of geometry and
-    mesh objects that are no longer in use &mdash; this is an area for future improvement.
-  </p>
+    <p>The SharedScene class does not perform any de-duplication if two pieces of code (local or remote) attempt to
+      create equivalent geometry/material assets. But it does allow code to search its internal maps using eg.
+      shared.sceneGeometry.getByName(geoName), to check for and re-use an already-registered shared asset rather
+      than constructing a new one. It also does not currently handle reference counting or deletion of geometry and
+      mesh objects that are no longer in use &mdash; this is an area for future improvement.
+    </p>
 
-  <p>Upon connection, the client constructs a new shared scene, which internally creates a THREE.Scene root object
-    (initially with no unique ID assigned) to add to the current world, and relays any sync messages received from the
-    server through it by calling shared.handleSyncMessage(syncMessage, serverID).
-  </p>
+    <p>Upon connection, the client constructs a new shared scene, which internally creates a THREE.Scene root object
+      (initially with no unique ID assigned) to add to the current world, and relays any sync messages received from the
+      server through it by calling shared.handleSyncMessage(syncMessage, serverID).
+    </p>
 
-  <p>Once the initial exchange of SyncMessages with the server reaches its end (merger.makeSyncMessage(serverID) returns
-    null), then we know we're up to date with the present state of the shared scene as stored on the server. At this
-    point, the SharedScene class examines the document to check whether it's been initialized. If not, it takes
-    responsibility for initializing it by creating three Automerge tables:
-  </p>
-  <ul>
-    <li>
-      <p><strong>doc.geometries</strong> - contains a row for each THREE.BufferGeometry used by objects in the shared
-        scene, with columns for the geometry's name, position attributes, and index buffer. (This bears expanding to
-        include normal and texture coordinate attributes).</p>
-    </li>
-    <li>
-      <p><strong>doc.materials</strong> - contains a row for each THREE.Material used by objects in the shared scene,
-        with columsn for the material's name and RGB color triplet. (Materials are currently assumed to always be
-        MeshLambertMaterial type, but this could be expanded to include more general materials)</p>
-    </li>
-    <li>
-      <p><strong>doc.objects</strong> - contains a row for the scene root object, and a row for each THREE.Object3D
-        object in the shared scene, with columns for their name, parent ID, position, rotation quaternion, scale, and
-        (for mesh objects) their geometry and material IDs</p>
-    </li>
-  </ul>
-  <p>It then proceeds to add a "root" entry into the objects table, with nulls for all elements but its name, setting it
-    apart from any objects to be added later. It takes the unique key assigned to this row when adding it to the table
-    and applies it to the scene root object, so that objects referencing</p>
+    <p>Once the initial exchange of SyncMessages with the server reaches its end (merger.makeSyncMessage(serverID)
+      returns
+      null), then we know we're up to date with the present state of the shared scene as stored on the server. At this
+      point, the SharedScene class examines the document to check whether it's been initialized. If not, it takes
+      responsibility for initializing it by creating three Automerge tables:
+    </p>
+    <ul>
+      <li>
+        <p><strong>doc.geometries</strong> - contains a row for each THREE.BufferGeometry used by objects in the shared
+          scene, with columns for the geometry's name, position attributes, and index buffer. (This bears expanding to
+          include normal and texture coordinate attributes).</p>
+      </li>
+      <li>
+        <p><strong>doc.materials</strong> - contains a row for each THREE.Material used by objects in the shared scene,
+          with columsn for the material's name and RGB color triplet. (Materials are currently assumed to always be
+          MeshLambertMaterial type, but this could be expanded to include more general materials)</p>
+      </li>
+      <li>
+        <p><strong>doc.objects</strong> - contains a row for the scene root object, and a row for each THREE.Object3D
+          object in the shared scene, with columns for their name, parent ID, position, rotation quaternion, scale, and
+          (for mesh objects) their geometry and material IDs</p>
+      </li>
+    </ul>
+    <p>It then proceeds to add a "root" entry into the objects table, with nulls for all elements but its name, setting
+      it
+      apart from any objects to be added later. It takes the unique key assigned to this row when adding it to the table
+      and applies it to the scene root object, so that objects referencing</p>
 
-  <p>Each time a SyncMessage is received from the server and applied to the local copy of the document, we parse the
-    resulting Automerge Patch object for...
-  </p>
-  <ul>
-    <li>
-      <p>New rows in the <strong>geometries</strong> table - which we instantiate as new BufferGeometry instances with
-        that row's unique key as their mergeID.</p>
-    </li>
-    <li>
-      <p>New rows in the <strong>materials</strong> table - which we instantiate as new MeshLambertMaterial instances
-        with that row's unique key as their mergeID.</p>
-    </li>
-    <li>
-      <p>Changes to the <strong>objects</strong> table - which could include...</p>
-      <ul>
-        <li>
-          <p>Empty changes, corresponding to a deleted object which we remove from our scene graph.</p>
-        </li>
-        <li>
-          <p>Changes to rows whose key does <em>not</em> exist in our sceneObjects map, which correspond to new objects
-            to add to
-            the scene. If the object has a null position, we know it must be the scene root, and assign this row's key
-            to
-            our scene root object's mergeID. Otherwise, we assume it to be a mesh, and instantiate a THREE.Mesh with the
-            data stored in the row.</p>
-        </li>
-        <li>
-          <p>Changes to rows whose key <em>does</em> exist in our sceneObjects map, which correspond to modified
-            objects. We parse the change for modifications to apply to the object's position, quaternion, scale, or
-            parent.</p>
-        </li>
-      </ul>
-    </li>
-  </ul>
-  <p>Changes are processed in this order, so that by the time we encounter a mesh that might reference the ID of a
-    geometry or material, they have already been added to our maps. Parenting is handled last, to ensure we have the
-    parent in our map before we try to add children to it.</p>
+    <p>Each time a SyncMessage is received from the server and applied to the local copy of the document, we parse the
+      resulting Automerge Patch object for...
+    </p>
+    <ul>
+      <li>
+        <p>New rows in the <strong>geometries</strong> table - which we instantiate as new BufferGeometry instances with
+          that row's unique key as their mergeID.</p>
+      </li>
+      <li>
+        <p>New rows in the <strong>materials</strong> table - which we instantiate as new MeshLambertMaterial instances
+          with that row's unique key as their mergeID.</p>
+      </li>
+      <li>
+        <p>Changes to the <strong>objects</strong> table - which could include...</p>
+        <ul>
+          <li>
+            <p>Empty changes, corresponding to a deleted object which we remove from our scene graph.</p>
+          </li>
+          <li>
+            <p>Changes to rows whose key does <em>not</em> exist in our sceneObjects map, which correspond to new
+              objects
+              to add to
+              the scene. If the object has a null position, we know it must be the scene root, and assign this row's key
+              to
+              our scene root object's mergeID. Otherwise, we assume it to be a mesh, and instantiate a THREE.Mesh with
+              the
+              data stored in the row.</p>
+          </li>
+          <li>
+            <p>Changes to rows whose key <em>does</em> exist in our sceneObjects map, which correspond to modified
+              objects. We parse the change for modifications to apply to the object's position, quaternion, scale, or
+              parent.</p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    <p>Changes are processed in this order, so that by the time we encounter a mesh that might reference the ID of a
+      geometry or material, they have already been added to our maps. Parenting is handled last, to ensure we have the
+      parent in our map before we try to add children to it.</p>
 
-  <p>This processing of changes is the most complex aspect of the solution, and it requires further expansion to cover
-    the full generality of content that could be authored in a THREE.js scene. But it offers a major advantage over 
-    destroying the scene and re-building it from scratch by deserializing JSON as we'd considered earlier in the project 
-    (beyond the performance gains from not doing that): it means that other code can hold references to objects in the
-    shared scene from frame to frame and use them like any other THREE.js object, without risk that those old references
-    will get invalidated and need to be refreshed following a remote update.
-  </p>
+    <p>This processing of changes is the most complex aspect of the solution, and it requires further expansion to cover
+      the full generality of content that could be authored in a THREE.js scene. But it offers a major advantage over
+      destroying the scene and re-building it from scratch by deserializing JSON as we'd considered earlier in the
+      project
+      (beyond the performance gains from not doing that): it means that other code can hold references to objects in the
+      shared scene from frame to frame and use them like any other THREE.js object, without risk that those old
+      references
+      will get invalidated and need to be refreshed following a remote update.
+    </p>
 
-  <p>The SharedScene class also exposes onSceneObjectAdded/Removed callbacks so that outside code can get notifications
-    when either local or remote changes have created or destroyed objects in the scene.
-  </p>
+    <p>The SharedScene class also exposes onSceneObjectAdded/Removed callbacks so that outside code can get
+      notifications
+      when either local or remote changes have created or destroyed objects in the scene.
+    </p>
 
-  <p>Inside the application's animation loop, once each frame, the SharedScene is asked if it has any new local changes
-    to share with the server (via shared.tryGenerateSyncMessage()), and if so, a message is sent. This limits the
-    amount of traffic and processing required in the event that many scripts make changes in rapid succession, such
-    as in response to multiple mouse events in a single frame. This structure is easy to throttle further should 
-    performace problems arise in future.
-  </p>
+    <p>Inside the application's animation loop, once each frame, the SharedScene is asked if it has any new local
+      changes
+      to share with the server (via shared.tryGenerateSyncMessage()), and if so, a message is sent. This limits the
+      amount of traffic and processing required in the event that many scripts make changes in rapid succession, such
+      as in response to multiple mouse events in a single frame. This structure is easy to throttle further should
+      performace problems arise in future.
+    </p>
 
 
-  <h3>UI/HUD</h3>
+    <h3>UI/HUD</h3>
 
-  <p> The UI/HUD was built with accessbility and ease to use in mind. The buttons on the HUD panels were made to be big
-    with bright colours so to indicate clearly what is being selected. An emoji system was introduced to give more
-    alternatives to the player to express themselves in a way that can be easily understood and seen by others in the
-    world. Then finally a print function was added that can print text in the wourld as a way to help debug the VR
-    version with ease.</p>
-  <!-- TODO: more can be added here -->
+    <p> The UI/HUD was built with accessbility and ease to use in mind. The buttons on the HUD panels were made to be
+      big
+      with bright colours so to indicate clearly what is being selected. An emoji system was introduced to give more
+      alternatives to the player to express themselves in a way that can be easily understood and seen by others in the
+      world. Then finally a print function was added that can print text in the wourld as a way to help debug the VR
+      version with ease.</p>
+    <!-- TODO: more can be added here -->
 
-  <h4>HUD Panels</h4>
+    <h4>HUD Panels</h4>
 
-  <p> The panels componet of the project uses the same in world 3D presence represented by 3D panels that can be
-    interacted either by mouse click, or in VR by using the controller. This was achieved by using a raycast object that
-    can be casted either from the mouse position, in case the client is using keyboard and mouse, or from the controller
-    position, in case the client is using VR.</p>
-  <!-- TODO: Add more to this section, I did not work on it so I don't know what else to add -->
+    <p> The panels componet of the project uses the same in world 3D presence represented by 3D panels that can be
+      interacted either by mouse click, or in VR by using the controller. This was achieved by using a raycast object
+      that
+      can be casted either from the mouse position, in case the client is using keyboard and mouse, or from the
+      controller
+      position, in case the client is using VR.</p>
+    <!-- TODO: Add more to this section, I did not work on it so I don't know what else to add -->
 
-  <h4>Emojis</h4>
-  <p>The emoji system was built to give the player more ways to express how they feel while navigating in the world.
-    This was achieved by spawning in 3D emojis that would animate on top of the player to signify their current emotion
-    towards the world at that moment.
-  </p>
-  <p>The first step into spawning the emoji is to get a parent component as soon as the application is launched, the
-    parent component serves as an anchor point where the emoji will always follow. Fot this parent component we chose to
-    use the body representation of the player in the application world, that way everyone in the world will always know
-    who used the emoji.
-  </p>
-  <p>The next step would come when the player decided to emote. As soon as they trigger the button a method is called
-    where we get a time stamp of the time when the method was called, this is meant to be used as a way for the program
-    to know
-    when it is suitable to delete the emoji, the current time is 5 seconds after it has been triggered.
-  </p>
-  <p>Once this is done we then set the position of the emoji and also set the parent to the body object. Then to make
-    sure the code is not expensive to run we call another method that actually spawns the emoji. This method does one of
-    two functions, it either loads the emoji from a file path, or if that emoji has been previously used it recycles the
-    emoji from a cached model.
-  </p>
+    <h4>Emojis</h4>
+    <p>The emoji system was built to give the player more ways to express how they feel while navigating in the world.
+      This was achieved by spawning in 3D emojis that would animate on top of the player to signify their current
+      emotion
+      towards the world at that moment.
+    </p>
+    <p>The first step into spawning the emoji is to get a parent component as soon as the application is launched, the
+      parent component serves as an anchor point where the emoji will always follow. Fot this parent component we chose
+      to
+      use the body representation of the player in the application world, that way everyone in the world will always
+      know
+      who used the emoji.
+    </p>
+    <p>The next step would come when the player decided to emote. As soon as they trigger the button a method is called
+      where we get a time stamp of the time when the method was called, this is meant to be used as a way for the
+      program
+      to know
+      when it is suitable to delete the emoji, the current time is 5 seconds after it has been triggered.
+    </p>
+    <p>Once this is done we then set the position of the emoji and also set the parent to the body object. Then to make
+      sure the code is not expensive to run we call another method that actually spawns the emoji. This method does one
+      of
+      two functions, it either loads the emoji from a file path, or if that emoji has been previously used it recycles
+      the
+      emoji from a cached model.
+    </p>
 
-  <h4>Print in VR</h4>
-  <p>The print in VR method was done using some of the basic principles of the emoji method. It gets a parent object
-    that we can then
-    parent the 3D text to it so it can anchor itself to that object in the world.
-    Every string sent to the print method is added to an array, this array has a capacity of ten elements, if an 11th
-    element is added
-    the fisrt element in that array is then deleted and all the other elements shifts one position. The capacity of ten
-    elements was chosen
-    so it can be easy for the user to read the messages coming through without being overwhelmed by many messages at
-    once.
-  </p>
+    <h4>Print in VR</h4>
+    <p>The print in VR method was done using some of the basic principles of the emoji method. It gets a parent object
+      that we can then
+      parent the 3D text to it so it can anchor itself to that object in the world.
+      Every string sent to the print method is added to an array, this array has a capacity of ten elements, if an 11th
+      element is added
+      the fisrt element in that array is then deleted and all the other elements shifts one position. The capacity of
+      ten
+      elements was chosen
+      so it can be easy for the user to read the messages coming through without being overwhelmed by many messages at
+      once.
+    </p>
 
-  <h2>Worlds</h2>
+    <h2>Worlds</h2>
 
-  <p>Reflect</p>
+    <p>Reflect</p>
 
-  <h2>Future Work</h2>
-  <p></p>
+    <h2>Future Work</h2>
+    <p></p>
+  </article>
 </body>
 
 </html>

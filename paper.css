@@ -1,0 +1,22 @@
+body {
+    text-align: center;
+    font-family: 'Lora';
+}
+article {
+    margin-left: 10%;
+    max-width: 40em;  
+    text-align: left;  
+}
+pre {
+    font-family: monospace;
+    background-color: #eee;
+    padding: 10px;
+}
+
+h1 {
+    font-size: 40pt;
+}
+
+.authors, .date {
+    font-style: italic;
+}
