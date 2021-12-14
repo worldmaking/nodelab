@@ -15,7 +15,7 @@
     <h1>WebXR Studio</h1>
 
     <!-- Add your names here - I was a bit shy to accidentally misspell or omit a name, so I think it's best if we each add our own. ;) -->
-    
+
     <p class="authors">Douglas Gregory, Jorge de Oliveira</p>
 
     <p class="date">Prepared for York University course DIGM5520, 2021-12-04.</p>
@@ -35,7 +35,7 @@
           <li><a href="#related">Replication</a>
             <ul>
               <li><a href="#websocket">WebSocket Protocol</a></li>
-              <li><a href="#websocket">"Shared Scene" and Automerge Integration</a></li>  
+              <li><a href="#websocket">"Shared Scene" and Automerge Integration</a></li>
             </ul>
           </li>
           <li><a href="#ui">UI / HUD</a>
@@ -45,7 +45,7 @@
               <li><a href="#print">Print in VR</a></li>
             </ul>
           </li>
-        </ul>        
+        </ul>
       </li>
       <li><a href="#worlds">Worlds</a>
         <ul>
@@ -53,6 +53,7 @@
         </ul>
       </li>
       <li><a href="#future">Future Work</a></li>
+      <li><a href="#references">References</a></li>
     </ul>
 
     <h2 id="overview">Overview</h2>
@@ -437,7 +438,8 @@
 
     <h3 id="ui">UI / HUD</h3>
 
-    <p> The UI / HUD (Heads-Up Display) was built with accessbility and ease to use in mind. The buttons on the HUD panels were made to be
+    <p> The UI / HUD (Heads-Up Display) was built with accessbility and ease to use in mind. The buttons on the HUD
+      panels were made to be
       big
       with bright colours so to indicate clearly what is being selected. An emoji system was introduced to give more
       alternatives to the player to express themselves in a way that can be easily understood and seen by others in the
@@ -497,10 +499,175 @@
 
     <h2 id="worlds">Worlds</h2>
 
-    <p id="reflect">Reflect</p>
+    <h3 id="reflect">Reflect</h3>
+
+    <h4>Abstract</h4>
+    <p>Reflect is a Virtual Reality artwork that also works on the web. It is a virtual representation of the physical
+      world that places users inside a gallery space. This space encapsulates an assemblage of point lights that float
+      around and fluctuate as chemicals that react with each other. We combined two mechanisms stemming from two
+      different biological species into the behavior of the lights. The result is a system of participatory lights
+      adaptive to other participants' positionality and other world objects. Reflect is a place for internet users to
+      visit, move inside it, interact with its lighting system, and together with other users can apply changes to the
+      colors of the world. This project encompasses a multi-user experience inside a dynamic environment and follows a
+      naturalistic perspective in the design of its interactions.</p>
+
+    <h4>Overview - Concepts and Motivation</h4>
+
+    <p>The motivations behind the design of Reflect's interaction system derive from inspiration found in nature's
+      biological systems. Our project worked with two biological systems: a firefly's lighting mechanism, known as
+      bioluminescence, and a chameleon's color adaptation mechanism. Like how a firefly produces light by a chemical
+      reaction inside its body[Strogatz, 2015, p.37], each light in our system changes its intensity or luminosity based
+      on a chemical reaction system algorithm. The programming for the changes in luminance relies on a set of reaction
+      rules found in a prey-predator system of chemicals. They derive from the Lotka-Volterra differential equation
+      [Campuzano, 2021]: </p>
+
+    <ul>
+      <li> x and y are the populations of the different chemicals;</li>
+      <li>x' and y' show how the two populations grow with respect to their individual rates;</li>
+      <li>The constants a, b, c,d, explain how the different chemicals interact;</li>
+    </ul>
+    <p>The color adaptability of the lighting system emulates a chameleon changing the color of its skin to that of its
+      surroundings [Duffy, 2003]. </p>
+
+    <p>Taking into consideration the work done by our peers, we wanted to use the choices made by each participant,
+      i.e., the color choice on the homepage, to create endless reactions within the space. Participants enter the space
+      and are greeted by a system of floating pointlights. Each light pulsates with other lights. As the participants
+      move and explore the space, the lights start to react by changing their color to match the colors chosen by each
+      participant when nearby. The color change causes a chain reaction as their colors spread throughout the space. As
+      the lights move away from the visitors, their colors sync with their neighboring lights, creating a unique
+      environment based on the choices and interactions made by each visitor. Another layer was the integration of the
+      voice chat to emphasize the shared atmosphere that this environment creates.</p>
+
+    <h4>Challenges and Solutions</h4>
+    <p>During the making of this project, we faced some challenges that influenced both our technical and aesthetic
+      decisions. One of the main challenges was implementing our ideas into a primary virtual world composed of standard
+      lighting, a floor, and an avatar's body controlling its movements. Due to the nature of our project that has a
+      custom lighting system and a custom avatar, we had to figure out a solution that did not affect the utilization of
+      these standard presets for other teams. We worked together with our peers, responsible for setting that
+      introductory scene together for our ideas of the avatar's body and our lighting system. We came up with the
+      modularization of the avatar's characteristics and the turning on and off of the lights. </p>
+
+    <p>Another significant challenge we had was that we could not test our work in a virtual reality setting since VR
+      equipment was not easily accessible. When equipped with VR glasses, we managed to test our system in a VR setting,
+      and we found out that the performance of our system was slightly slower than the performance of the system in the
+      WebXR environment. Since the library we were using to create our content, namely, THREE.js, could not afford the
+      creation of more than thirty lights per scene [threejs.org] for seamless interaction with our system, we had to
+      decrease the number of lights in the space.</p>
+
+    <p>In addition to the performance issues we had with working with 3D objects in a virtual environment, we had to
+      test some of our ideas in a 2D system first before we moved everything into a three-dimensional scene. In
+      designing the chemical reaction between the light objects, we began visualizing the system using a custom shader
+      that stretched the scale of our light objects to give the impression of the lights being three-dimensional objects
+      when in reality, they were two-dimensional [threejs.org]. However, for the interaction of our lights in a 3D
+      environment, this approach did not work well because we could not see our lights from different angles. We ended
+      up turning our 2D lights into 3D to work with two lists of objects. One was internal and included a smaller number
+      of objects that carried the reaction rules for the chemical behavior of our system. The other was external and
+      included a more significant number of objects and the programming of our three-dimensional geometries. We had to
+      work with two lists of objects with their positions and utilize the smaller list of objects to control some of the
+      behavioral characteristics of the more extensive list of 3D objects, which were the scale of our lights and the
+      maximum range of the light intensities.</p>
+
+    <p>The final challenge we had to overcome while dealing with the design and implementation of this shared space was
+      to create a unified experience for every participant. Initially, we were testing with one participant in the space
+      to figure out the avatar's movements and apply our color-sharing interaction between the avatar and the nearby
+      lights. What we managed to accomplish was to pass along this interaction to all users who share this space.
+      Finally, we were able to track the movements of all users interacting and offer a slightly different experience
+      for each participant based on the timestamp to which they joined the world. We found that to propagate changes
+      between users, we needed to move the multiplayer interaction design from the client-side architecture to the
+      server-side architecture of our application. On the server side, we can track the different entry points of each
+      user and save whatever change has preceded. We are still working on a more permanent solution where remote users
+      can share all changes in a unified experience.</p>
+
+    <h4>A description of future work to be done on this project</h4>
+    <p>Having a world where multiple users can have a unified experience would mean that Reflect can be a space for
+      sculptors, painters, musicians, and digital artists in general to exhibit their artworks. We hope our current
+      system will evolve into a sensory system that tracks other artworks or other artificial entities added to the
+      world. An example of this evolution would be adding forces that attract and repel [Shiffman, 2012] our lights to
+      and from a series of exhibited artworks, depending on the amount of lighting that has the greatest probability of
+      complimenting each work.</p>
+    <p>Apart from having artists exhibit their work in the Reflect world, we plan to refactor our lighting system into a
+      module of lights [jetbrains] that can be part of complex worlds. We hope it can be helpful for contextualized
+      pieces that engage with different modalities. The repurposing of our lighting system into a module we hope will
+      allow us to work with musicians and sound artists that treat sound as energy transducing between the elements that
+      make the core of its sound. In addition, we would very much like to see that energy exchanged between light and
+      sound as it is transducing into a generative performance.</p>
+    <p>While working on this project, we came across a competition that shared some of the conceptual aspects with the
+      Reflect world, namely the annual architecture competition [architecturecompetition.com]. The theme for the year
+      2022 is Museum of Emotions and focuses on the affective properties of two polarized spaces, which can evoke
+      positive and negative emotions, respectively [architecturecompetition.com]. We wish to explore the behavior of the
+      lighting between the two different spaces that influence each other and affect the atmosphere of each space,
+      according to their contrasting lighting intensities. Our idea is to divide our lighting system in half and
+      distribute it across the two spaces, one housing the prey and the second housing the predators. We believe that by
+      dividing our Reflect world into two opposite spaces that interact with each other based on the dynamics found in
+      the relations between the lights themselves, we will explore if there are any affective properties within our
+      lighting system.</p>
+
+    <h4>Conclusion</h4>
+
+    <p>Our goal has been to create a collective experience between human beings and artificial life lights inside a
+      gallery or a studio space. A shared space between living and non-living beings that co-create dynamically the
+      virtual world surrounding them both. We strived to reimagine the natural world as an open possibility inside the
+      virtual world. We believe that nature's examples can drive technological development. Since the technologies we
+      are using today are not fully sustainable, we see a potential change in how energy is produced. Studying
+      biological systems with the help of simulation tools makes it plausible to explore more sustainable life models,
+      as in the example of the fireflies that produce light with small amounts of energy. Reflect is a speculative
+      design for a more sustainable future.</p>
+
+
+
 
     <h2 id="future">Future Work</h2>
     <p></p>
+
+    <h2 id="references">References</h2>
+    <ul>
+      <p>
+        <li>Breeders, Bee. “Museum of Emotions / Architecture Competition.” Museum of Emotions. Accessed December 14,
+          2021.
+          <a
+            href="https://architecturecompetitions.com/museumofemotions/">https://architecturecompetitions.com/museumofemotions/</a>.
+        </li>
+      </p>
+      <p>
+        <li>Campuzano, Juan Carlos Ponce. Lotka-Volterra model. Accessed December 14, 2021.
+          <a
+            href="https://teaching.smp.uq.edu.au/scims/Appl_analysis/Lotka_Volterra.html">https://teaching.smp.uq.edu.au/scims/Appl_analysis/Lotka_Volterra.html</a>.
+        </li>
+      </p>
+      <p>
+        <li>Duffy, B.R., G.M.P. O'Hare, A.N. Martin, J.F. Bradley, and B. Schon. “Agent Chameleons: Agent Minds and
+          Bodies.”
+          Proceedings 11th IEEE International Workshop on Program Comprehension, n.d.
+          <a href="https://doi.org/10.1109/casa.2003.1199312">https://doi.org/10.1109/casa.2003.1199312</a>.
+        </li>
+      </p>
+      <p>
+        <li>“Refactoring Javascript: WebStorm.” WebStorm Help. Accessed December 14, 2021.
+          <a
+            href="https://www.jetbrains.com/help/webstorm/specific-javascript-refactorings.html#javascript_rename_function">https://www.jetbrains.com/help/webstorm/specific-javascript-refactorings.html#javascript_rename_function</a>.
+        </li>
+      </p>
+      <p>
+        <li>Shiffman, Daniel, Shannon Fry, and Zannah Marsh. “FORCES.” Essay. In The Nature of Code. Mountain View
+          (California): s.n., 2012.</li>
+      </p>
+      <p>
+        <li>Strogatz, Steven H. “Fireflies and the Inevitability of Sync.” Essay. In Sync: How Order Emerges from Chaos
+          in
+          the Universe, Nature, and Daily Life, 37. New York: Hachette Books, 2015.</li>
+      </p>
+      <p>
+        <li>“Three.js.” three.js docs. Accessed December 14, 2021. <a
+            href="https://threejs.org/docs/#api/en/lights/PointLight">https://threejs.org/docs/#api/en/lights/PointLight</a>.
+        </li>
+      </p>
+      <p>
+        <li>“Webgl Particles Waves Example.” Three.js webgl - particles - waves. Accessed December 14, 2021.
+          <a
+            href="https://threejs.org/examples/webgl_points_waves.html">https://threejs.org/examples/webgl_points_waves.html</a>.
+        </li>
+      </p>
+    </ul>
   </article>
 </body>
 
