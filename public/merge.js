@@ -16,6 +16,11 @@ try {
  * @param {Object} document The document to be modified. This can be mutated ONLY inside this function.
  */
 
+/**
+ * Class to provide an easy wrapper around an Automerged-synchronized document.
+ * Handles management of sync states with each actor in the conversation, and can be used
+ * from both server and client side.
+ */
 class Merger {
     
     /** @type {string} Unique identifier for "this" agent, used for attributing changes. */
