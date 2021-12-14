@@ -117,7 +117,7 @@ class SharedScene {
     constructor(parentScene, myID, serverID) {
         console.log("setting up SharedScene", myID, serverID);
         this.serverID = serverID;
-        this.merger = setupMerge(null, myID);
+        this.merger = new Merger(null, myID);
         this.merger.addClient(serverID);
 
         this.sceneRoot = new THREE.Scene();

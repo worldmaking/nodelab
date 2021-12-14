@@ -135,7 +135,8 @@ function getRoom(name="default") {
 			name: name,
 			clients: {},
 			project: demoproject,
-			merger: merge.setupMerge(null, serverID),
+			// Automerge state tracking for the shared scene in this room.
+			merger: new merge.Merger(null, serverID),
 			syncNeeded: false
 		}
 	}
