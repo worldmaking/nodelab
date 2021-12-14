@@ -24,8 +24,18 @@
 
   <h3>Replication</h3>
 
+  <p>
+    Multi-user interaction occurs in one of an arbitrary number of "<b>rooms</b>", each one identified by a string key. Users who have connected
+    to the same room are able to see and hear one another, and collaboratively edit a shared 3D scene that persists within that room,
+    independent of all others.
+  </p>
+  <p>
+    At present, we use one "room" per HTML entry point to the application (so each "world" discussed below has its own URL that always 
+    directs users into the same room). But this could be exposed to visitors to allow them to spin up semi-private instances of a given world,
+    behind a room key known only to them and those they invite to join them.
+  </p>
   <p>The application uses a client-server architecture over WebSocket connections to synchronize information about users 
-  in the shared environment, and the editable geometry of that shared environment.  These two channels of information
+  in the shared environment of a given room, and the editable geometry of that shared environment. These two channels of information
   use different replication strategies:</p>
 
   <ul>
@@ -43,12 +53,80 @@
       <a href="https://github.com/automerge/automerge" title="Automerge GitHub Repository">Automerge</a> library.</p>
       <p>This handles merging concurrent changes made to the scene by multiple users, and resolving conflicts
         so that all users eventually agree on the same state of the shared 3D scene. It also retains a full
-        history of the changes made, so that the scene can be restored to previous versions or the edit sequence re-played.
+        history of the changes made, so that the scene can be restored to previous versions or the edit sequence re-played.        
       </p>
     </li>
   </ul>
 
-  <h4>Websocket Communication Protocol</h4>
+  <p>A Node.js server is used as the central relay, as well as to host the user-facing web page content via the 
+    <a href="https://www.npmjs.com/package/express" title="express npm package">express</a> library.
+  </p>
+
+  <h4>WebSocket Communication Protocol</h4>
+
+  <p>All WebSocket communication with the server transmits "Message" objects in JSON text format, with the following structure:</p>
+
+  <pre>
+  {
+    cmd: "command", // A short string indicating the message type.
+    val: {
+      // A JSON object with properties defining the mesage contents / payload.
+    }
+  }
+  </pre>
+
+  <p>This communication structure is defined in a shared <a href="https://github.com/worldmaking/nodelab/blob/main/public/networkMessages.js">networkMessages.js</a> file used by both client and server code, for consistency.</p>
+
+  <p>The initial connection flow works like this (see the client side in 
+    <a href="https://github.com/worldmaking/nodelab/blob/main/public/connect.mjs">connect.mjs</a>, 
+    and the server side in <a href="https://github.com/worldmaking/nodelab/blob/main/server.js">server.js</a>)</p>
+  <ol>
+    <li>The client initiates a connection to the server, by appending the desired room key onto the end of the server's domain 
+      and using this as the WebSocket request URL.</li>
+    <li>Upon receiving a new connection request, the server checks for an existing "room" object corresponding to the path component 
+      of the request URL (trailing or doubled slashes in the room key are ignored). If no existing room is found, it creates one, as an object dontaining:
+      <ul>
+        <li>The room's key ("name")</li>
+        <li>A map of all clients in the room</li>
+        <li>A default scene document (see below), and a flag indicating whether there are local changes to syncrhonize to the clients (initially false)</li>
+      </ul>
+    </li>
+    <li>Next, the server assigns the newly-connected client a unique ID (using the <a href="https://www.npmjs.com/package/uuid" title="uuid npm package">uuid</a> library) 
+      in RFC4122 version 4 format (though we strip out the hyphens for compatibility as an Automerge actor ID). It then adds to the room's client map an object representing this client, containing:
+      <ul>
+        <li>The WebSocket connection to use for communicating with this client</li>
+        <li>A reference to the room object this client occupies</li>
+        <li>A shared data structure, representing data to be synchronized to other clients in the room, further divided into two parts:
+          <ul>
+            <li>A "<b>volatile</b>" component, containing information that changes rapidly and should be syncrhonized eagerly, such as head and controller poses (initially assumed to be at the origin by default). The client's unique ID is also stored here,
+              even though it does not change, for the convenience of being able to send an array of all the "volatile" structures and have them already pre-labelled with the client to whom they belong.              
+            </li>
+            <li>A "<b>user</b>" component, containing long-lived user information, such as their display name and avatar customization. These are relayed only when a new user joins, 
+              though in future they could also be updated when a user changes their display properties. (The current interface does not give users a means to do this, but this is only a UI restriction)</li>
+          </ul>
+        </li>
+      </ul>
+      The server replies back to the client with a "handshake" message, containing the client's assigned unique ID, the server's own unique ID, 
+      and an array of the "shared" data objects for all other clients connected to the same room.
+    </li>
+    <li>
+      As soon as the connection is established, the client sends a "user" message, containing the contents of its shared user data structure as described above.
+    </li>
+    <li>Upon receiving the "handshake" message, the client stores its unique ID and the server's, and uses these to set up its synchronized Automerge document (see below). 
+      It also generates "replicas" or local copies of each remote client's avatars.</li>
+    <li><p>From then on, 30 times per second, the client sends the contents of its "volatile" shared data structure to the serve as part of a "pose" message. 
+      The server receives this data and uses it to overwrite the corresponding volatile portion of its data structure for the user.</p>
+      <p>Similarly, 30 times per second, the server iterates through all of its rooms, and broadcasts an array of all volatile data structures for all users in each room to all of those users.</p>
+    </li>
+    <li>When the server receives a "user" message, it repeats it to all other clients in that room, along with the unique ID of the client who sent it so they know to which replica the change should be applied.</li>
+    <li>When the server detects that a client has disconnected, it sends an "exit" message to all clients in that room, containing the disconnected client's ID, so that they can delete the corresponding replica.</li>
+  </ol>
+
+  <p>The networking code here is deliberately agnostic about the contents of the "volatile" and "user" data structures - simply copying them verbatim as opaque containers. 
+    This makes it easy for new prototypes and artworks to add new synchronized data into the protocol, without depending on changes to the networking infrastructure.
+    Different experiences using divergent data streams can co-exist in different rooms running on the same shared server. An example of this in action are the "emotes"
+    used in the multiplayer2.html demo, discussed below, where information about a user's current emoting state is injected into the volatile structure to replicate to other users.
+  </p>
 
   <h4>"Shared Scene" & Automerge Integration</h4>
 
