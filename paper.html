@@ -11,7 +11,7 @@
 
   <!-- Add your names here - I was a bit shy to accidentally misspell or omit a name, so I think it's best if we each add our own. ;) -->
   <p class="date">2021 - 12 - 04</p>
-  <p class="authors">Douglas Gregory</p>
+  <p class="authors">Douglas Gregory, Jorge de Oliveira</p>
 
   <!-- TODO: Add table of contents with anchor links to each section. -->
 
@@ -51,6 +51,48 @@
   <h4>Websocket Communication Protocol</h4>
 
   <h4>"Shared Scene" & Automerge Integration</h4>
+
+  <h3>UI/HUD</h3>
+
+  <p> The UI/HUD was built with accessbility and ease to use in mind. The buttons on the HUD panels were made to be big with 
+    bright colours so to indicate clearly what is being selected. An emoji system was introduced to give more alternatives to 
+    the player to express themselves in a way that can be easily understood and seen by others in the world. Then finally a print
+  function was added that can print text in the wourld as a way to help debug the VR version with ease.</p>
+  <!-- TODO: more can be added here -->
+
+  <h4>HUD Panels</h4>
+
+  <p> The panels componet of the project uses the same in world 3D presence represented by 3D panels that can be interacted 
+    either by mouse click, or in VR by using the controller. This was achieved by using a raycast object that can be casted 
+    either from the mouse position, in case the client is using keyboard and mouse, or from the controller position, in caste
+    the client is using VR.</p>
+    <!-- TODO: Add more to this section, I did not work on it so I don't know what else to add -->
+
+  <h4>Emojis</h4>
+  <p>The emoji system was built to give the player more ways to express how they feel while navigating in the world. This was 
+    achieved by spawning in 3D emojis that would animate on top of the player to signify their current emotion towards the world 
+    at that moment.
+  </p>
+  <p>The first step into spawning the emoji is to get a parent component as soon as the application is launched, the parent 
+    component serves as an anchor point where the emoji will always follow. Fot this parent component we chose to use the body 
+    representation of the player in the application world, that way everyone in the world will always know who used the emoji. 
+  </p>
+  <p>The next step would come when the player decided to emote. As soon as they trigger the button a method is called where we 
+    get a time stamp of the time when the method was called, this is meant to be used as a way for the program to know when it 
+    is suitable to delete the emoji, the current time is 5 seconds after it has been triggered.
+  </p>
+  <p>Once this is done we then set the position of the emoji and also set the parent to the body object. Then to make sure the 
+    code is not expensive to run we call another method that actually spawns the emoji. This method does one of two functions, 
+    it either loads the emoji from a file path, or if that emoji has been previously used it recycles the emoji from a cached model. 
+  </p>
+
+  <h4>Print in VR</h4>
+  <p>The print in VR method was done using some of the basic principles of the emoji method. It gets a parent object that we can then 
+    parent the 3D text to it so it can anchor itself to that object in the world. 
+    Every string sent to the print method is added to an array, this array has a capacity of ten elements, if an 11th element is added
+    the fisrt element in that array is then deleted and all the other elements shifts one position. The capacity of ten elements was chosen 
+    so it can be easy for the user to read the messages coming through without being overwhelmed by many messages at once. 
+  </p>
 
   <h2>Worlds</h2>
 
