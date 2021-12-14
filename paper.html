@@ -22,20 +22,52 @@
 
     <!-- TODO: Add table of contents with anchor links to each section. -->
 
-    <h2>Overview</h2>
+    <h2>Contents</h2>
 
-    <h3>Related Works</h3>
+    <ul>
+      <li><a href="#overview">Overview</a>
+        <ul>
+          <li><a href="#related">Related Works</a></li>
+        </ul>
+      </li>
+      <li><a href="#overview">Technical Components</a>
+        <ul>
+          <li><a href="#related">Replication</a>
+            <ul>
+              <li><a href="#websocket">WebSocket Protocol</a></li>
+              <li><a href="#websocket">"Shared Scene" and Automerge Integration</a></li>  
+            </ul>
+          </li>
+          <li><a href="#ui">UI / HUD</a>
+            <ul>
+              <li><a href="#hud">HUD Panels</a></li>
+              <li><a href="#emoji">Emojis</a></li>
+              <li><a href="#print">Print in VR</a></li>
+            </ul>
+          </li>
+        </ul>        
+      </li>
+      <li><a href="#worlds">Worlds</a>
+        <ul>
+          <li><a href="#reflect">Reflect</a></li>
+        </ul>
+      </li>
+      <li><a href="#future">Future Work</a></li>
+    </ul>
+
+    <h2 id="overview">Overview</h2>
+
+    <h3 id="related">Related Works</h3>
 
 
-    <h2>Technical Components</h2>
+    <h2 id="technical">Technical Components</h2>
 
-    <h3>Replication</h3>
+    <h3 id="replication">Replication</h3>
 
     <p>
       Multi-user interaction occurs in one of an arbitrary number of "<strong>rooms</strong>", each one identified by a
       string key. Users who have connected to the same room are able to see and hear one another, and collaboratively
-      edit
-      a shared 3D scene that persists within that room, independent of all others.
+      edit a shared 3D scene that persists within that room, independent of all others.
     </p>
     <p>
       At present, we use one "room" per HTML entry point to the application (so each "world" discussed below has its own
@@ -76,7 +108,7 @@
       <a href="https://www.npmjs.com/package/express" title="express npm package">express</a> library.
     </p>
 
-    <h4>WebSocket Communication Protocol</h4>
+    <h4 id="websocket">WebSocket Communication Protocol</h4>
 
     <p>Because WebSockets are built on top of TCP, our communication is reliable and in-order, so we don't need to
       manually handle dropped or out-of-order messages. Interruptions in communication can still happen, but it's safe
@@ -204,7 +236,7 @@
       injected into the volatile structure to replicate to other users.
     </p>
 
-    <h4>"Shared Scene" and Automerge Integration</h4>
+    <h4 id="automerge">"Shared Scene" and Automerge Integration</h4>
 
     <p>When a new room is created, the server creates a blank Automerge document with its unique ID,
       and tracks a synchronization state for that document for each user who connects to the room.
@@ -403,9 +435,9 @@
     </p>
 
 
-    <h3>UI/HUD</h3>
+    <h3 id="ui">UI / HUD</h3>
 
-    <p> The UI/HUD was built with accessbility and ease to use in mind. The buttons on the HUD panels were made to be
+    <p> The UI / HUD (Heads-Up Display) was built with accessbility and ease to use in mind. The buttons on the HUD panels were made to be
       big
       with bright colours so to indicate clearly what is being selected. An emoji system was introduced to give more
       alternatives to the player to express themselves in a way that can be easily understood and seen by others in the
@@ -413,7 +445,7 @@
       version with ease.</p>
     <!-- TODO: more can be added here -->
 
-    <h4>HUD Panels</h4>
+    <h4 id="hud">HUD Panels</h4>
 
     <p> The panels componet of the project uses the same in world 3D presence represented by 3D panels that can be
       interacted either by mouse click, or in VR by using the controller. This was achieved by using a raycast object
@@ -423,7 +455,7 @@
       position, in case the client is using VR.</p>
     <!-- TODO: Add more to this section, I did not work on it so I don't know what else to add -->
 
-    <h4>Emojis</h4>
+    <h4 id="emoji">Emojis</h4>
     <p>The emoji system was built to give the player more ways to express how they feel while navigating in the world.
       This was achieved by spawning in 3D emojis that would animate on top of the player to signify their current
       emotion
@@ -450,7 +482,7 @@
       emoji from a cached model.
     </p>
 
-    <h4>Print in VR</h4>
+    <h4 id="print">Print in VR</h4>
     <p>The print in VR method was done using some of the basic principles of the emoji method. It gets a parent object
       that we can then
       parent the 3D text to it so it can anchor itself to that object in the world.
@@ -463,11 +495,11 @@
       once.
     </p>
 
-    <h2>Worlds</h2>
+    <h2 id="worlds">Worlds</h2>
 
-    <p>Reflect</p>
+    <p id="reflect">Reflect</p>
 
-    <h2>Future Work</h2>
+    <h2 id="future">Future Work</h2>
     <p></p>
   </article>
 </body>
