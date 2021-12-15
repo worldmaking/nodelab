@@ -487,13 +487,9 @@
           </li>
           <li>
             <p>Changes to rows whose key does <em>not</em> exist in our sceneObjects map, which correspond to new
-              objects
-              to add to
-              the scene. If the object has a null position, we know it must be the scene root, and assign this row's key
-              to
-              our scene root object's mergeID. Otherwise, we assume it to be a mesh, and instantiate a THREE.Mesh with
-              the
-              data stored in the row.</p>
+              objects to add to the scene. If the object has a null position, we know it must be the scene root, and
+              assign this row's key to our scene root object's mergeID. Otherwise, we assume it to be a mesh, and
+              instantiate a THREE.Mesh with the data stored in the row.</p>
           </li>
           <li>
             <p>Changes to rows whose key <em>does</em> exist in our sceneObjects map, which correspond to modified
@@ -588,6 +584,12 @@
     <h3 id="multiplayer">Multiplayer</h3>
 
     <a href="https://xr.alicelab.world/multiplayer2.html">Try the "Multiplayer" experience live in your browser!</a>
+
+    <video width="640" poster="media/multiplayer-still.jpg" controls>
+      <source src="media/multiplayer-video.mkv" type="video/mp4">
+      <source src="media/multiplayer-video.mkv" type="video/ogg">
+      Your browser does not support HTML video.
+    </video>
 
     <p>This world explores methods for users to interact and communicate within the shared 3D space, and to
       collaboratively edit the structure of their shared world together.</p>
