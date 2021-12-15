@@ -60,13 +60,15 @@
 
     <h2 id="overview">Overview</h2>
 
-
-
     <p>The WebXR Studio project began as an experiment in building a platform to support "<em>telematic</em> (remote)
       immersive experiences" using browser-based <a href="https://en.wikipedia.org/wiki/WebXR"
         title="Wikipedia article on WebXR API">WebXR technology</a>, and "to rethink how immersive worlds can be
       developed & shared through remote development and education," as outlined in the <a
         href="https://alicelab.world/digm5520/project.html">original project brief</a>.</p>
+
+    <p>The work was conducted over the course on the fall 2021 semester by a group of undergraduate and graduate
+      students at York University, working remotely over Zoom, Discord, and GitHub, and supported by professor Graham
+      Wakefield and research assistants Michael Palumbo and Nick Fox-Gieg.</p>
 
     <p>Currently at a proof of concept stage, this project consists of a collection of separate "worlds"
       built on a common infrastructure of client and server JavaScript code, demonstrating distinct aspects
@@ -74,9 +76,12 @@
     </p>
 
     <ul>
-      <li><a href="#multiplayer">The "multiplayer" world</a> demonstrates collaborative editing of a shared 3D scene, and non-verbal communication between users via visual "emote" signifiers.</li>      
-      <li><a href="#reflect">The "reflect" world</a> demonstrates dynamic simulation of agents in the space, and "viral" influence of users spreading to influence those agents.</li>
-      <li><a href="#forest">The "forest" world</a> demonstrates reactivity to external data streams, and algorithmic synthesis of generative sound and three-dimensional forms.</li>
+      <li><a href="#multiplayer">The "multiplayer" world</a> demonstrates collaborative editing of a shared 3D scene,
+        and non-verbal communication between users via visual "emote" signifiers.</li>
+      <li><a href="#reflect">The "reflect" world</a> demonstrates dynamic simulation of agents in the space, and "viral"
+        influence of users spreading to influence those agents.</li>
+      <li><a href="#forest">The "forest" world</a> demonstrates reactivity to external data streams, and algorithmic
+        synthesis of generative sound and three-dimensional forms.</li>
     </ul>
 
     <h3 id="related">Related Works</h3>
@@ -84,7 +89,11 @@
 
     <h2 id="technical">Technical Components</h2>
 
-    <h3 id="three">three.js and WebXR</h3>
+    <p>The entire project is built on top of the three.js library, which provides convenient scene graph management
+      for working with GPU-accelerated WebGL rendering in the browser, and WebXR, a relatively new browser API
+      allowing interactions between JavaScript code and head-mounted displays and controllers used for virtual,
+      mixed, and extended reality experiences.
+    </p>
 
     <h3 id="replication">Replication</h3>
 
@@ -202,8 +211,7 @@
               </li>
               <li>
                 <p>A "<strong>user</strong>" component, containing long-lived user information, such as their display
-                  name
-                  and avatar customization. These are relayed only when a new user joins,
+                  name and avatar customization. These are relayed only when a new user joins,
                   though in future they could also be updated when a user changes their display properties. (The current
                   interface does not give users a means to do this, but this is only a UI restriction)
                 </p>
@@ -212,8 +220,8 @@
           </li>
         </ul>
         <p>The server replies back to the client with a "handshake" message, containing the client's assigned unique ID,
-          the server's own unique ID,
-          and an array of the "shared" data objects for all other clients connected to the same room.</p>
+          the server's own unique ID, and an array of the "shared" data objects for all other clients connected to the
+          same room.</p>
       </li>
       <li>
         <p>
@@ -223,17 +231,13 @@
       </li>
       <li>
         <p>Upon receiving the "handshake" message, the client stores its unique ID and the server's, and uses these to
-          set
-          up its synchronized Automerge document (see below).
-          It also generates "replicas" or local copies of each remote client's avatars.</p>
+          set up its synchronized Automerge document (see below). It also generates "replicas" or local copies of each
+          remote client's avatars.</p>
       </li>
       <li>
         <p>From then on, 30 times per second, the client sends the contents of its "volatile" shared data structure to
-          the
-          serve as part of a "pose" message.
-          The server receives this data and uses it to overwrite the corresponding volatile portion of its data
-          structure
-          for the user.</p>
+          the serve as part of a "pose" message. The server receives this data and uses it to overwrite the
+          corresponding volatile portion of its data structure for the user.</p>
         <p>Similarly, 30 times per second, the server iterates through all of its rooms, and broadcasts an array of all
           volatile data structures for all users in each room to all of those users.</p>
       </li>
@@ -243,8 +247,7 @@
       </li>
       <li>
         <p>When the server detects that a client has disconnected, it sends an "exit" message to all clients in that
-          room,
-          containing the disconnected client's ID, so that they can delete the corresponding replica.</p>
+          room, containing the disconnected client's ID, so that they can delete the corresponding replica.</p>
       </li>
     </ol>
 
@@ -252,11 +255,9 @@
       -
       simply copying them verbatim as opaque containers.
       This makes it easy for new prototypes and artworks to add new synchronized data into the protocol, without
-      depending
-      on changes to the networking infrastructure.
-      Different experiences using divergent data streams can co-exist in different rooms running on the same shared
-      server. An example of this in action are the "emotes"
-      used in the multiplayer2.html demo, discussed below, where information about a user's current emoting state is
+      depending on changes to the networking infrastructure. Different experiences using divergent data streams can
+      co-exist in different rooms running on the same shared server. An example of this in action are the "emotes" used
+      in the multiplayer demo, discussed below, where information about a user's current emoting state is
       injected into the volatile structure to replicate to other users.
     </p>
 
@@ -268,19 +269,16 @@
       server has no opinions about its contents.
     </p>
     <p>When a new user connects, immediately following the initial "handshake" message, the server generates an
-      Automerge
-      SyncMessage to send to that user, as a message with the "sync" command. Both client and server, upon receiving a
-      "sync" message, apply its updates to their local copy of the shared document, and immediately try to generate a
-      reply to send back as a "sync" message of their own. This conversation continues until both ends are up-to-date
-      with
-      one another and agree on the shared document contents (at which point Automerge will generate a null SyncMessage
-      signifying that there is nothing new to discuss).
+      Automerge SyncMessage to send to that user, as a message with the "sync" command. Both client and server, upon
+      receiving a "sync" message, apply its updates to their local copy of the shared document, and immediately try to
+      generate a reply to send back as a "sync" message of their own. This conversation continues until both ends are
+      up-to-date with one another and agree on the shared document contents (at which point Automerge will generate a
+      null SyncMessage, signifying that there is nothing new to discuss).
     </p>
 
     <p>This foundation of document and conversation state management is handled by the "Merger" class in <a
         href="https://github.com/worldmaking/nodelab/blob/develop/public/merge.js">merge.js</a>, which provides a
-      wrapper
-      around the common Automerge document transactions used on both client and server:
+      wrapper around the common Automerge document transactions used on both client and server:
     </p>
     <ul>
       <li>
@@ -488,23 +486,18 @@
     </p>
     <p>The first step into spawning the emoji is to get a parent component as soon as the application is launched, the
       parent component serves as an anchor point where the emoji will always follow. Fot this parent component we chose
-      to
-      use the body representation of the player in the application world, that way everyone in the world will always
-      know
-      who used the emoji.
+      to use the body representation of the player in the application world, that way everyone in the world will always
+      know who used the emoji.
     </p>
     <p>The next step would come when the player decided to emote. As soon as they trigger the button a method is called
       where we get a time stamp of the time when the method was called, this is meant to be used as a way for the
-      program
-      to know
-      when it is suitable to delete the emoji, the current time is 5 seconds after it has been triggered.
+      program to know when it is suitable to delete the emoji, the current time is 5 seconds after it has been
+      triggered.
     </p>
     <p>Once this is done we then set the position of the emoji and also set the parent to the body object. Then to make
       sure the code is not expensive to run we call another method that actually spawns the emoji. This method does one
-      of
-      two functions, it either loads the emoji from a file path, or if that emoji has been previously used it recycles
-      the
-      emoji from a cached model.
+      of two functions, it either loads the emoji from a file path, or if that emoji has been previously used it
+      recycles the emoji from a cached model.
     </p>
 
     <h4 id="print">Print in VR</h4>
@@ -525,6 +518,35 @@
     <h3 id="multiplayer">Multiplayer</h3>
 
     <a href="https://xr.alicelab.world/multiplayer2.html">Try the "Multiplayer" experience live in your browser!</a>
+
+    <p>This world explores methods for users to interact and communicate within the shared 3D space, and to
+      collaboratively edit the structure of their shared world together.</p>
+
+    <p>It makes use of the UI and shared scene technologies discussed above to give users a palette of options when they
+      press "m", which can be clicked with a mouse or by pointing and squeezing the trigger of a VR controller to
+      perform a number of effects:</p>
+
+    <ul>
+      <li>Trigger one of several "emoji" emotes to show above the user's head, visible to other users in the room.</li>
+      <li>Create a new box with a random colour in front of the user, as part of the shared scene that everyone can see
+        and modify.</li>
+      <li>Switch between translation, rotation, and scaling modes to manipulate these created boxes.</li>
+      <li>Delete created boxes.</li>
+    </ul>
+
+    <p>In the translation, rotation, and scaling modes, transformation gizmos appear around the currently selected box,
+      allowing the user to transform it in various ways, and immediately propagate those changes to all other users in
+      the room.
+    </p>
+
+    <p>A significant challenge with this work &mdash; in addition to the core technology problems discussed in the
+      preceding sections &mdash; is making the UI work smoothly in both first and third-person views. In a third-person
+      view, the UI needs to move closer to the camera to be more visible, and avoid being occluded by the user's own
+      avatar, while in first-person view, the UI needs to remain in front of the avatar to be seen.</p>
+
+    <p>Challenges remain in adapting the UI to work optimally with VR &mdash; using controller face buttons rather than
+      keyboard keys, and ensuring there is no confusion between commands to teleport or activate a UI button.
+    </p>
 
     <h3 id="reflect">Reflect</h3>
 
@@ -647,168 +669,293 @@
       as in the example of the fireflies that produce light with small amounts of energy. Reflect is a speculative
       design for a more sustainable future.</p>
 
-    </style></head><body class="c3 c12"><p class="c1">
-      <span class="c0">Title: </span><span class="c2">Holonic Chorus</span></p><p class="c1">
-      <span class="c0">Authors: </span><span class="c2">Kwame Kyei-Boateng, Eyal Assaf, Grace Grothaus, and Ilze Briede [Kavi]</span></p><p class="c1">
-      <span class="c0 c11">Abstract:</span></p><p class="c1 c4">
-        <span class="c6">Holonic Chorus</span><span>&nbsp;is a</span><span>&nbsp;shared WebXR virtual forest that shifts 
-        and changes through both real world biometeorological data and user interaction. Through the use of a set of 
-        biometeorological sensors, Internet of Things(IoT) server shiftr.io, and MQTT protocol, we were able to create a 
-        virtual environment in which the trees fluctuate via the wind blowing in Toronto. Furthermore, user interactions 
-        with the trees in this playful space generate different musical tones, creating the possibility of making 
-        extemporaneous distributed choral work which is unique to the collective decisions of all participants involved. 
-        A holon, from the Greek holos&lsquo;whole&rsquo; and -on &lsquo;part&rsquo;, is defined as being simultaneously 
-        both a whole in and of itself, as well as part of a larger whole. In our real worlds, socially distanced due to 
-        the pandemic, we hoped to provide a sense of collectivity and shared space in the virtual environment.</span></p><p class="c1">
-      <span class="c0">An overview of the world visuals and interaction design:</span></p><p class="c1 c4">
-        <span>The forest.mjs module was built upon the world.mjs module which provided a common landing screen, lighting, 
-        floor, navigation, and avatar developed by other members of the class. On top of this we created a forest of 
-        t</span><span>rees randomly placed on the plane. The trees were formed by grouping 3D meshes consisting of a trunk, 
-        an inner foliage, an outer dynamic shell, inner animated spheres and an overall encompassing sphere. The meshes were 
-        based on default primitive geometry in the THREE.js library. The inner foliage was created from a looped array of 
-        triangular shapes randomly positioned within a set volume. The dynamic outer shell was an icosahedron made up of 
-        dynamic vertices that moved based on numbers generated by the biometeorological data (</span><span>numbers were 
-        initially generated using the</span><span>&nbsp;OpenSimplexNoise JS library, which creates a random </span><span>
-        gradient noise</span><span>&nbsp;function)</span><span>.</span><span class="c3">&nbsp;The auras haloing each tree 
-        were made using THREE.SphereGeometry() and were randomized in color. &nbsp;</span><span class="c2">Finally, the 
-        animated globes within the tree were also made of sphere geometries.</span></p><p class="c1 c4"><span>At the outset 
-        of the project, the dynamic tree shells were conceived of as Non-Player Character (NPC) agents in the virtual world 
-        that would allow for interaction with the VR User. This eventually evolved into creating shells around the users 
-        themselves, which would allow users to interact with the digital world as well as with each other when their shells 
-        came into contact with one another. The hope was that these shells could act as a surface where some NPC agents would
-        &ldquo;live&rdquo; and provide various data directly to the VR User, or alternatively to influence the animation of 
-        the world around the User. However, ultimately they evolved from shells around the users into being the data 
-        responsive components of the trees. </span></p><p class="c1 c4"><span>To build out the world around the trees, a fog 
-        was created using THREE.FogExp2() that increased in density as a user moved away from the centre of the world. A 
-        gradient shader over the ground also faded color away from the centre, in hopes of encouraging visitors to spend 
-        more time in the outskirts area, where they would readily find one another for interaction. </span><span class="c2">
-        Colors were randomized in the background sky, on the sphere agents that now moved within the foliage of the tree, and 
-        of the aura meshes haloing each tree. &nbsp;</span></p><p class="c8 c4"><span>When a user approached a tree in the 
-        space, the wireframe of the foliage mesh turned &ldquo;false&rdquo;, the trunk mesh&rsquo;s wireframe turned 
-        &ldquo;true&rdquo;, and using vertex and fragment shaders, the material of both meshes changed, increasing in 
-        luminosity. The x, y, and z positions of the foliage mesh&rsquo;s vertices also translated within their confined bounds 
-        (-2.2 to +2.2 units) using</span><span>&nbsp;real world biometeorological data through </span><span>MQTT.js, a client 
-        library for the </span><span>MQTT</span><span>&nbsp;protocol written in JavaScript for node.js and the browser, from 
-        server shiftr.io, an Internet of Things(IoT) platform that allows connection between hardware and software over the 
-        cloud. In this project, our data, </span><span class="c10"><a class="c7" 
-        href="https://www.google.com/url?q=https://poetryai.cloud.shiftr.io/&amp;sa=D&amp;source=editors&amp;ust=1639531788929000&amp;usg=AOvVaw2QuIMDBedVvM_c5dGlxWWe">
-        https://poetryai.cloud.shiftr.io/</a></span><span>, was shared generously through project </span><span class="c6">
-        Foresta-Inclusive</span><span class="c2">&nbsp;by Professor Jane Tingley through Research Assistants Grace Grothaus 
-        and Ilze Briede aka Kavi. </span></p><p class="c5 c4"><span class="c2"></span></p><p class="c8 c4"><span>Each inner 
-        foliage mesh was given a number between 300 and 1700 as its frequency. When a user got close to a tree, using Tone.js, 
-        a JavaScript library built on top of the Web Audio API, that number was used to create a synth with a fat triangle 
-        oscillator, thus each tree would produce its own unique sound. The generated sound was attached to the position of the 
-        inner foliage using THREE.PositionalAudio(), and so as a user moved away from a tree, it seemed as if they were moving 
-        away from the sound as well. The light and sound effect was meant to aid users in finding one another as they navigated 
-        the fog shrouded world. The digital environment, populated with digital bodies, helped bring users together despite a 
-        physical &nbsp;separation.</span></p><p class="c1">
-      <span class="c0">Description of the primary challenges and solutions found to overcome them</span></p><p class="c1 c4">
-        <span class="c2">Our collaboration was process driven: we made changes iteratively as each team member contributed a 
-        suggestion and provided a code example to the group. Much of the code was written separately; however we also 
-        interspersed group coding sessions which helped us to get past hurdles and to understand the logic of one another&rsquo;s 
-        code blocks. One issue we encountered as a team was an initial lack of familiarity with the THREE.js platform, and coding 
-        in Javascript at the outset of the project. We learned through the process. A secondary issue was lack of familiarity 
-        with merging code through the github platform. However we gained proficiency at resolving versioning issues as they arose 
-        and made tremendous progress in a short span of time.</span></p><p class="c4 c8"><span>Another issue that arose came out 
-        of a</span><span class="c2">n attempt to incorporate Web Audio API code for generative sound making into the Three.js world. 
-        However, attempting to add the Web Audio API code with the Three.js code proved to be challenging, and no official or 
-        unofficial documentation could be found regarding connecting the two, beyond simply connecting an mp3 file to a Three.js 
-        AudioListener. However, a new approach was developed using Tone.js, a high level Javascript library built on top of the Web 
-        Audio API, and although it wouldn&#39;t provide the same sound that was initially desired using the Web Audio API, Tone.js 
-        was easily able to connect to Three.js. Ultimately, this was a lesson in perseverance, but also about learning to adapt and 
-        approach a problem in a new way.</span></p><p class="c5"><span class="c2"></span></p><p class="c8 c4"><span>Initially, we 
-        also experimented with working with bio-physiological sensing and incorporating the body data in the virtual space. 
-        Since real-time data collected from team member Kavi&#39;s heart was populated to the shiftr.io instance </span>
-        <span class="c10"><a class="c7" href="https://www.google.com/url?q=https://kavitest.cloud.shiftr.io&amp;sa=D&amp;source=editors&amp;ust=1639531788932000&amp;usg=AOvVaw0u_2DoG7y5LXLwdWFkfyL9">https://kavitest.cloud.shiftr.io</a></span><span class="c2">
-        , the integration of the MQTT library used for the forest data also made it functionally possible to incorporate heart rate
-        and other biometrics. Kavi used Biopac MP40 and esp32 hardware coupled with a custom build software package called PACIS2 
-        developed by Prof. Mark-David Hosale and artist Alan Macy. Using this set up, complex heart activity can be calculated from 
-        three electrodes on a person&#39;s skin, such as heartbeat, respiration, heart rate variability, and such. First, the data 
-        should be readily available for prototyping and building purposes which would involve a tedious process to connect yourself 
-        to a sensing unit and sit still for bio-physiological data to register correctly. That was not always possible since we all 
-        worked on individual schedules. To facilitate continuous flow of data, the heart activity should have been recorded first 
-        and then made available through the shiftr.io platform. </span></p><p class="c5 c4"><span class="c2"></span></p><p class="c8 c4"><span>
-        This posed questions about data collection and privacy issues that arise when data is made widely available on the Internet. 
-        Since personal data exposes a person&#39;s physiology and physical fitness, it also begged us to think of ways to mask this 
-        data and use it more abstractly in the piece. Nevertheless, the data access was still available in the source code. 
-        In &quot;Psychophysiological Recording&quot;, Stern et al. talk about ethical responsibilities that have to be taken into 
-        consideration when gathering one&#39;s data and making sure it is ethically done and ethically treated afterwards. &quot;The 
-        rights of the subject include the right to privacy, the right to know what is to occur, freedom from physical danger, and 
-        freedom from fear, anger, embarrassment, or other behavioural disturbance.&quot; (2001:73). Even though our intentions would 
-        be solely positive and creative and data treatment highly ethical, we could not possibly be responsible for other people&#39;s 
-        actions that could gain access to this data from the website&#39;s source code. We also discussed aspects of equality and 
-        meaning in the case of using someone&#39;s data set in a collaborative piece where not everyone would have access to sensing 
-        equipment. That would result in everyone not contributing equally to the virtual world we were building. Therefore we decided 
-        not to include it in this VR experience.</span></p><p class="c1">
-      <span class="c11 c0">A description of future work to be done on this project</span></p><p class="c1">
-        <span class="c0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span>Looking ahead, we would love to integrate this 
-        world with other worlds and elements of them, increasing the ways in which the virtual environment could be explored by Users. 
-        One direction to explore includes e</span><span class="c2">xpanding upon the ways in which users can affect the world. 
-        Additionally, changing more aspects of the world through interactions with each other, such as further transforming the trees, 
-        or themselves when multiple users come into contact, or create configurations with one another, would create altogether new 
-        means of engagement. Sonically, in addition to the visual, there is much that could be explored in future iterations. Perhaps 
-        generating sounds that are closer to real instruments, such as a piano or viola, and thereby orchestrating a true symphony of 
-        trees.</span></p><p class="c1">
-          
-      <span class="c2">Endnotes:</span></p><p class="c8">
-        <span class="c6">Foresta-Inclusive</span><span class="c2">&nbsp;is funded by the Social Sciences and Humanities Research Council 
-        of Canada as well as the&ldquo;Environments of Change&rdquo; Partnership Grant. </span></p><p class="c1">
-        <span class="c3">Stern, Robert Morris, William J. Ray, and Karen S. Quigley. </span><span class="c3 c6">Psychophysiological 
-          recording</span><span class="c2 c3">. Oxford University Press, USA, 2001.</span></p><hr style="page-break-before:always;display:none;"><p class="c1 c9"><span class="c2"></span></p><p class="c1 c9"><span class="c2"></span></p><p class="c1 c9"><span class="c2"></span></p><p class="c5"><span class="c2"></span></p><p class="c1"><span class="c2"></span>  
+    </style>
+    </head>
+
+    <body class="c3 c12">
+      <p class="c1">
+        <span class="c0">Title: </span><span class="c2">Holonic Chorus</span>
+      </p>
+      <p class="c1">
+        <span class="c0">Authors: </span><span class="c2">Kwame Kyei-Boateng, Eyal Assaf, Grace Grothaus, and Ilze
+          Briede [Kavi]</span>
+      </p>
+      <p class="c1">
+        <span class="c0 c11">Abstract:</span>
+      </p>
+      <p class="c1 c4">
+        <span class="c6">Holonic Chorus</span><span>&nbsp;is a</span><span>&nbsp;shared WebXR virtual forest that shifts
+          and changes through both real world biometeorological data and user interaction. Through the use of a set of
+          biometeorological sensors, Internet of Things(IoT) server shiftr.io, and MQTT protocol, we were able to create
+          a
+          virtual environment in which the trees fluctuate via the wind blowing in Toronto. Furthermore, user
+          interactions
+          with the trees in this playful space generate different musical tones, creating the possibility of making
+          extemporaneous distributed choral work which is unique to the collective decisions of all participants
+          involved.
+          A holon, from the Greek holos&lsquo;whole&rsquo; and -on &lsquo;part&rsquo;, is defined as being
+          simultaneously
+          both a whole in and of itself, as well as part of a larger whole. In our real worlds, socially distanced due
+          to
+          the pandemic, we hoped to provide a sense of collectivity and shared space in the virtual environment.</span>
+      </p>
+      <p class="c1">
+        <span class="c0">An overview of the world visuals and interaction design:</span>
+      </p>
+      <p class="c1 c4">
+        <span>The forest.mjs module was built upon the world.mjs module which provided a common landing screen,
+          lighting,
+          floor, navigation, and avatar developed by other members of the class. On top of this we created a forest of
+          t</span><span>rees randomly placed on the plane. The trees were formed by grouping 3D meshes consisting of a
+          trunk,
+          an inner foliage, an outer dynamic shell, inner animated spheres and an overall encompassing sphere. The
+          meshes were
+          based on default primitive geometry in the THREE.js library. The inner foliage was created from a looped array
+          of
+          triangular shapes randomly positioned within a set volume. The dynamic outer shell was an icosahedron made up
+          of
+          dynamic vertices that moved based on numbers generated by the biometeorological data (</span><span>numbers
+          were
+          initially generated using the</span><span>&nbsp;OpenSimplexNoise JS library, which creates a random
+        </span><span>
+          gradient noise</span><span>&nbsp;function)</span><span>.</span><span class="c3">&nbsp;The auras haloing each
+          tree
+          were made using THREE.SphereGeometry() and were randomized in color. &nbsp;</span><span class="c2">Finally,
+          the
+          animated globes within the tree were also made of sphere geometries.</span>
+      </p>
+      <p class="c1 c4"><span>At the outset
+          of the project, the dynamic tree shells were conceived of as Non-Player Character (NPC) agents in the virtual
+          world
+          that would allow for interaction with the VR User. This eventually evolved into creating shells around the
+          users
+          themselves, which would allow users to interact with the digital world as well as with each other when their
+          shells
+          came into contact with one another. The hope was that these shells could act as a surface where some NPC
+          agents would
+          &ldquo;live&rdquo; and provide various data directly to the VR User, or alternatively to influence the
+          animation of
+          the world around the User. However, ultimately they evolved from shells around the users into being the data
+          responsive components of the trees. </span></p>
+      <p class="c1 c4"><span>To build out the world around the trees, a fog
+          was created using THREE.FogExp2() that increased in density as a user moved away from the centre of the world.
+          A
+          gradient shader over the ground also faded color away from the centre, in hopes of encouraging visitors to
+          spend
+          more time in the outskirts area, where they would readily find one another for interaction. </span><span
+          class="c2">
+          Colors were randomized in the background sky, on the sphere agents that now moved within the foliage of the
+          tree, and
+          of the aura meshes haloing each tree. &nbsp;</span></p>
+      <p class="c8 c4"><span>When a user approached a tree in the
+          space, the wireframe of the foliage mesh turned &ldquo;false&rdquo;, the trunk mesh&rsquo;s wireframe turned
+          &ldquo;true&rdquo;, and using vertex and fragment shaders, the material of both meshes changed, increasing in
+          luminosity. The x, y, and z positions of the foliage mesh&rsquo;s vertices also translated within their
+          confined bounds
+          (-2.2 to +2.2 units) using</span><span>&nbsp;real world biometeorological data through </span><span>MQTT.js, a
+          client
+          library for the </span><span>MQTT</span><span>&nbsp;protocol written in JavaScript for node.js and the
+          browser, from
+          server shiftr.io, an Internet of Things(IoT) platform that allows connection between hardware and software
+          over the
+          cloud. In this project, our data, </span><span class="c10"><a class="c7"
+            href="https://www.google.com/url?q=https://poetryai.cloud.shiftr.io/&amp;sa=D&amp;source=editors&amp;ust=1639531788929000&amp;usg=AOvVaw2QuIMDBedVvM_c5dGlxWWe">
+            https://poetryai.cloud.shiftr.io/</a></span><span>, was shared generously through project </span><span
+          class="c6">
+          Foresta-Inclusive</span><span class="c2">&nbsp;by Professor Jane Tingley through Research Assistants Grace
+          Grothaus
+          and Ilze Briede aka Kavi. </span></p>
+      <p class="c5 c4"><span class="c2"></span></p>
+      <p class="c8 c4"><span>Each inner
+          foliage mesh was given a number between 300 and 1700 as its frequency. When a user got close to a tree, using
+          Tone.js,
+          a JavaScript library built on top of the Web Audio API, that number was used to create a synth with a fat
+          triangle
+          oscillator, thus each tree would produce its own unique sound. The generated sound was attached to the
+          position of the
+          inner foliage using THREE.PositionalAudio(), and so as a user moved away from a tree, it seemed as if they
+          were moving
+          away from the sound as well. The light and sound effect was meant to aid users in finding one another as they
+          navigated
+          the fog shrouded world. The digital environment, populated with digital bodies, helped bring users together
+          despite a
+          physical &nbsp;separation.</span></p>
+      <p class="c1">
+        <span class="c0">Description of the primary challenges and solutions found to overcome them</span>
+      </p>
+      <p class="c1 c4">
+        <span class="c2">Our collaboration was process driven: we made changes iteratively as each team member
+          contributed a
+          suggestion and provided a code example to the group. Much of the code was written separately; however we also
+          interspersed group coding sessions which helped us to get past hurdles and to understand the logic of one
+          another&rsquo;s
+          code blocks. One issue we encountered as a team was an initial lack of familiarity with the THREE.js platform,
+          and coding
+          in Javascript at the outset of the project. We learned through the process. A secondary issue was lack of
+          familiarity
+          with merging code through the github platform. However we gained proficiency at resolving versioning issues as
+          they arose
+          and made tremendous progress in a short span of time.</span>
+      </p>
+      <p class="c4 c8"><span>Another issue that arose came out
+          of a</span><span class="c2">n attempt to incorporate Web Audio API code for generative sound making into the
+          Three.js world.
+          However, attempting to add the Web Audio API code with the Three.js code proved to be challenging, and no
+          official or
+          unofficial documentation could be found regarding connecting the two, beyond simply connecting an mp3 file to
+          a Three.js
+          AudioListener. However, a new approach was developed using Tone.js, a high level Javascript library built on
+          top of the Web
+          Audio API, and although it wouldn&#39;t provide the same sound that was initially desired using the Web Audio
+          API, Tone.js
+          was easily able to connect to Three.js. Ultimately, this was a lesson in perseverance, but also about learning
+          to adapt and
+          approach a problem in a new way.</span></p>
+      <p class="c5"><span class="c2"></span></p>
+      <p class="c8 c4"><span>Initially, we
+          also experimented with working with bio-physiological sensing and incorporating the body data in the virtual
+          space.
+          Since real-time data collected from team member Kavi&#39;s heart was populated to the shiftr.io instance
+        </span>
+        <span class="c10"><a class="c7"
+            href="https://www.google.com/url?q=https://kavitest.cloud.shiftr.io&amp;sa=D&amp;source=editors&amp;ust=1639531788932000&amp;usg=AOvVaw0u_2DoG7y5LXLwdWFkfyL9">https://kavitest.cloud.shiftr.io</a></span><span
+          class="c2">
+          , the integration of the MQTT library used for the forest data also made it functionally possible to
+          incorporate heart rate
+          and other biometrics. Kavi used Biopac MP40 and esp32 hardware coupled with a custom build software package
+          called PACIS2
+          developed by Prof. Mark-David Hosale and artist Alan Macy. Using this set up, complex heart activity can be
+          calculated from
+          three electrodes on a person&#39;s skin, such as heartbeat, respiration, heart rate variability, and such.
+          First, the data
+          should be readily available for prototyping and building purposes which would involve a tedious process to
+          connect yourself
+          to a sensing unit and sit still for bio-physiological data to register correctly. That was not always possible
+          since we all
+          worked on individual schedules. To facilitate continuous flow of data, the heart activity should have been
+          recorded first
+          and then made available through the shiftr.io platform. </span>
+      </p>
+      <p class="c5 c4"><span class="c2"></span></p>
+      <p class="c8 c4"><span>
+          This posed questions about data collection and privacy issues that arise when data is made widely available on
+          the Internet.
+          Since personal data exposes a person&#39;s physiology and physical fitness, it also begged us to think of ways
+          to mask this
+          data and use it more abstractly in the piece. Nevertheless, the data access was still available in the source
+          code.
+          In &quot;Psychophysiological Recording&quot;, Stern et al. talk about ethical responsibilities that have to be
+          taken into
+          consideration when gathering one&#39;s data and making sure it is ethically done and ethically treated
+          afterwards. &quot;The
+          rights of the subject include the right to privacy, the right to know what is to occur, freedom from physical
+          danger, and
+          freedom from fear, anger, embarrassment, or other behavioural disturbance.&quot; (2001:73). Even though our
+          intentions would
+          be solely positive and creative and data treatment highly ethical, we could not possibly be responsible for
+          other people&#39;s
+          actions that could gain access to this data from the website&#39;s source code. We also discussed aspects of
+          equality and
+          meaning in the case of using someone&#39;s data set in a collaborative piece where not everyone would have
+          access to sensing
+          equipment. That would result in everyone not contributing equally to the virtual world we were building.
+          Therefore we decided
+          not to include it in this VR experience.</span></p>
+      <p class="c1">
+        <span class="c11 c0">A description of future work to be done on this project</span>
+      </p>
+      <p class="c1">
+        <span class="c0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span>Looking ahead, we would love to
+          integrate this
+          world with other worlds and elements of them, increasing the ways in which the virtual environment could be
+          explored by Users.
+          One direction to explore includes e</span><span class="c2">xpanding upon the ways in which users can affect
+          the world.
+          Additionally, changing more aspects of the world through interactions with each other, such as further
+          transforming the trees,
+          or themselves when multiple users come into contact, or create configurations with one another, would create
+          altogether new
+          means of engagement. Sonically, in addition to the visual, there is much that could be explored in future
+          iterations. Perhaps
+          generating sounds that are closer to real instruments, such as a piano or viola, and thereby orchestrating a
+          true symphony of
+          trees.</span>
+      </p>
+      <p class="c1">
+
+        <span class="c2">Endnotes:</span>
+      </p>
+      <p class="c8">
+        <span class="c6">Foresta-Inclusive</span><span class="c2">&nbsp;is funded by the Social Sciences and Humanities
+          Research Council
+          of Canada as well as the&ldquo;Environments of Change&rdquo; Partnership Grant. </span>
+      </p>
+      <p class="c1">
+        <span class="c3">Stern, Robert Morris, William J. Ray, and Karen S. Quigley. </span><span
+          class="c3 c6">Psychophysiological
+          recording</span><span class="c2 c3">. Oxford University Press, USA, 2001.</span>
+      </p>
+      <hr style="page-break-before:always;display:none;">
+      <p class="c1 c9"><span class="c2"></span></p>
+      <p class="c1 c9"><span class="c2"></span></p>
+      <p class="c1 c9"><span class="c2"></span></p>
+      <p class="c5"><span class="c2"></span></p>
+      <p class="c1"><span class="c2"></span>
 
 
-    <h2 id="future">Future Work</h2>
-    <p></p>
+      <h2 id="future">Future Work</h2>
+      <p></p>
 
-    <h2 id="references">References</h2>
-    <ul>
-      <p>
-        <li>Breeders, Bee. “Museum of Emotions / Architecture Competition.” Museum of Emotions. Accessed December 14,
-          2021.
-          <a
-            href="https://architecturecompetitions.com/museumofemotions/">https://architecturecompetitions.com/museumofemotions/</a>.
-        </li>
-      </p>
-      <p>
-        <li>Campuzano, Juan Carlos Ponce. Lotka-Volterra model. Accessed December 14, 2021.
-          <a
-            href="https://teaching.smp.uq.edu.au/scims/Appl_analysis/Lotka_Volterra.html">https://teaching.smp.uq.edu.au/scims/Appl_analysis/Lotka_Volterra.html</a>.
-        </li>
-      </p>
-      <p>
-        <li>Duffy, B.R., G.M.P. O'Hare, A.N. Martin, J.F. Bradley, and B. Schon. “Agent Chameleons: Agent Minds and
-          Bodies.”
-          Proceedings 11th IEEE International Workshop on Program Comprehension, n.d.
-          <a href="https://doi.org/10.1109/casa.2003.1199312">https://doi.org/10.1109/casa.2003.1199312</a>.
-        </li>
-      </p>
-      <p>
-        <li>“Refactoring Javascript: WebStorm.” WebStorm Help. Accessed December 14, 2021.
-          <a
-            href="https://www.jetbrains.com/help/webstorm/specific-javascript-refactorings.html#javascript_rename_function">https://www.jetbrains.com/help/webstorm/specific-javascript-refactorings.html#javascript_rename_function</a>.
-        </li>
-      </p>
-      <p>
-        <li>Shiffman, Daniel, Shannon Fry, and Zannah Marsh. “FORCES.” Essay. In The Nature of Code. Mountain View
-          (California): s.n., 2012.</li>
-      </p>
-      <p>
-        <li>Strogatz, Steven H. “Fireflies and the Inevitability of Sync.” Essay. In Sync: How Order Emerges from Chaos
-          in
-          the Universe, Nature, and Daily Life, 37. New York: Hachette Books, 2015.</li>
-      </p>
-      <p>
-        <li>“three.js.” three.js docs. Accessed December 14, 2021. <a
-            href="https://threejs.org/docs/#api/en/lights/PointLight">https://threejs.org/docs/#api/en/lights/PointLight</a>.
-        </li>
-      </p>
-      <p>
-        <li>“Webgl Particles Waves Example.” three.js webgl - particles - waves. Accessed December 14, 2021.
-          <a
-            href="https://threejs.org/examples/webgl_points_waves.html">https://threejs.org/examples/webgl_points_waves.html</a>.
-        </li>
-      </p>
-    </ul>
+      <h2 id="references">References</h2>
+      <ul>
+        <p>
+          <li>Breeders, Bee. “Museum of Emotions / Architecture Competition.” Museum of Emotions. Accessed December 14,
+            2021.
+            <a
+              href="https://architecturecompetitions.com/museumofemotions/">https://architecturecompetitions.com/museumofemotions/</a>.
+          </li>
+        </p>
+        <p>
+          <li>Campuzano, Juan Carlos Ponce. Lotka-Volterra model. Accessed December 14, 2021.
+            <a
+              href="https://teaching.smp.uq.edu.au/scims/Appl_analysis/Lotka_Volterra.html">https://teaching.smp.uq.edu.au/scims/Appl_analysis/Lotka_Volterra.html</a>.
+          </li>
+        </p>
+        <p>
+          <li>Duffy, B.R., G.M.P. O'Hare, A.N. Martin, J.F. Bradley, and B. Schon. “Agent Chameleons: Agent Minds and
+            Bodies.”
+            Proceedings 11th IEEE International Workshop on Program Comprehension, n.d.
+            <a href="https://doi.org/10.1109/casa.2003.1199312">https://doi.org/10.1109/casa.2003.1199312</a>.
+          </li>
+        </p>
+        <p>
+          <li>“Refactoring Javascript: WebStorm.” WebStorm Help. Accessed December 14, 2021.
+            <a
+              href="https://www.jetbrains.com/help/webstorm/specific-javascript-refactorings.html#javascript_rename_function">https://www.jetbrains.com/help/webstorm/specific-javascript-refactorings.html#javascript_rename_function</a>.
+          </li>
+        </p>
+        <p>
+          <li>Shiffman, Daniel, Shannon Fry, and Zannah Marsh. “FORCES.” Essay. In The Nature of Code. Mountain View
+            (California): s.n., 2012.</li>
+        </p>
+        <p>
+          <li>Strogatz, Steven H. “Fireflies and the Inevitability of Sync.” Essay. In Sync: How Order Emerges from
+            Chaos
+            in
+            the Universe, Nature, and Daily Life, 37. New York: Hachette Books, 2015.</li>
+        </p>
+        <p>
+          <li>“three.js.” three.js docs. Accessed December 14, 2021. <a
+              href="https://threejs.org/docs/#api/en/lights/PointLight">https://threejs.org/docs/#api/en/lights/PointLight</a>.
+          </li>
+        </p>
+        <p>
+          <li>“Webgl Particles Waves Example.” three.js webgl - particles - waves. Accessed December 14, 2021.
+            <a
+              href="https://threejs.org/examples/webgl_points_waves.html">https://threejs.org/examples/webgl_points_waves.html</a>.
+          </li>
+        </p>
+      </ul>
   </article>
 </body>
 
