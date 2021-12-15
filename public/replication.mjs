@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { World }    from './world.mjs';
 import { colourTripletToHex, print, vectorToString } from './utility.mjs';
+import { font } from './font.mjs';
 
 /**
  * Pseudo-enum to make magic numbers for indexing hands less magic/more readable.
@@ -84,14 +85,6 @@ let world;
 let clientReplica;
 
 
-// Load a font that we can use to display user names of other users, 
-// and prepare a material to use for text rendering.
-const loader = new THREE.FontLoader();
-/** @type {THREE.Font} */
-let font;
-loader.load('fonts/Roboto_Regular.json', function (loadedFont) {
-    font = loadedFont;
-});
 const textMaterial = new THREE.MeshBasicMaterial({color:0x000000});
 
 
@@ -132,12 +125,22 @@ class Replica {
     #colour;
 
     /**
+     * Defining the callback type used in the Replica constructor.
+     * @callback customAvatarCallback
+     * @param {THREE.Group} head An empty group that will track the head of the replica.
+     * @param {THREE.Group} body An empty group that will track the torso of the replica.
+     * @param {THREE.Material} material A material bearing the user's assigned colour.
+     * @returns {boolean} True to continue building default avatar, false to skip it.
+     */
+
+
+    /**
      * Create a replica with these user properties.
      * @param {string} displayName Name to display for this replica user.
-     * @param {?number} colour Hex code colour to tint this user's avatar. Uses default material if absent.
+     * @param {?number[]} colour Hex code colour to tint this user's avatar. Uses default material if absent.
+     * @param {?customAvatarCallback} customAvatar Optional callback to
      */
-    constructor(displayName, colour, customAvatar) {
-        
+    constructor(displayName, colour, customAvatar) {        
 
         // Use the world default material if we lack a colour for this user.
         let material = world.defaultMaterial;
@@ -149,20 +152,19 @@ class Replica {
             material = new THREE.MeshLambertMaterial({color: this.#colour});
             this.#material = material;            
         }
+        
         this.#head = new THREE.Group();
         world.scene.add(this.#head);
         this.#body = new THREE.Group();
-        world.scene.add(this.#body);
-        let makeAvatar = true;
+        world.scene.add(this.#body);           
+
+        let makeDefaultAvatar = true;
+
         if(customAvatar){
-            makeAvatar = customAvatar(this.#head,this.#body, material)
+            makeDefaultAvatar = customAvatar(this.#head,this.#body, material)
         }
-        if (makeAvatar){
-            
-            
 
-        
-
+        if (makeDefaultAvatar) {
             // Build a "head" object, starting with a box representing the user's VR goggles.
             
             const visor = new THREE.Mesh(world.primitiveGeo.box, material);
@@ -213,12 +215,18 @@ class Replica {
         world.vrCamera.add(replica.#head);
         world.clientSpace.add(replica.#body);
         replica.#head.visible = true;
+
         return replica;
     }
 
     getBody(){
         return this.#body;
     }
+
+    getColour() {
+        return this.#colour;
+    }
+
     /**
      * Call this when a user chances their colour/name to update their appearance.
      * @param userData data structure containing rgb colour and name string.
@@ -304,7 +312,7 @@ class Replica {
             // and we're currently showing a hand we made earlier, hide it.
             world.scene.remove(hand);
             hand.visible = false;
-        }
+        }        
     }
 
     /**
@@ -355,9 +363,7 @@ class Replica {
         this.#tryReplicateHand(HandID.right, userData.poses[2], scale);
     }
 
-    getColour() {
-        return this.#colour;
-    }
+
 }
 
 /** @type {Replica[]} */

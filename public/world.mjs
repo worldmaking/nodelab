@@ -2,6 +2,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.m
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 import {print, vectorToString} from './utility.mjs';
 
+// added ramp to floor; expanded plane and gridHelper
+
+
 /**
  * Bundles up the boilerplate of setting up a THREE.js scene for VR,
  * and packs up the items we want to use most often into a "world" object with type information
@@ -157,9 +160,7 @@ class World {
         const grid = new THREE.GridHelper(200,200, 0x333366, 0x666666);
         scene.add(grid);
         
-        if (makeLights){
-
-        
+        if (makeLights){        
             // Add some lights to the scene to distinguish surfaces help see where objects are positioned,
             // using the parallax of their shadow.
             const light = new THREE.HemisphereLight(0xfffcee, 0x202555);

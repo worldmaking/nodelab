@@ -4,7 +4,7 @@ import { FBXLoader } from './jsm/loaders/FBXLoader.js'
 import * as MKControl from './mouseKeyboardControl.mjs';
 import * as VRControl from './vrControl.mjs';
 import * as ThreeMeshUI from "https://cdn.skypack.dev/three-mesh-ui"; //ui interface library
-
+import { font } from './font.mjs';
 import { joinRoom, leaveRoom, initialize } from "./audioConnect.mjs"
 
 // MERGE FROM https://codepen.io/oxgr/pen/NWveNBX?editors=0010
@@ -16,6 +16,8 @@ const loader = new FBXLoader();
 
 const emojiDuration = 8;
 const emojiSpinRate = Math.PI;
+
+const textMaterial = new THREE.MeshLambertMaterial();
 
 const modelCache = { 
   tryLoad: function(fileName, container) {
@@ -95,6 +97,7 @@ const UI = {
   replicaEmotes: [],
 
   init(world) {
+    //console.log("UI initialized");
     this.world = world;
     this.control = new TransformControls(world.mouseCamera, world.renderer.domElement);
 
@@ -367,17 +370,36 @@ const UI = {
     },
 
     addNewObj(pos) {
-      let newBox = new THREE.Mesh(
-        new THREE.BoxGeometry(0.5, 0.5, 0.5),
-        new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
-      );
+      const geoName = "box-0.5";
+      let geo = this.world.shared.sceneGeometries.getByName(geoName);
+      if (!geo) {
+        geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        geo.name = geoName;
+        this.world.shared.registerGeometry(geo);
+      }
+
+      const color = Math.round(Math.floor(Math.random() * 5) * 255/4)
+                  + (Math.round(Math.floor(Math.random() * 5) * 255/4) << 8)
+                  + (Math.round(Math.floor(Math.random() * 5) * 255/4) << 16);
+      const matName = "lambert-" + color.toString('16').padStart(6, "0");
+
+      let mat = this.world.shared.sceneMaterials.getByName(matName);
+      if (!mat) {
+        mat = new THREE.MeshLambertMaterial({color: color});
+        mat.name = matName;
+        this.world.shared.registerMaterial(mat);
+      }
+
+
+      let newBox = new THREE.Mesh(geo, mat);
+
       newBox.position.x = pos.x;
       newBox.position.y = pos.y;
       newBox.position.z = pos.z;
-      // newBox.rotation = new THREE.Euler().setFromVector3(pos);
-      this.world.scene.add(newBox);
-      this.clickable.push(newBox);
-      this.malleable.push(newBox);
+      
+      this.world.shared.sceneRoot.add(newBox);
+
+      this.world.shared.registerMesh(newBox);
 
       this.print("box added");
     //   this.print(newBox.color.toString());
@@ -507,13 +529,13 @@ const UI = {
         }
 
         if (this.malleable.includes(obj)) { // if the obj is part of the malleable objects array,
-          if (this.removeMode) {
-            this.world.scene.remove(obj);
-            this.print("box removed");
+          if (this.removeMode) {            
             if (obj == this.activeObj) {
               this.control.detach();
               this.activeObj = null;
             }
+            this.world.shared.remove(obj);
+            this.print("box removed");
           } else if (obj !== this.activeObj) {
             this.activateObj(obj);
           }
@@ -716,31 +738,27 @@ const UI = {
     this.logs.push(s);
     if (this.logs.length > 9) {
       this.logs.shift();
+      const removed = this.textGroup.children[0];
+      removed.geometry.dispose();
+      this.textGroup.remove(removed);
+    }   
+    
+    for (let i = 0; i < this.textGroup.children.length; i++) {
+      this.textGroup.children[i].position.y -= 0.2;
     }
-    const loader = new THREE.FontLoader();
-    let tempLogs = this.logs;
-    let tempTextGroup = this.textGroup;
-    loader.load('./fonts/Roboto_Regular.json', function (font) {
-      for (let i = 0; i < tempTextGroup.children.length; i++) {
-        tempTextGroup.remove(tempTextGroup.children[i])
-      }
-      let y = 0.8;
-      for (let i = tempLogs.length - 1; i >= 0; i--) {
-        const textGeo = new THREE.TextGeometry(tempLogs[i].toString(), {
-          font: font,
-          size: 0.15,
-          height: .04,
-        });
+    let y = 1.8;
+    const textGeo = new THREE.TextGeometry(this.logs[this.logs.length-1].toString(), {
+      font: font,
+      size: 0.15,
+      height: .04,
+    });
 
-        let textMesh = new THREE.Mesh(textGeo, new THREE.MeshLambertMaterial());
-        textMesh.position.x = 0;
-        textMesh.position.y = y;
-        textMesh.position.z = -1;
-        tempTextGroup.add(textMesh);
-        y -= 0.2;
-      }
-    }
-    );
+    let textMesh = new THREE.Mesh(textGeo, textMaterial);
+    textMesh.position.x = 0;
+    textMesh.position.y = y;
+    textMesh.position.z = -1;
+    this.textGroup.add(textMesh);
+    y -= 0.2;
   },
 
   playEmoteOnReplica(replica, fileName) {
@@ -779,7 +797,38 @@ const UI = {
       this.emotePanel.position.set(0, 0.2, 0.3);
       this.emotePanel2.position.set(0, 0.4, 0.2);
     }
+  },
+
+  onSceneObjectAdded(sceneObject) {
+    this.clickable.push(sceneObject);
+    this.malleable.push(sceneObject);
+  },
+
+  onSceneObjectRemoved(sceneObject) {
+    if (this.control.object === sceneObject) {
+      this.control.detach();
+      this.activeObj = null;
+    }
+    removeFromArray(this.clickable, sceneObject);
+    removeFromArray(this.malleable, sceneObject);
+  },
+
+  attachToSharedScene(sharedScene) {
+    sharedScene.onSceneObjectAdded = this.onSceneObjectAdded.bind(this);
+    sharedScene.onSceneObjectRemoved = this.onSceneObjectRemoved.bind(this);
+
+    this.control.addEventListener('change', ()=> {
+      if (this.control.object) {
+        sharedScene.updateTransformation(this.control.object);
+      }
+    });
   }
 };
+
+function removeFromArray(array, item) {
+  const index = array.indexOf(item);
+  if (index > -1)
+    array.splice(index, 1);
+}
 
 export { UI }

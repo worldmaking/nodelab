@@ -8,17 +8,20 @@ function connectToWorld(opt={}) {
 		userName: "Anonymous",
 		userRGB: [Math.random(), Math.random(), Math.random()],		
 		log: console.log,
-		onconnect: function(myID) {
+		onconnect: function(myID, serverID) {
 			options.log ("Received connection handshake, but no 'onconnect' handler was provided.");
-		},		
+		},
+		onsync: function(syncMessage) {
+			options.log ("Received syncMessage, but no 'onsync' handler was provided.");
+		},
 		onproject: function(projectData) { 
-			options.log ("Received project message, but ignored it since no 'onproject' handler was provided.")
-		},		
+			options.log ("Received project message, but ignored it since no 'onproject' handler was provided.");
+		},
 		onuser: function(id, userData) { 
-			options.log (`Received user message for ${id}, but ignored it because no 'onuser' handler was provided.`)
+			options.log (`Received user message for ${id}, but ignored it because no 'onuser' handler was provided.`);
 		},
 		onuserexit: function(id, userData) { 
-			options.log (`Received user exit message for ${id}, but ignored it because no 'onuserexit' handler was provided.`)
+			options.log (`Received user exit message for ${id}, but ignored it because no 'onuserexit' handler was provided.`);
 		},	
 	}, opt);
 
@@ -41,6 +44,8 @@ function connectToWorld(opt={}) {
 		options.log(`connecting to ${options.url}${options.room}`)
 		let server = new WebSocket(options.url + options.room);
 		server.binaryType = "arraybuffer";
+
+		let serverID;
 
 		const reconnect = function() {
 			server = null
@@ -71,15 +76,17 @@ function connectToWorld(opt={}) {
 				switch (msg.cmd) {
 					case "handshake":
 						// Accept our new ID.
-						users.self.id = msg.val.id;						
+						users.self.id = msg.val.id;
+						serverID = msg.val.serverID;
 
-						options.onconnect(users.self.id);
+						options.onconnect(users.self.id, serverID);
 
 						// Initialize replication for all other users already in the room.
 						for (let o of msg.val.others) {
 							users.others[o.volatile.id] = o.volatile;
 							options.onuser(o.volatile.id, o.user);							
-						}
+						}						
+
 						break;
 					case "user":
 						// Accept notification of a new user joining, 
@@ -101,7 +108,13 @@ function connectToWorld(opt={}) {
 					case "project":
 						// Accept JSON representing the current state of the world contents.
 						if (options.onproject) options.onproject(msg.val);
-						break;					
+						break;				
+					case "sync":
+						const reply = options.onsync(msg.val, serverID);
+						if (reply) {
+							(new Message('sync', `[${reply.toString()}]`)).sendWith(server);
+						}
+						break;	
 					default: 
 						options.log("unknown message", msg);
 				}			
@@ -128,7 +141,13 @@ function connectToWorld(opt={}) {
 
 	return {
 		users,
-		server
+		server,
+		sync: function(syncMessage) {
+			if (syncMessage) {
+				//console.log("Sending local change to server.");
+				(new Message('sync', `[${syncMessage.toString()}]`)).sendWith(server);
+			}
+		}
 	};
 }
 

@@ -14,12 +14,8 @@ const { Message, PoseData } = require('./public/networkMessages.js');
 // const dotenv = require("dotenv").config();
 const dotenv = require("dotenv").config();
 
-// These constants are available by default in CommonJS Module syntax,
-// but we need to polyfill them in when working in an ES Module.
-/*
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-*/
+const merge = require('./public/merge.js');
+
 
 // this will be true if this server is running on Heroku
 const IS_HEROKU = (process.env._ && process.env._.indexOf("heroku") !== -1);
@@ -87,19 +83,6 @@ require('child_process').fork('audioSignalingServer.js');
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 const demoproject = {
   threejs: {
 	geometries: [{ uuid: "geom_cube", type: "BoxGeometry" }],
@@ -130,6 +113,8 @@ const demoproject = {
   }
 };
 
+
+
 const clients = {}
 // a set of uniquely-named rooms
 // each room would have a list of its occupants
@@ -138,13 +123,21 @@ const rooms = {
 	
 }
 
+// Server ID used for automerge operations.
+const serverID = newID();
+console.log('server ID: ' + serverID);
+
 // get (or create) a room:
 function getRoom(name="default") {
 	if (!rooms[name]) {
+		
 		rooms[name] = {
 			name: name,
 			clients: {},
-			project: demoproject
+			project: demoproject,
+			// Automerge state tracking for the shared scene in this room.
+			merger: new merge.Merger(null, serverID),
+			syncNeeded: false
 		}
 	}
 	return rooms[name]
@@ -165,10 +158,10 @@ function notifyRoom(room, message) {
 // verify id is unused (or generate a new one instead)
 // returns 128-bit UUID as a string:
 function newID(id="") {
-	while (!id || clients[id]) id = uuidv4()
-	return id
+	// Removing hyphens so these IDs can double as automerge actor IDs (AM will not accept hyphens)
+	while (!id || clients[id]) id = uuidv4().replace(/-/g, '');
+	return id;
 }
-
 
 // Handle incoming connections as a new user joining a room.
 wss.on('connection', (socket, req) => {
@@ -176,27 +169,41 @@ wss.on('connection', (socket, req) => {
 	// Actual room name might differ from this, if it's empty and we need to substitute a "default" instead.
 	const requestedRoomName = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
 	
-	const id = newID()
+	const clientID = newID();
 	let client = {
 		socket: socket,
 		room: getRoom(requestedRoomName),
 		shared: {
 			// Structure for any rapidly-changing data (poses, etc.)
 			volatile: {
-				id: id,
+				id: clientID,
 				poses: [new PoseData()],
 			},
 			// Structure for rarely-changing user configuration (display name, colour, etc.)
 			user: {}
 		}
 	}
-	clients[id] = client
+	clients[clientID] = client
 	// enter this room
-	client.room.clients[id] = client;
+	client.room.clients[clientID] = client;
+
+	client.room.merger.addClient(clientID);
+
+	client.trySync = function() {
+		const payload = client.room.merger.makeSyncMessage(clientID);
+		if (payload) {
+			const toSend = `[${payload.toString()}]`;
+			const message = new Message('sync', toSend);
+			//console.log('sending: ', toSend, typeof(toSend), 'to: ', clientID);
+			message.sendWith(socket);
+			return true;
+		}
+		return false;
+	}
 
 	// Convenience function for getting everyone in the room *except* this client.
 	function getOthersInRoom() {
-		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != id);
+		return Object.values(client.room.clients).filter(c => c.shared.volatile.id != clientID);
 	}
 
 	console.log(`client ${client.shared.volatile.id} connecting to room ${client.room.name}`);
@@ -210,17 +217,25 @@ wss.on('connection', (socket, req) => {
 				client.shared.volatile = msg.val;
 				// Insert our ID into this structure, so we can just batch-send all the volatile
 				// info together and it already has our ID packed in.
-				client.shared.volatile.id = id;			
+				client.shared.volatile.id = clientID;			
 				break;
 			case "user": 
 				// TODO: Send update to other users about changed info.
 				client.shared.user = msg.val;
 
 				// Tell everyone about the new/updated user.
-				(new Message("user", {id: id, user: msg.val})).sendToAll(getOthersInRoom());
+				(new Message("user", {id: clientID, user: msg.val})).sendToAll(getOthersInRoom());
 				break;
-		}
-	
+			case "sync":
+				// Handle an automerge synchronization message from the client.
+				client.room.merger.handleSyncMessage(JSON.parse(msg.val), clientID);
+				// Flag that we may have new updates to propagate out to the other users in the room.
+				client.room.syncNeeded = true;
+				// Check to see if we need to reply back with more synchronization conversation,
+				// and if so, do so.
+				client.trySync();
+				break;
+		}	
 	});
 
 	socket.on('error', (err) => {
@@ -230,27 +245,29 @@ wss.on('connection', (socket, req) => {
 
 	socket.on('close', () => {
 		// console.log(Object.keys(clients))
-		delete clients[id]
+		delete clients[clientID]
 
 		// remove from room
-		if (client.room) delete client.room.clients[id]
+		if (client.room) delete client.room.clients[clientID]
 
 
 		// Tell everyone this user left.		
-		notifyRoom(client.room, new Message("exit", id));
+		notifyRoom(client.room, new Message("exit", clientID));
 
-		console.log(`client ${id} left room ${client.room.name}`);		
+		console.log(`client ${clientID} left room ${client.room.name}`);		
 	});
 
 	// Welcome the new user and tell them their unique id.
 	// TODO: Tell them their spawn position too.
 	(new Message("handshake", {
-		id: id, 
+		id: clientID, 
+		serverID: serverID,
 		others: getOthersInRoom().map(o=>o.shared)
 	})).sendWith(socket);
 
 	// Share the current 3D scene with the user.
-	(new Message("project", client.room.project)).sendWith(socket);
+	//(new Message("project", client.room.project)).sendWith(socket);
+	client.trySync();
 });
 
 setInterval(function() {
@@ -259,6 +276,13 @@ setInterval(function() {
 		const clientlist = Object.values(room.clients);
 		const message = new Message("others", clientlist.map(o=>o.shared.volatile));
 		message.sendToAll(clientlist);
+
+		if (room.syncNeeded) {
+			for (let client of clientlist) {
+				client.trySync();
+			}
+		}
+		room.syncNeeded = false;
 	}
 }, 1000/30);
 
