@@ -49,7 +49,9 @@
       </li>
       <li><a href="#worlds">Worlds</a>
         <ul>
+          <li><a href="#multiplayer">Multiplayer</a></li>
           <li><a href="#reflect">Reflect</a></li>
+          <li><a href="#forest">Forest</a></li>
         </ul>
       </li>
       <li><a href="#future">Future Work</a></li>
@@ -58,10 +60,31 @@
 
     <h2 id="overview">Overview</h2>
 
+
+
+    <p>The WebXR Studio project began as an experiment in building a platform to support "<em>telematic</em> (remote)
+      immersive experiences" using browser-based <a href="https://en.wikipedia.org/wiki/WebXR"
+        title="Wikipedia article on WebXR API">WebXR technology</a>, and "to rethink how immersive worlds can be
+      developed & shared through remote development and education," as outlined in the <a
+        href="https://alicelab.world/digm5520/project.html">original project brief</a>.</p>
+
+    <p>Currently at a proof of concept stage, this project consists of a collection of separate "worlds"
+      built on a common infrastructure of client and server JavaScript code, demonstrating distinct aspects
+      of this world-building proposition:
+    </p>
+
+    <ul>
+      <li><a href="#multiplayer">The "multiplayer" world</a> demonstrates collaborative editing of a shared 3D scene, and non-verbal communication between users via visual "emote" signifiers.</li>      
+      <li><a href="#reflect">The "reflect" world</a> demonstrates dynamic simulation of agents in the space, and "viral" influence of users spreading to influence those agents.</li>
+      <li><a href="#forest">The "forest" world</a> demonstrates reactivity to external data streams, and algorithmic synthesis of generative sound and three-dimensional forms.</li>
+    </ul>
+
     <h3 id="related">Related Works</h3>
 
 
     <h2 id="technical">Technical Components</h2>
+
+    <h3 id="three">three.js and WebXR</h3>
 
     <h3 id="replication">Replication</h3>
 
@@ -309,19 +332,19 @@
     </p>
 
     <p>On the client side, we create an abstraction over this basic document-synchronization, tailored to the needs of
-      synchronizing a THREE.js scene, specifically. This is provided by the "SharedScene" class in
+      synchronizing a three.js scene, specifically. This is provided by the "SharedScene" class in
       <a href="https://github.com/worldmaking/nodelab/blob/develop/public/sharedScene.mjs">sharedScene.mjs</a>. This
       class
       maintains collections of THREE.Geometry, Material, and Object3D objects used in the local copy of the scene, and
       associates with each one a unique ID matching them to their corresponding entry in the Automerge document. This ID
       is stored in the objects' "userData" object as a "mergeID" field. This allows code that interfaces with the shared
-      scene to work with regular THREE.js object references as they would for conventional/non-shared 3D content, rather
+      scene to work with regular three.js object references as they would for conventional/non-shared 3D content, rather
       than working via a specialized synchronization handle or other abstraction. It also maintains maps of these
       mergeIDs
       back to their corresponding objects, so that they can be fetched and modified in response to remote changes.
     </p>
 
-    <p>Code that modifies the shared scene can create new geometries, materials, and meshes as THREE.js code normally
+    <p>Code that modifies the shared scene can create new geometries, materials, and meshes as three.js code normally
       does. To publish a new mesh, it just needs to call shared.registerMesh(mesh), and the SharedScene class handles
       making the necessary changes to the Automerge document and marking the object with its assigned unique ID.
       It automatically handles registering the mesh's geometry and materials too, though this can also be done manually
@@ -413,11 +436,11 @@
       parent in our map before we try to add children to it.</p>
 
     <p>This processing of changes is the most complex aspect of the solution, and it requires further expansion to cover
-      the full generality of content that could be authored in a THREE.js scene. But it offers a major advantage over
+      the full generality of content that could be authored in a three.js scene. But it offers a major advantage over
       destroying the scene and re-building it from scratch by deserializing JSON as we'd considered earlier in the
       project
       (beyond the performance gains from not doing that): it means that other code can hold references to objects in the
-      shared scene from frame to frame and use them like any other THREE.js object, without risk that those old
+      shared scene from frame to frame and use them like any other three.js object, without risk that those old
       references
       will get invalidated and need to be refreshed following a remote update.
     </p>
@@ -499,7 +522,14 @@
 
     <h2 id="worlds">Worlds</h2>
 
+    <h3 id="multiplayer">Multiplayer</h3>
+
+    <a href="https://xr.alicelab.world/multiplayer2.html">Try the "Multiplayer" experience live in your browser!</a>
+
     <h3 id="reflect">Reflect</h3>
+
+    <a href="https://xr.alicelab.world/reflect.html">Try the "Reflect" experience live in your browser!</a>
+
     <video width="600" poster="media/reflect.png" controls>
       <source src="media/ReflectVideo.mp4" type="video/mp4">
       <source src="media/ReflectVideo.mp4" type="video/ogg">
@@ -524,7 +554,7 @@
       on a chemical reaction system algorithm. The programming for the changes in luminance relies on a set of reaction
       rules found in a prey-predator system of chemicals. They derive from the Lotka-Volterra differential equation
       [Campuzano, 2021]: </p>
-      <center><img src="media/math-1.png" style="width:100px;height:40px;"></center>
+    <center><img src="media/math-1.png" style="width:100px;height:40px;"></center>
     <ul>
       <li> x and y are the populations of the different chemicals;</li>
       <li>x' and y' show how the two populations grow with respect to their individual rates;</li>
@@ -554,7 +584,7 @@
     <p>Another significant challenge we had was that we could not test our work in a virtual reality setting since VR
       equipment was not easily accessible. When equipped with VR glasses, we managed to test our system in a VR setting,
       and we found out that the performance of our system was slightly slower than the performance of the system in the
-      WebXR environment. Since the library we were using to create our content, namely, THREE.js, could not afford the
+      WebXR environment. Since the library we were using to create our content, namely, three.js, could not afford the
       creation of more than thirty lights per scene [threejs.org] for seamless interaction with our system, we had to
       decrease the number of lights in the space.</p>
 
@@ -778,12 +808,12 @@
           the Universe, Nature, and Daily Life, 37. New York: Hachette Books, 2015.</li>
       </p>
       <p>
-        <li>“Three.js.” three.js docs. Accessed December 14, 2021. <a
+        <li>“three.js.” three.js docs. Accessed December 14, 2021. <a
             href="https://threejs.org/docs/#api/en/lights/PointLight">https://threejs.org/docs/#api/en/lights/PointLight</a>.
         </li>
       </p>
       <p>
-        <li>“Webgl Particles Waves Example.” Three.js webgl - particles - waves. Accessed December 14, 2021.
+        <li>“Webgl Particles Waves Example.” three.js webgl - particles - waves. Accessed December 14, 2021.
           <a
             href="https://threejs.org/examples/webgl_points_waves.html">https://threejs.org/examples/webgl_points_waves.html</a>.
         </li>
