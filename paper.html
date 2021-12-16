@@ -46,6 +46,11 @@
               <li><a href="#print">Print in VR</a></li>
             </ul>
           </li>
+
+          <li><a href="#voice">Voice Chat</a>
+            </li>
+
+
         </ul>
       </li>
       <li><a href="#worlds">Worlds</a>
@@ -557,6 +562,198 @@
       so it can be easy for the user to read the messages coming through without being overwhelmed by many messages at
       once.
     </p>
+
+
+
+
+
+
+    <h3 id="voice">Voice Chat</h3>
+
+    <p> An in-app voice chat feature was added to the project for a seamless collaborative experience. A call button on the
+      HUD is used to enable the audio chat. When pressed a separate audio channel is created according to the HTML entry point,
+      only users that are present in the same “world” can communicate with each other. The audio-chat feature uses 
+      <a href="https://webrtc.org/">webRTC</a> an 
+      open-source communication protocol used to stream audio and video directly from browser to browser (peer-to-peer). </p>
+
+    <h4 id="eval">Evaluation of available techniques and technologies:</h4>
+   
+    
+    <p><strong>WebRTC: Peer-to-Peer: </strong><a href = "https://webrtc.org/">WebRTC </a> is the most popular open-source method of establishing audio and video connections. WebRTC is real-time and does not 
+    require the user to install plugins or third-party software the features are built into the browser itself. Connections are 
+    established from the client browser to another client browser using a server to relay connection information only, no data is
+    streamed through the server. This system is only designed to connect peer-to-peer (two users) additional features need to be 
+    created to establish connections between multiple users. </p>
+
+
+    
+    <p><strong>Socket.IO and Node.JS: </strong><a href = "https://socket.io/">Socket.IO </a> and Node.js can be used to record and send audio data. When audio is detected the client-side records the 
+    snippet of audio, converts it to a suitable format (base64String) and transfers the data over a server. There is significant latency 
+    in this implementation, the file has to be stored, converted, transferred and then re-converted into audio.</p>
+    
+    
+    <p><strong>PeerJS: </strong> <a href = "https://peerjs.com/"> PeerJS </a> is a javascript wrapper for webRTC, it simplifies the information exchanges required to establish the communication.
+    My implementation of PeerJS was not successful due to certain browsers being unable to load a source file. This is a known issue and 
+    is documented on the PeerJS’s GitHub with tickets still open <a href = "https://peerjs.com/">link</a>. The PeerJs GitHub does offer a fix by changing an unpkg.com 
+    link, successful connections are rare and inconsistent. </p> 
+
+
+<h4>Implementation: WebRTC, Mesh architecture </h4>
+<h5> Description of WebRtc peer-to-peer </h5>
+
+<p>
+The following pseudo code describes briefly how a simple peer-to-peer connection is established using webRTC and a web socket server. <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN Web Docs </a> and
+ <a href = "https://webrtc.org/"> webrtc.org </a> have been excellent resources for understanding each component of the protocol. To establish a connection between
+peers a pattern of negotiation has to occur, this description of peer-to-peer uses a signalling server and only two clients. 
+</p>
+
+
+
+
+
+<pre>
+
+{
+
+Step 1:  A client (Peer A) enters a room
+  1. A new room is created on the server (Room) based on the HTML entry point title
+
+Step 2: Another client (Peer B) enters the room
+  1. Room emits a message letting inhabitants know a new user has joined  “room_joined”
+
+Step 3: Peer A receives “room_joined”
+  1. Peer A emits “Start_Call” to the server
+  2. Room receives “Start_Call” and emits “Start_Call” to all inhabitants with 
+     the emitter’s (Peer A) socket ID
+	
+Step 4: Peer B receives “Start_Call” and the emitter’s ID (Peer A)
+
+  Step 4A: 
+    1. Checks if a connection is already made with this Peer
+    2. Creates a new object to represent the connection between (itself and Peer A)
+       “RTCPeerConnection”
+  
+  Step 4B:
+    1. Peer B emits to server “Webrtc_ice_candidate” and ICECandidate information 
+       for Peer A
+    2. Room emits to Peer A “Webrtc_ice_canditate” and the emitter’s (Peer B) 
+       socket ID
+  
+  Step 4C:
+    1. Peer B creates an offer using the “RTCPeerConnection” object called
+       “SessionDescription”
+    2. Peer B emits “webrtc_offer” and the “SessionDescription” object to Room 
+       for Peer A
+    3. Room emits “webrtc_offer” and the “SessionDescription” object to Peer A 
+       along with the emitter's (Peer B) Socket ID
+
+Step 5: Peer A receives “Webrtc_ice_canditate” and appends the candidate 
+        information to its own “RTCPeerConnection” object
+
+Step 6: Peer A receives “webrtc_offer” 
+
+  Step 6A: 
+    Checks if a connection is already made
+    Creates a new object to represent the connection between (itself and Peer B)
+    “RTCPeerConnection”
+
+  Step 6B:
+    1. Peer A emits to server “Webrtc_ice_candidate” and ICECandidate information 
+    for Peer B
+    2. Room emits to Peer B “Webrtc_ice_canditate” and the emitter’s (Peer B) 
+       socket ID
+    3. Peer B receives “Webrtc_ice_canditate” and appends the candidate information
+       to its own “RTCPeerConnection” object
+  
+  Step 6C:
+    1. Peer A creates a remote Description of Peer B
+    2. Peer A creates an answer using the “RTCPeerConnection” object called
+       “SessionDescription”
+    3. Peer A emits “Webrtc_answer” and the “SessionDescription” to Room for Peer B
+    4. Room emits “Webrtc_answer” and the “SessionDescription” object to Peer B
+       along with the emitters Socket ID
+
+Step 7: Peer B Receives “Webrtc_ answer and creates a remote Description of Peer A
+
+Step 8: Call between Peer A and B starts
+
+// MDN reference https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
+
+}
+
+</pre>
+
+<h5> Helpful Terms: </h5>
+
+<p>
+<strong> Signalling server: </strong> A signalling server’s purpose is to facilitate the information exchange from browser to browser
+ to establish the connection. This project uses Socket.IO though any web socket server can be used, the server 
+ is created using Node.js and hosted on <a href = 'https://www.heroku.com/'>Heroku</a>. </p>
+ <p>
+  <strong> Interactive Connectivity Establishment (ICE): </strong> The ice protocol allows web browsers to connect with peers by 
+bypassing firewalls that would usually prevent this from happening, it uses servers (STUN or TURN) to relay network 
+address information to establish the connection. <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN reference</a> </p>
+<p>
+  <strong> STUN: </strong> A protocol used to determine your own public address called STUN (Session traversal utilities for NAT 
+(Network Address Translation )) and any router restrictions that would prevent a connection. Google provides
+ a list of free STUN servers that are often used by developers.  <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN reference</a></p>
+ <p>
+  <strong> TURN: </strong> Some routers will prevent the connection from occurring in those cases a TURN(Traversal Using Relays around NAT
+ (TURN)) server must be used instead of a STUN. The TURN server relays all information through the server instead of 
+ directly from peer to peer. This is less performant than STUN and not often used.  <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN reference</a> </p>
+
+
+
+ <h4> Peer-to-Peer to mesh architecture </h4>
+
+ <p>WebRTC is only able to connect two peers, alternate methods of connecting many peers to many peers are necessary. 
+ The WebXR Studio project uses a mesh architecture to connect more than two peers. Each client holds
+  a list of connections to each other clients in the call, a separate WebRTC connection is created for each client in the call.
+   Steps 4 to 8 are executed every time a new peer joins the room. This is the simplest implementation of many-to-many and 
+   does not require additional servers. The creation of separate connections per client in the call is demanding on the 
+   client’s hardware, this increases as the number of clients increase. The current iteration of the audio chat only uses 
+   audio only, in test the performance of this implementation was satisfactory. Amendments will have to be 
+   made for future iterations of this project that requires the use of streaming video, a separate media server will have to be created.
+
+  </p> 
+
+  <img src="https://meetrix.io/blog/assets/images/webrtc/01-01--what-is-webrtc/webrtc-mesh.png" width="650"  alt="MeshDiagram">
+
+ <small> Diagram of a mesh architecture, each arrow represents a separate stream from peer to peer. In a conference of 5 each user must establish 4 seperate connections, https://meetrix.io/blog/assets/images/webrtc/01-01--what-is-webrtc/webrtc-mesh.png </small>
+
+
+   <h4>  Issue: Merging Servers </h4>
+
+
+  <p> The server (sever.js) that manages the shared scene data and positions in the three.js world is separate from the server that 
+   facilitates the WebRTC connections. The server that manages the three.js share seen data utilizes WebSockets in node.js, the 
+   audio server uses Socket.IO in Node.js. The audio server was launched as a child process allowing both servers to be hosted on 
+   the same address. The audio server communicates with the clients using an alternate port. This works locally but fails when deployed
+    to the Heroku test server, due to port security issues, Heroku prevents multiple ports from being opened
+    
+    
+   <a href="https://devcenter.heroku.com/articles/runtime-principles#web-servers">link</a> 
+    . The most time efficient solution was to launch a separate server to handle all the audio signalling connections. In future iterations, this audio-only sever can be merged into the main 
+    server by rewriting the signalling server to use WebSockets instead of Socket.IO.
+  </p> 
+  <h4> Future work </h4>
+   
+  <p> A mesh implementation of WebRTC is not an efficient method of creating a conferencing application, a more robust solution is to utilize a 
+   media server. Media servers are often used to create conferencing applications between many clients. All the clients establish a WebRTC 
+   connection to the server, their streams are merged and sent back to the clients. The diagram below describes the functions and architecture 
+   of the media server implementation, <a href="https://www.kurento.org/">Kurento</a> is an example of an open-source WebRTC media server and client API this could replace
+    the current mesh architecture. Instead of peers connecting to each other, each client connects to the server the data is then processed 
+    and distributed to all connected peers. The server can also be used to process and augment the data for example voice features and facial
+     recognition.
+</p>
+
+<img src="https://www.kurento.org/sites/default/files/pictures/MediaServerEvolution.png" width="650"  alt="MediaServerDiagram">
+
+<small>Description of Kurento Media Server's capabilities compared to a common media server and direct peer to peer, https://www.kurento.org/sites/default/files/pictures/MediaServerEvolution.png </small>
+
+
+
+
 
     <h2 id="worlds">Worlds</h2>
 
