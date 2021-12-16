@@ -737,6 +737,9 @@ address information to establish the connection. <a href = 'https://developer.mo
     server by rewriting the signalling server to use WebSockets instead of Socket.IO.
   </p> 
   <h4> Future work </h4>
+
+  <p> Positional audio can be implemented using the <a href="https://threejs.org/docs/#api/en/audio/PositionalAudio">PositionalAudio()</a> object in three.js, which requires an object (the users in the three.js world) and the audio 
+  ( incoming audio objects from each WebRTC connection). The Audio can be attached to the users position using the <a href="https://threejs.org/docs/#api/en/audio/Audio.setMediaStreamSource">.setMediaStreamSource()</a> audio function </p>
    
   <p> A mesh implementation of WebRTC is not an efficient method of creating a conferencing application, a more robust solution is to utilize a 
    media server. Media servers are often used to create conferencing applications between many clients. All the clients establish a WebRTC 
