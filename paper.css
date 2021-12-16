@@ -21,6 +21,11 @@ h1 {
     font-style: italic;
 }
 
+.caption {
+    font-style: italic;
+    font-size: small;
+}
+
 .center {
     display: block;
     margin-left: auto;

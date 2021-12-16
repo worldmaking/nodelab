@@ -48,7 +48,7 @@
           </li>
 
           <li><a href="#voice">Voice Chat</a>
-            </li>
+          </li>
 
 
         </ul>
@@ -98,7 +98,7 @@
     <h4><a href="http://www.immersence.com/osmose/">Osmose</a></h4>
 
     <p>A significant experimental artist working with VR who engages with the immersiveness of the medium is Char
-      Davies. Davies’ work Osmose that dates back to 1995, avoids solid objects and treats the whole composition of the
+      Davies. Davies' work Osmose (1995) avoids solid objects and treats the whole composition of the
       VR experience as a fluid landscape of forces between time, space, and people [Osmose]. Char Davies in Osmose and
       the teams that worked on both the conceptual and the technical aspects of the WebXR Studio Project explore the
       growing and reconfiguring of relationships in immersive experiences. Osmose repurposes the breathing of
@@ -152,9 +152,8 @@
       </li>
       <li>
         <p><strong>Shared scene data</strong> like the geometry, materials, and transformations of 3D objects in the
-          world,
-          are maintained in a syncrhonized document through the use of the
-          <a href="https://github.com/automerge/automerge" title="Automerge GitHub Repository">Automerge</a> library.
+          world, are maintained in a synchronized document through the use of the
+          <a href="https://github.com/Automerge/Automerge" title="Automerge GitHub Repository">Automerge</a> library.
         </p>
         <p>This handles merging concurrent changes made to the scene by multiple users, and resolving conflicts
           so that all users eventually agree on the same state of the shared 3D scene. It also retains a full
@@ -183,7 +182,7 @@
 {
   cmd: "command", // A short string indicating the message type.
   val: {
-    // A JSON object with properties defining the mesage contents / payload.
+    // A JSON object with properties defining the message contents / payload.
   }
 }</pre>
 
@@ -207,11 +206,11 @@
         <p>Upon receiving a new connection request, the server checks for an existing "room" object corresponding to the
           path component of the request URL (trailing or doubled slashes in the room key are ignored). If no existing
           room
-          is found, it creates one, as an object dontaining:</p>
+          is found, it creates one, as an object containing:</p>
         <ul>
           <li>The room's key ("name")</li>
           <li>A map of all clients in the room</li>
-          <li>A default scene document (see below), and a flag indicating whether there are local changes to syncrhonize
+          <li>A default scene document (see below), and a flag indicating whether there are local changes to synchronize
             to the clients (initially false)</li>
         </ul>
       </li>
@@ -229,7 +228,7 @@
             <ul>
               <li>
                 <p>A "<strong>volatile</strong>" component, containing information that changes rapidly and should be
-                  syncrhonized eagerly, such as head and controller poses (initially assumed to be at the origin by
+                  synchronized eagerly, such as head and controller poses (initially assumed to be at the origin by
                   default). The client's unique ID is also stored here,
                   even though it does not change, for the convenience of being able to send an array of all the
                   "volatile"
@@ -288,7 +287,7 @@
       injected into the volatile structure to replicate to other users.
     </p>
 
-    <h4 id="automerge">"Shared Scene" and Automerge Integration</h4>
+    <h4 id="Automerge">"Shared Scene" and Automerge Integration</h4>
 
     <p>When a new room is created, the server creates a blank Automerge document with its unique ID,
       and tracks a synchronization state for that document for each user who connects to the room.
@@ -304,7 +303,7 @@
     </p>
 
     <p>This foundation of document and conversation state management is handled by the "Merger" class in <a
-        href="https://github.com/worldmaking/nodelab/blob/develop/public/merge.js">merge.js</a>, which provides a
+        href="https://github.com/worldmaking/nodelab/blob/main/public/merge.js">merge.js</a>, which provides a
       wrapper around the common Automerge document transactions used on both client and server:
     </p>
     <ul>
@@ -323,7 +322,7 @@
           contributing to the document. The client calls this with the server's unique ID to track its synchronization
           state relative
           to the server. The server calls this with the unique client ID each time a client joins a room, to manage the
-          syncrhonizaton states of each client relative to its local document version.</p>
+          synchronizaton states of each client relative to its local document version.</p>
       </li>
       <li>
         <p><strong>merger.applyChange(commitMessage, doc => { /* change function */})</strong> - applies a change to the
@@ -338,10 +337,10 @@
           with that recipient, this function returns null.</p>
       </li>
       <li>
-        <p><strong>merger.handleSyncMessage(syncMesage, senderID)</strong> - accepts a string representation of an
+        <p><strong>merger.handleSyncMessage(syncMessage, senderID)</strong> - accepts a string representation of an
           Automerge SyncMessage received over the network from the specified actor, and applies it to the local
           document.
-          It returns an AutoMerge Patch data structure describing the full set of changes that this message has made to
+          It returns an Automerge Patch data structure describing the full set of changes that this message has made to
           the document, which we can parse to update our front end.</p>
       </li>
       <li>
@@ -351,14 +350,14 @@
     </ul>
 
     <p>On the server side, when a SyncMessage is received from the client, we mark the room as potentially in need
-      of syncrhonizaton. On our next 30-times-per-second loop sharing volatile information with all clients, we also
+      of synchronizaton. On our next 30-times-per-second loop sharing volatile information with all clients, we also
       try to generate a SyncMessage for each one, and send it if it is non-null (ie. if there's a change on the server
       that the remote client does not yet know about).
     </p>
 
     <p>On the client side, we create an abstraction over this basic document-synchronization, tailored to the needs of
       synchronizing a three.js scene, specifically. This is provided by the "<strong>SharedScene</strong>" class in
-      <a href="https://github.com/worldmaking/nodelab/blob/develop/public/sharedScene.mjs">sharedScene.mjs</a>. This
+      <a href="https://github.com/worldmaking/nodelab/blob/main/public/sharedScene.mjs">sharedScene.mjs</a>. This
       class
       maintains collections of THREE.Geometry, Material, and Object3D objects used in the local copy of the scene, and
       associates with each one a unique ID matching them to their corresponding entry in the Automerge document. This ID
@@ -406,7 +405,7 @@
       </li>
       <li>
         <p><strong>doc.materials</strong> - contains a row for each THREE.Material used by objects in the shared scene,
-          with columsn for the material's name and RGB color triplet. (Materials are currently assumed to always be
+          with columns for the material's name and RGB color triplet. (Materials are currently assumed to always be
           MeshLambertMaterial type, but this could be expanded to include more general materials)</p>
       </li>
       <li>
@@ -471,61 +470,67 @@
       changes to share with the server (via shared.tryGenerateSyncMessage()), and if so, a message is sent. This limits
       the amount of traffic and processing required in the event that many scripts make changes in rapid succession,
       such as in response to multiple mouse events in a single frame. This structure is easy to throttle further should
-      performace problems arise in future.
+      performance problems arise in future.
     </p>
 
 
     <h3 id="ui">UI / HUD</h3>
 
-    <p> The UI / HUD (Heads-Up Display) was built with accessbility and ease to use in mind. The buttons on the HUD
-      panels were made to be
-      big
-      with bright colours so to indicate clearly what is being selected. An emoji system was introduced to give more
+    <p> The UI / HUD (Heads-Up Display) was built with accessibility and ease to use in mind. The buttons on the HUD
+      panels were made to be big with bright colours so to indicate clearly what is being selected. An emoji system was
+      introduced to give more
       alternatives to the player to express themselves in a way that can be easily understood and seen by others in the
-      world. Then finally a print function was added that can print text in the wourld as a way to help debug the VR
+      world. Then finally a print function was added that can print text in the world as a way to help debug the VR
       version with ease.</p>
     <!-- TODO: more can be added here -->
 
     <h4 id="hud">HUD Panels</h4>
 
-    <p> The panels componet of the project uses the same in world 3D presence represented by 3D panels that can be
+    <p> The panels component of the project uses the same in world 3D presence represented by 3D panels that can be
       interacted either by mouse click, or in VR by using the controller. This was achieved by using a raycast object
       that
       can be casted either from the mouse position, in case the client is using keyboard and mouse, or from the
       controller
       position, in case the client is using VR.</p>
-      <p>
-        To build a compatible UI for VR and non-VR platforms, we tried <a
-        href="https://github.com/NikLever/CanvasUI#readme">CanvasUI</a> and <a href="https://github.com/felixmariotto/three-mesh-ui">Three Mesh UI</a> .
-      </p>
-      <p>
-        The Canvas UI was developed by Nik Lever. It is used to create user interface (UI) implementations in 
-        three.js for VR platforms [Lever, 2020]. The panel creates a plane object by default, and it allows you to configure 
-        the settings such as the size, font, etc. It seemed like it has a straightforward implementation; however, 
-        the default panel creating does not allow you to interact with the panel if you do not connect to the VR platform. 
-        This problem can be solved through additional code; however, we chose to use the latter option, which is the Three 
-        Mesh UI library.
-      </p>
-      <p>
-        The Three Mesh UI was developed by Felix Mariotto. Likewise the previous library, this library used to create user 
-        interfaces (UI) for VR platforms; however, since the default panel is a 3D object in the Three.js platform, this 
-        allows the created objects to be used in non-VR platforms [Mariotto, 2020]. This library does not have any dependency other than 
-        Three.js, making it easier to implement in that platform.
-        It uses a parent-child hierarchy for building the panel and its components. Ex: First, the container needs to be created 
-        (Block function from ThreeMeshUI class), which has the parent-like properties, and then for other components depending on the 
-        context such as text, image, or keyboard, we need to use the ThreeMeshUI class. After initializing the text or other components, 
-        it needs to be added to the container. This process is similar to how Three.js displays objects in the scene. This library provided 
-        various examples and features, and it has a more extensive user base than the previous library.
-      </p>
-      <p>
-        The primary challenge we had, in the beginning, was not able to find a stable content delivery network (CDN) server. The Three 
-        Mesh UI library is available on different servers; however, the server we are using for all the other libraries in this project was 
-        not working well with this UI library. We still get warnings on using two different servers indicating that “Multiple instances of 
-        three.js being imported.” Even though this warning does not affect the function of the world in any way, we might need to find a better 
-        implementation. 
-        The future of the UI part is to incorporate UI into the other worlds, add accessibility features, and have a more efficient design 
-        for usability purposes.
-      </p>
+    <p>
+      To build a compatible UI for VR and non-VR platforms, we tried <a
+        href="https://github.com/NikLever/CanvasUI#readme">CanvasUI</a> and <a
+        href="https://github.com/felixmariotto/three-mesh-ui">Three Mesh UI</a> .
+    </p>
+    <p>
+      The Canvas UI was developed by Nik Lever. It is used to create user interface (UI) implementations in
+      three.js for VR platforms [Lever, 2020]. The panel creates a plane object by default, and it allows you to
+      configure
+      the settings such as the size, font, etc. It seemed like it has a straightforward implementation; however,
+      the default panel creating does not allow you to interact with the panel if you do not connect to the VR platform.
+      This problem can be solved through additional code; however, we chose to use the latter option, which is the Three
+      Mesh UI library.
+    </p>
+    <p>
+      The Three Mesh UI was developed by Felix Mariotto. Likewise the previous library, this library used to create user
+      interfaces (UI) for VR platforms; however, since the default panel is a 3D object in the Three.js platform, this
+      allows the created objects to be used in non-VR platforms [Mariotto, 2020]. This library does not have any
+      dependency other than
+      Three.js, making it easier to implement in that platform.
+      It uses a parent-child hierarchy for building the panel and its components. Ex: First, the container needs to be
+      created
+      (Block function from ThreeMeshUI class), which has the parent-like properties, and then for other components
+      depending on the
+      context such as text, image, or keyboard, we need to use the ThreeMeshUI class. After initializing the text or
+      other components,
+      it needs to be added to the container. This process is similar to how Three.js displays objects in the scene. This
+      library provided
+      various examples and features, and it has a more extensive user base than the previous library.
+    </p>
+    <p>
+      The primary challenge we had, in the beginning, was not able to find a stable content delivery network (CDN)
+      server. The Three Mesh UI library is available on different servers; however, the server we are using for all the
+      other libraries in this project was not working well with this UI library. We still get warnings on using two
+      different servers indicating that “Multiple instances of three.js being imported.” Even though this warning does
+      not affect the function of the world in any way, we might need to find a better implementation. The future of the
+      UI part is to incorporate UI into the other worlds, add accessibility features, and have a more efficient design
+      for usability purposes.
+    </p>
     <!-- TODO: Add more to this section, I did not work on it so I don't know what else to add -->
 
     <h4 id="emoji">Emojis</h4>
@@ -535,7 +540,7 @@
       towards the world at that moment.
     </p>
     <p>The first step into spawning the emoji is to get a parent component as soon as the application is launched, the
-      parent component serves as an anchor point where the emoji will always follow. Fot this parent component we chose
+      parent component serves as an anchor point where the emoji will always follow. For this parent component we chose
       to use the body representation of the player in the application world, that way everyone in the world will always
       know who used the emoji.
     </p>
@@ -552,14 +557,12 @@
 
     <h4 id="print">Print in VR</h4>
     <p>The print in VR method was done using some of the basic principles of the emoji method. It gets a parent object
-      that we can then
-      parent the 3D text to it so it can anchor itself to that object in the world.
-      Every string sent to the print method is added to an array, this array has a capacity of ten elements, if an 11th
-      element is added
-      the fisrt element in that array is then deleted and all the other elements shifts one position. The capacity of
-      ten
-      elements was chosen
-      so it can be easy for the user to read the messages coming through without being overwhelmed by many messages at
+      that we can then parent the 3D text to it so it can anchor itself to that object in the world. Every string sent
+      to the print method is added to an array, this array has a capacity of ten elements, if an 11th
+      element is added, the first element in that array is then deleted and all the other elements shifts one position.
+      The capacity of
+      ten elements was chosen so it can be easy for the user to read the messages coming through without being
+      overwhelmed by many messages at
       once.
     </p>
 
@@ -570,48 +573,60 @@
 
     <h3 id="voice">Voice Chat</h3>
 
-    <p> An in-app voice chat feature was added to the project for a seamless collaborative experience. A call button on the
-      HUD is used to enable the audio chat. When pressed a separate audio channel is created according to the HTML entry point,
-      only users that are present in the same “world” can communicate with each other. The audio-chat feature uses 
-      <a href="https://webrtc.org/">webRTC</a> an 
-      open-source communication protocol used to stream audio and video directly from browser to browser (peer-to-peer). </p>
+    <p> An in-app voice chat feature was added to the project for a seamless collaborative experience. A call button on
+      the
+      HUD is used to enable the audio chat. When pressed a separate audio channel is created according to the HTML entry
+      point,
+      only users that are present in the same “world” can communicate with each other. The audio-chat feature uses
+      <a href="https://webrtc.org/">webRTC</a> an
+      open-source communication protocol used to stream audio and video directly from browser to browser (peer-to-peer).
+    </p>
 
-    <h4 id="eval">Evaluation of available techniques and technologies:</h4>
-   
-    
-    <p><strong>WebRTC: Peer-to-Peer: </strong><a href = "https://webrtc.org/">WebRTC </a> is the most popular open-source method of establishing audio and video connections. WebRTC is real-time and does not 
-    require the user to install plugins or third-party software the features are built into the browser itself. Connections are 
-    established from the client browser to another client browser using a server to relay connection information only, no data is
-    streamed through the server. This system is only designed to connect peer-to-peer (two users) additional features need to be 
-    created to establish connections between multiple users. </p>
+    <h4 id="eval">Evaluation of Available Techniques and Technologies</h4>
 
 
-    
-    <p><strong>Socket.IO and Node.JS: </strong><a href = "https://socket.io/">Socket.IO </a> and Node.js can be used to record and send audio data. When audio is detected the client-side records the 
-    snippet of audio, converts it to a suitable format (base64String) and transfers the data over a server. There is significant latency 
-    in this implementation, the file has to be stored, converted, transferred and then re-converted into audio.</p>
-    
-    
-    <p><strong>PeerJS: </strong> <a href = "https://peerjs.com/"> PeerJS </a> is a javascript wrapper for webRTC, it simplifies the information exchanges required to establish the communication.
-    My implementation of PeerJS was not successful due to certain browsers being unable to load a source file. This is a known issue and 
-    is documented on the PeerJS’s GitHub with tickets still open <a href = "https://peerjs.com/">link</a>. The PeerJs GitHub does offer a fix by changing an unpkg.com 
-    link, successful connections are rare and inconsistent. </p> 
-
-
-<h4>Implementation: WebRTC, Mesh architecture </h4>
-<h5> Description of WebRtc peer-to-peer </h5>
-
-<p>
-The following pseudo code describes briefly how a simple peer-to-peer connection is established using webRTC and a web socket server. <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN Web Docs </a> and
- <a href = "https://webrtc.org/"> webrtc.org </a> have been excellent resources for understanding each component of the protocol. To establish a connection between
-peers a pattern of negotiation has to occur, this description of peer-to-peer uses a signalling server and only two clients. 
-</p>
+    <p><strong>WebRTC: Peer-to-Peer: </strong><a href="https://webrtc.org/">WebRTC </a> is the most popular open-source
+      method of establishing audio and video connections. WebRTC is real-time and does not
+      require the user to install plugins or third-party software the features are built into the browser itself.
+      Connections are
+      established from the client browser to another client browser using a server to relay connection information only,
+      no data is
+      streamed through the server. This system is only designed to connect peer-to-peer (two users) additional features
+      need to be
+      created to establish connections between multiple users. </p>
 
 
 
+    <p><strong>Socket.IO and Node.JS: </strong><a href="https://socket.io/">Socket.IO </a> and Node.js can be used to
+      record and send audio data. When audio is detected the client-side records the
+      snippet of audio, converts it to a suitable format (base64String) and transfers the data over a server. There is
+      significant latency
+      in this implementation, the file has to be stored, converted, transferred and then re-converted into audio.</p>
 
 
-<pre>
+    <p><strong>PeerJS: </strong> <a href="https://peerjs.com/"> PeerJS </a> is a JavaScript wrapper for webRTC, it
+      simplifies the information exchanges required to establish the communication.
+      My implementation of PeerJS was not successful due to certain browsers being unable to load a source file. This is
+      a known issue and
+      is documented on the PeerJS's GitHub with tickets still open <a href="https://peerjs.com/">link</a>. The PeerJs
+      GitHub does offer a fix by changing an unpkg.com
+      link, successful connections are rare and inconsistent. </p>
+
+
+    <h4>Implementation: WebRTC, Mesh Architecture </h4>
+
+    <h5> Description of WebRTC Peer-to-Peer </h5>
+
+    <p>
+      The following pseudo code describes briefly how a simple peer-to-peer connection is established using webRTC and a
+      web socket server. <a href='https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN Web Docs </a> and
+      <a href="https://webrtc.org/"> webrtc.org </a> have been excellent resources for understanding each component of
+      the protocol. To establish a connection between
+      peers a pattern of negotiation has to occur, this description of peer-to-peer uses a signalling server and only
+      two clients.
+    </p>
+
+    <pre>
 
 {
 
@@ -624,9 +639,9 @@ Step 2: Another client (Peer B) enters the room
 Step 3: Peer A receives “room_joined”
   1. Peer A emits “Start_Call” to the server
   2. Room receives “Start_Call” and emits “Start_Call” to all inhabitants with 
-     the emitter’s (Peer A) socket ID
+     the emitter's (Peer A) socket ID
 	
-Step 4: Peer B receives “Start_Call” and the emitter’s ID (Peer A)
+Step 4: Peer B receives “Start_Call” and the emitter's ID (Peer A)
 
   Step 4A: 
     1. Checks if a connection is already made with this Peer
@@ -636,7 +651,7 @@ Step 4: Peer B receives “Start_Call” and the emitter’s ID (Peer A)
   Step 4B:
     1. Peer B emits to server “Webrtc_ice_candidate” and ICECandidate information 
        for Peer A
-    2. Room emits to Peer A “Webrtc_ice_canditate” and the emitter’s (Peer B) 
+    2. Room emits to Peer A “Webrtc_ice_canditate” and the emitter's (Peer B) 
        socket ID
   
   Step 4C:
@@ -660,7 +675,7 @@ Step 6: Peer A receives “webrtc_offer”
   Step 6B:
     1. Peer A emits to server “Webrtc_ice_candidate” and ICECandidate information 
     for Peer B
-    2. Room emits to Peer B “Webrtc_ice_canditate” and the emitter’s (Peer B) 
+    2. Room emits to Peer B “Webrtc_ice_canditate” and the emitter's (Peer B) 
        socket ID
     3. Peer B receives “Webrtc_ice_canditate” and appends the candidate information
        to its own “RTCPeerConnection” object
@@ -683,79 +698,108 @@ Step 8: Call between Peer A and B starts
 
 </pre>
 
-<h5> Helpful Terms: </h5>
+    <h5> Helpful Terms</h5>
 
-<p>
-<strong> Signalling server: </strong> A signalling server’s purpose is to facilitate the information exchange from browser to browser
- to establish the connection. This project uses Socket.IO though any web socket server can be used, the server 
- is created using Node.js and hosted on <a href = 'https://www.heroku.com/'>Heroku</a>. </p>
- <p>
-  <strong> Interactive Connectivity Establishment (ICE): </strong> The ice protocol allows web browsers to connect with peers by 
-bypassing firewalls that would usually prevent this from happening, it uses servers (STUN or TURN) to relay network 
-address information to establish the connection. <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN reference</a> </p>
-<p>
-  <strong> STUN: </strong> A protocol used to determine your own public address called STUN (Session traversal utilities for NAT 
-(Network Address Translation )) and any router restrictions that would prevent a connection. Google provides
- a list of free STUN servers that are often used by developers.  <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN reference</a></p>
- <p>
-  <strong> TURN: </strong> Some routers will prevent the connection from occurring in those cases a TURN(Traversal Using Relays around NAT
- (TURN)) server must be used instead of a STUN. The TURN server relays all information through the server instead of 
- directly from peer to peer. This is less performant than STUN and not often used.  <a href = 'https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>MDN reference</a> </p>
+    <p>
+      <strong> Signalling Server: </strong> A signalling server's purpose is to facilitate the information exchange from
+      browser to browser
+      to establish the connection. This project uses Socket.IO though any web socket server can be used, the server
+      is created using Node.js and hosted on <a href='https://www.heroku.com/'>Heroku</a>.
+    </p>
+    <p>
+      <strong> Interactive Connectivity Establishment (ICE): </strong> The ice protocol allows web browsers to connect
+      with peers by
+      bypassing firewalls that would usually prevent this from happening, it uses servers (STUN or TURN) to relay
+      network
+      address information to establish the connection.
+    </p>
+    <p>
+      <strong> STUN: </strong> A protocol used to determine your own public address called STUN (Session traversal
+      utilities for NAT
+      (Network Address Translation )) and any router restrictions that would prevent a connection. Google provides
+      a list of free STUN servers that are often used by developers.
+    </p>
+    <p>
+      <strong> TURN: </strong> Some routers will prevent the connection from occurring in those cases a TURN(Traversal
+      Using Relays around NAT
+      (TURN)) server must be used instead of a STUN. The TURN server relays all information through the server instead
+      of
+      directly from peer to peer. This is less performant than STUN and not often used.
+    </p>
 
-
-
- <h4> Peer-to-Peer to mesh architecture </h4>
-
- <p>WebRTC is only able to connect two peers, alternate methods of connecting many peers to many peers are necessary. 
- The WebXR Studio project uses a mesh architecture to connect more than two peers. Each client holds
-  a list of connections to each other clients in the call, a separate WebRTC connection is created for each client in the call.
-   Steps 4 to 8 are executed every time a new peer joins the room. This is the simplest implementation of many-to-many and 
-   does not require additional servers. The creation of separate connections per client in the call is demanding on the 
-   client’s hardware, this increases as the number of clients increase. The current iteration of the audio chat only uses 
-   audio only, in test the performance of this implementation was satisfactory. Amendments will have to be 
-   made for future iterations of this project that requires the use of streaming video, a separate media server will have to be created.
-
-  </p> 
-
-  <img src="https://meetrix.io/blog/assets/images/webrtc/01-01--what-is-webrtc/webrtc-mesh.png" width="650"  alt="MeshDiagram">
-
- <small> Diagram of a mesh architecture, each arrow represents a separate stream from peer to peer. In a conference of 5 each user must establish 4 seperate connections, https://meetrix.io/blog/assets/images/webrtc/01-01--what-is-webrtc/webrtc-mesh.png </small>
-
-
-   <h4>  Issues </h4>
-
-
-  <p> The server (sever.js) that manages the shared scene data and positions in the three.js world is separate from the server that 
-   facilitates the WebRTC connections. The server that manages the three.js share seen data utilizes WebSockets in node.js, the 
-   audio server uses Socket.IO in Node.js. The audio server was launched as a child process allowing both servers to be hosted on 
-   the same address. The audio server communicates with the clients using an alternate port. This works locally but fails when deployed
-    to the Heroku test server, due to port security issues, Heroku prevents multiple ports from being opened
-    
-    
-   <a href="https://devcenter.heroku.com/articles/runtime-principles#web-servers">link</a> 
-    . The most time efficient solution was to launch a separate server to handle all the audio signalling connections. In future iterations, this audio-only sever can be merged into the main 
-    server by rewriting the signalling server to use WebSockets instead of Socket.IO.
-  </p> 
-  <h4> Future work </h4>
-
-  <p> Positional audio can be implemented using the <a href="https://threejs.org/docs/#api/en/audio/PositionalAudio">PositionalAudio()</a> object in three.js, which requires an object (the users in the three.js world) and the audio 
-  ( incoming audio objects from each WebRTC connection). The Audio can be attached to the users position using the <a href="https://threejs.org/docs/#api/en/audio/Audio.setMediaStreamSource">.setMediaStreamSource()</a> audio function </p>
-   
-  <p> A mesh implementation of WebRTC is not an efficient method of creating a conferencing application, a more robust solution is to utilize a 
-   media server. Media servers are often used to create conferencing applications between many clients. All the clients establish a WebRTC 
-   connection to the server, their streams are merged and sent back to the clients. The diagram below describes the functions and architecture 
-   of the media server implementation, <a href="https://www.kurento.org/">Kurento</a> is an example of an open-source WebRTC media server and client API this could replace
-    the current mesh architecture. Instead of peers connecting to each other, each client connects to the server the data is then processed 
-    and distributed to all connected peers. The server can also be used to process and augment the data for example voice features and facial
-     recognition.
-</p>
-
-<img src="https://www.kurento.org/sites/default/files/pictures/MediaServerEvolution.png" width="650"  alt="MediaServerDiagram">
-
-<small>Description of Kurento Media Server's capabilities compared to a common media server and direct peer to peer, https://www.kurento.org/sites/default/files/pictures/MediaServerEvolution.png </small>
+    <p><a href='https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API'>See the MDN reference for the WebRTC API
+        for further information</a>.</p>
 
 
 
+    <h4> Peer-to-Peer to mesh architecture </h4>
+
+    <p>WebRTC is only able to connect two peers, alternate methods of connecting many peers to many peers are necessary.
+      The WebXR Studio project uses a mesh architecture to connect more than two peers. Each client holds
+      a list of connections to each other clients in the call, a separate WebRTC connection is created for each client
+      in the call.
+      Steps 4 to 8 are executed every time a new peer joins the room. This is the simplest implementation of
+      many-to-many and
+      does not require additional servers. The creation of separate connections per client in the call is demanding on
+      the
+      client's hardware, this increases as the number of clients increase. The current iteration of the audio chat only
+      uses
+      audio only, in test the performance of this implementation was satisfactory. Amendments will have to be
+      made for future iterations of this project that requires the use of streaming video, a separate media server will
+      have to be created.
+
+    </p>
+
+    <img src="media/meshnetwork.png" width="512"
+      alt="Mesh Network Diagram">
+
+    <p class="caption">Diagram of a mesh architecture: each arrow represents a separate stream from peer to peer. In a conference
+      of 5 each user must establish 4 separate connections.</p>
+
+    <h4>Issues</h4>
+
+
+    <p> The server (sever.js) that manages the shared scene data and positions in the three.js world is separate from
+      the server that
+      facilitates the WebRTC connections. The server that manages the three.js share seen data utilizes WebSockets in
+      node.js, the
+      audio server uses Socket.IO in Node.js. The audio server was launched as a child process allowing both servers to
+      be hosted on
+      the same address. The audio server communicates with the clients using an alternate port. This works locally but
+      fails when deployed
+      to the Heroku test server, due to port security issues, Heroku prevents multiple ports from being opened
+
+
+      <a href="https://devcenter.heroku.com/articles/runtime-principles#web-servers">link</a>
+      . The most time efficient solution was to launch a separate server to handle all the audio signalling connections.
+      In future iterations, this audio-only sever can be merged into the main
+      server by rewriting the signalling server to use WebSockets instead of Socket.IO.
+    </p>
+    <h4> Future work </h4>
+
+    <p> Positional audio can be implemented using the <a
+        href="https://threejs.org/docs/#api/en/audio/PositionalAudio">PositionalAudio()</a> object in three.js, which
+      requires an object (the users in the three.js world) and the audio
+      ( incoming audio objects from each WebRTC connection). The Audio can be attached to the users position using the
+      <a href="https://threejs.org/docs/#api/en/audio/Audio.setMediaStreamSource">.setMediaStreamSource()</a> audio
+      function
+    </p>
+
+    <p> A mesh implementation of WebRTC is not an efficient method of creating a conferencing application. A more robust
+      solution is to utilize a media server. Media servers are often used to create conferencing applications between many clients. All the
+      clients establish a WebRTC connection to the server, their streams are merged and sent back to the clients. The diagram below describes the
+      functions and architecture of the media server implementation.  Instead of peers connecting to each other, each client connects to the server. The
+      data is then processed and distributed to all connected peers. This also preserves user privacy, as clients do not need to know the IP addresses of their peers.</p>
+      
+    <p><a href="https://www.kurento.org/">Kurento</a> is one example of an open-source
+      WebRTC media server and client API that could replace the current mesh architecture. The server can also be used to process and augment the data, for example adding voice features and facial
+      recognition.
+    </p>
+
+    <img src="media/mediaserver.png" width="512"
+      alt="MediaServerDiagram">
+
+    <p class="caption">Diagram illustrating a central media server architecture.</p>
 
 
     <h2 id="worlds">Worlds</h2>
@@ -1118,11 +1162,13 @@ address information to establish the connection. <a href = 'https://developer.mo
         </p>
       </li>
       <li>
-        <p>Lever, Nick. “CanvasUI”. Github. 2020. <a href="https://github.com/NikLever/CanvasUI">https://github.com/NikLever/CanvasUI</a> 
+        <p>Lever, Nick. “CanvasUI”. Github. 2020. <a
+            href="https://github.com/NikLever/CanvasUI">https://github.com/NikLever/CanvasUI</a>
         </p>
       </li>
       <li>
-        <p>Mariotto, Felix. “three-mesh-ui”. Github. 2020. <a href="https://github.com/felixmariotto/three-mesh-ui">https://github.com/felixmariotto/three-mesh-ui</a> 
+        <p>Mariotto, Felix. “three-mesh-ui”. Github. 2020. <a
+            href="https://github.com/felixmariotto/three-mesh-ui">https://github.com/felixmariotto/three-mesh-ui</a>
         </p>
       </li>
       <li>
@@ -1179,7 +1225,7 @@ address information to establish the connection. <a href = 'https://developer.mo
 
       <li>
         <p>​​“We Live in an Ocean of Air: Immerse Yourself in Nature.” PHI. Accessed December 15, 2021. <a
-            href= "https://phi.ca/en/events/we-live-in-an-ocean-of-air/">
+            href="https://phi.ca/en/events/we-live-in-an-ocean-of-air/">
             https://phi.ca/en/events/we-live-in-an-ocean-of-air/</a>. </p>
       </li>
 
@@ -1189,15 +1235,15 @@ address information to establish the connection. <a href = 'https://developer.mo
             href="https://threejs.org/examples/webgl_points_waves.html">https://threejs.org/examples/webgl_points_waves.html</a>.
         </p>
       </li>
-      
+
       <li>
-        <p>Tree foliage (bubbles) code modified from: 
-          <a
-            href="https://jsfiddle.net/prisoner849/wnash36c/">https://jsfiddle.net/prisoner849/wnash36c/</a>. by Paul West
+        <p>Tree foliage (bubbles) code modified from:
+          <a href="https://jsfiddle.net/prisoner849/wnash36c/">https://jsfiddle.net/prisoner849/wnash36c/</a>. by Paul
+          West
         </p>
       </li>
-      
-      
+
+
 
     </ul>
   </article>
