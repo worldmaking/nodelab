@@ -1,53 +1,49 @@
 
 // DOM elements.
-// This Code is from https://github.com/borjanebbal/webrtc-node-app
-
-//const roomSelectionContainer = document.getElementById('room-selection-container')
-//const roomInput = document.getElementById('room-input')
-//const connectButton = document.getElementById('connect-button')
-
+// This Code is addapted from the tutorial on https://github.com/borjanebbal/webrtc-node-app
+// This is modified to be a mesh network from being a standard peer to peer 
+// The index.html was removed and the features implemented into the HUD ui
+// This implementation also only uses audio to make sure it is preformant
 
 
+
+
+//
 const audioChatContainer = document.getElementById('audio-chat-container')
-//const localVideoComponent = document.getElementById('local-video')
-//const remoteVideoComponent = document.getElementById('remote-video')
 
-// Variables.
-
-console.log("audiorun")
 let socket;
 
 
 
-
+//This checks if we are on a local host or deployed to heroku
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1"){
 	socket = io(':3123', { transports : ['websocket'] })
-
 	console.log("Connected to local socket")
 }
 
+//Connects to a seperate heroku server
+//This would be removed if the heroku server is merged with the server.js
 else{
 	socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
-
 	console.log("Connected to agile-basin-71343")
 }
 
-// const socket = io('https://agile-basin-71343.herokuapp.com/', { transports : ['websocket'] })
 
+//This sets the constraints of the stream, it is able to send video and audio
+//currently it is audio only
 const mediaConstraints = {
 	audio: true,
 	video: false,
 }
+
 let localStream
 let remoteStream
 let isRoomCreator
 let rtcPeerConnection // Connection between the local device and the remote peer.
 let roomId
 
-
+//This contains every list of connected clients
 var connections=[]
-
-
 
 // Free public STUN servers provided by Google.
 const iceServers = {
@@ -66,10 +62,6 @@ const iceServers = {
 		],
 	}
 
-// BUTTON LISTENER ============================================================
-// connectButton.addEventListener('click', () => {
-// 	joinRoom(roomInput.value)
-// })
 
 // SOCKET EVENT CALLBACKS =====================================================
 socket.on('room_created', async () => {
@@ -88,54 +80,36 @@ socket.on('room_joined2', async () => {
 
 socket.on('full_room', () => {
 	console.log('Socket event callback: full_room')
-
 	alert('The room is full, please try another one')
 })
 
 // FUNCTIONS ==================================================================
 
-
-
-
-
+// Is called by what ever html pagethe client is on 
+// the client would send the uuid in though this function
+// The uuid would be used to apply the webrtc audio to a three.js object 
 function initialize(){
-	
-	//myID = id
-	//console.log("initialized with UUID " + id)
-
 	joinRoom();
 }
 
-
+//the trigger function to start the audio
 function joinRoom() {
 
 	console.log("joinRoom")
-	
-	
+//This insures that the room is generated based on the page the client is currently on
 	let room = location.hostname
-	//let room = '/multiplayer'
-	//if (room == '') {
-	//	alert('Please type a room ID')
-//		
-	//} 
+	roomId = room
+//Sends the function to the server to join the room 
+	socket.emit('join', room)
 
-	//else {
-		roomId = room
-		console.log(typeof room) 
-		socket.emit('join', room)
-		//showVideoConference()
-        //console.log(app)
-	//}
-
-
-	// socket.emit('join', room)
 }
 
+//Tester : not fully developed
 function leaveRoom(){
-	//socket.close()
 	socket.emit('dis_con',roomId)
 }
 
+// The export function for mjs
 export{
 	joinRoom,
 	leaveRoom,
@@ -143,12 +117,13 @@ export{
 }
 
 
-
 // function showVideoConference() {
 // 	roomSelectionContainer.style = 'display: none'
 // 	videoChatContainer.style = 'display: block'
 // }
 
+// The set local stream 
+// gets the clients audio or video stream
 async function setLocalStream(mediaConstraints) {
 	let stream
 	try {
@@ -163,9 +138,13 @@ async function setLocalStream(mediaConstraints) {
 
 
 // SOCKET EVENT CALLBACKS =====================================================
-
+//this triggers the webrtc exchange
 socket.on('start_call2', async (id,count,clients,roomId) => {
 console.log("startCall")
+
+// Since this will be called multiple times as the client is added 
+// It checks if a connection is already made with the user thats making the call
+// If not it creates a new entry into the list of connections 
 	if(!connections[id]){
 		connections[id] = new RTCPeerConnection(iceServers);
 		addLocalTracks(connections[id])
@@ -173,12 +152,14 @@ console.log("startCall")
 			setRemoteStream(event,id)
 		}
 		connections[id].onicecandidate  = function() {
+			// ice canditates are exchanged
 			sendIceCandidate(event,id)
 		}
 		await createOffer(connections[id], id)                                                
 	}
 })
 
+//The client receives a web rtc offer 
 socket.on('webrtc_offer2', async (id,count,clients,eventd) => {
 	console.log("webrtc_offer")
 	if(!connections[id]){
@@ -247,7 +228,15 @@ async function createOffer(rtcPeerConnection, toID) {
 	toID)
 	
 }
-	
+
+// Session descriptions:
+// The configuration of an endpoint on a WebRTC connection is called a session 
+// description. The description includes information about the kind of media being 
+// sent, its format, the transfer protocol being used, the endpoint's IP address and 
+// port, and other information needed to describe a media transfer 
+// endpoint. This information is exchanged and stored using Session Description Protocol
+// From: https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
+
 async function createAnswer(rtcPeerConnection, toID) {
 	let sessionDescription
 	try {
@@ -268,7 +257,7 @@ async function createAnswer(rtcPeerConnection, toID) {
 
 
 
-
+//creates the stream oobject that is appended to the html
 function setRemoteStream(event,id) {
 	// remoteVideoComponent.srcObject = event.streams[0]
 	// remoteStream = event.stream
@@ -285,6 +274,9 @@ function setRemoteStream(event,id) {
 	audio_chat_container.appendChild(audio);
 }
 
+
+
+// an exchanged regarding the information of the network connection
 function sendIceCandidate(event,id) {
 	if (event.candidate) {
 		socket.emit('webrtc_ice_candidate', {
